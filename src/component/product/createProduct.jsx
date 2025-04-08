@@ -345,12 +345,13 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
 
 
   // Update handleRemoveWarehouse to also clear warehouse values
-  const handleRemoveWarehouse = (typeToRemove) => {
+  const handleRemoveWarehouse = (event, typeToRemove) => {
     setSelectedWarehouse(prev => prev.filter(type => type !== typeToRemove));
     setShowSections(prev => ({ ...prev, [typeToRemove]: false }));
     setWarehouseValues(prevValues => {
       const newValues = { ...prevValues };
       delete newValues[typeToRemove];
+      console.log("🧹 Removing warehouse:", typeToRemove);
       return newValues;
     });
   };
@@ -1354,8 +1355,9 @@ const handleCategoryLogoChange = async (e) => {
                   >
                     {type}
                     <button
+                      type="button"
                       className="ml-2 text-red-500"
-                      onClick={() => handleRemoveWarehouse(type)}
+                      onClick={(event) => handleRemoveWarehouse(event, type)}
                     >
                       &#x2715;
                     </button>
@@ -1372,8 +1374,9 @@ const handleCategoryLogoChange = async (e) => {
             {variation && selectedWarehouse.map((warehouseName) => (
               <div className="border-2 mt-20 rounded-lg p-5 text-gray-700 text-left bold" key={warehouseName}>
                 <button
+                  type="button"
                   className="mr-4 text-gray-500 size-4 text-xl stroke-8"
-                  onClick={() => handleRemoveWarehouse(warehouseName)}
+                  onClick={(event) => handleRemoveWarehouse(event, warehouseName)}
                 >
                   &#x2715;
                 </button>
@@ -1411,6 +1414,7 @@ const handleCategoryLogoChange = async (e) => {
                     >
                       {type}
                       <button
+                        type="button"
                         className="ml-2 text-red-500"
                         onClick={() => handleRemoveVariationType(type)}
                       >
@@ -1630,8 +1634,10 @@ const handleCategoryLogoChange = async (e) => {
                       <div className="flex justify-between items-start mb-4">
                         <h3 className="text-md text-gray-700">{warehouseName}</h3>
                         <button
+                          type="button"
                           className="mr-4 text-gray-500 size-4 text-xl stroke-8"
-                          onClick={() => handleRemoveWarehouse(warehouseName)}
+                          onClick={(event) => handleRemoveWarehouse(event, warehouseName)}
+
                         >
                           &#x2715;
                         </button>

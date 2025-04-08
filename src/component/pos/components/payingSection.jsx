@@ -20,6 +20,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     const totalPrice = calculateTotalPrice();
     const [decryptedUser, setDecryptedUser] = useState(null);
     const [preFix, setPreFix] = useState('');
+    const [loading, setLoading] = useState(false);
     const { currency } = useCurrency();
     const [invoiceData, setInvoiceData] = useState([]);
     const [printTrigger, setPrintTrigger] = useState(false);
