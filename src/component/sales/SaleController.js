@@ -370,35 +370,14 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async (
-    grandTotal,
-    profit,
-    orderStatus,
-    paymentStatus,
-    paymentType,
-    amounts,
-    shipping,
-    discountType,
-    discount,
-    tax,
-    selectedWarehouses,
-    selectedCustomer,
-    selectedProduct,
-    date,
-    preFix,
-    offerPercentage,
-    setInvoiceNumber,
-    setResponseMessage,
-    setError,
-    setProgress,
-) => {
+export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData,note, cashBalance) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
     setInvoiceNumber(invoiceNumber);
     const totalAmount = Number(grandTotal) || 0;
     const profitAmount = Number(profit) || 0;
-    const paidAmount = Object.values(amounts).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    let paidAmount = Object.values(amounts).reduce((sum, value) => sum + (Number(value) || 0), 0);
     const balance = totalAmount - paidAmount;
 
     const normalizedPaymentStatus = paymentStatus?.toLowerCase();
@@ -410,19 +389,15 @@ export const handleSave = async (
         return;
     }
 
-    // **Validation: Check if "Paid" but balance is positive**
-    // if (paymentStatus.toLowerCase() === 'paid' && balance > 0) {
-    //     alert(`Payment status is 'Paid', but there's still a balance remaining. Please adjust the payment amount or if it is a partial paying sale please select payment status as 'Partial'.`);
-    //     setProgress(false);
-    //     return;
-    // }
-   if (paidAmount) {
+    // If paid amount exceeds the grand total, set the grand total as the paid amount
+    if (paidAmount) {
         if (paidAmount >= totalAmount) {
             paidAmount = grandTotal;
         } else {
             paidAmount = paidAmount;
         }
     }
+
     const numberRegex = /^[0-9]*(\.[0-9]+)?$/;
 
     if (!numberRegex.test(tax)) {
@@ -517,7 +492,9 @@ export const handleSave = async (
         pureProfit: profitAmount,
         cashierUsername: cashierUsername || 'Unknown',
         offerPercentage,
-        invoiceNumber
+        invoiceNumber,
+        note,
+        cashBalance
     };
 
     const finalSaleData = {
@@ -542,13 +519,14 @@ export const handleSave = async (
         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}${endpoint}`, finalSaleData);
         if (response.data.status === 'success') {
             toast.success('Sale created successfully!', { autoClose: 2000, className: "custom-toast" });
+            setInvoiceData(response.data.sale);
+            console.log(response.data.sale);
         }
     } catch (error) {
         console.error('Error creating sale:', error);
         if (error.response) {
             const errorMessage = error.response.data.message;
             if (errorMessage === "Please choose products from the default warehouse.") {
-                // Show the specific error as an alert
                 alert(errorMessage);
             } else {
                 toast.error(errorMessage || 'An error occurred on the server', { autoClose: 2000, className: "custom-toast" });
