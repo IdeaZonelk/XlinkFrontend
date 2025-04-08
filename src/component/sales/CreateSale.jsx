@@ -38,6 +38,9 @@ function CreateSaleBody() {
     const [error, setError] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [orderStatus, setOrderStatus] = useState('');
+    const [note, setNote] = useState('null');
+    const [invoiceData, setInvoiceData] = useState([]);
+    const [balance, setBalance] = useState(0);
     const [paymentStatus, setPaymentStatus] = useState('');
     const [paymentType, setPaymentType] = useState({
         cash: false,
@@ -656,7 +659,10 @@ function CreateSaleBody() {
                                 setInvoiceNumber,
                                 setResponseMessage,
                                 setError,
-                                setProgress
+                                setProgress,
+                                setInvoiceData,
+                                note,
+                                balance
                             )} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save sale
                             </button>
