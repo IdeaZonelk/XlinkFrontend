@@ -8,10 +8,10 @@ export const handleFindProductBySearch = (e, setProductKeyword, handleProductSub
 };
 
 export const determineSearchTypeOfProduct = (keyword) => {
-    if (/^\d+$/.test(keyword)) {
+    if (/^[A-Za-z0-9\-]+$/.test(keyword)) {
         return 'code';
     }
-    return 'name'; // Directly return 'name' for non-numeric values
+    return 'name';
 };
 
 export const handleProductSubmit = async (Productkeyword, setLoading, setSearchedProductData) => {
