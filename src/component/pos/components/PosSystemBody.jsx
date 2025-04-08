@@ -1427,7 +1427,7 @@ function PosSystemBody({ defaultWarehouse }) {
             {/* Produc billing section in right */}
             <div className="flex justify-between mt-2 w-full h-screen ">
                 <div className="w-[35%] h-screen rounded-[15px] bg-white p-4">
-                    <div>
+                   <div>
                         <BillingSection
                             productBillingHandling={productBillingHandling}
                             setProductBillingHandling={setProductBillingHandling}
@@ -1438,6 +1438,10 @@ function PosSystemBody({ defaultWarehouse }) {
                             warehouse={warehouse}
                             setReloadStatus={setReloadStatus}
                             setHeldProductReloading={setHeldProductReloading}
+                            setSelectedCategoryProducts={setSelectedCategoryProducts} 
+                            setSelectedBrandProducts={setSelectedBrandProducts} 
+                            setSearchedProductData={setSearchedProductData}
+                            setError={setError}
                         />
                     </div>
                 </div>
