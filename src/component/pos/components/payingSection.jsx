@@ -8,7 +8,7 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
-const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, totalPcs, calculateTotalQty, profit, tax, shipping, discount, productDetails, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, grandTotal, setError, setProgress, setSelectedOffer }) => {
+const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, productDetails, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer }) => {
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -186,7 +186,7 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                 return acc;
             }, {});
 
-            handleSave(
+            await handleSave(
                 calculateTotalPrice(),
                 profit,
                 "ordered",
@@ -212,7 +212,7 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                 calculateBalance(),
             );
             console.log("type of setProgress", setProgress);
-            await fetchAllData();
+             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
             return;
         } catch (error) {
             console.error('Error updating product quantities:', error);
