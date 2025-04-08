@@ -353,6 +353,7 @@ function PosSystemBody({ defaultWarehouse }) {
                 return prevBilling;
             }
             return prevBilling;
+            
         });
 
         setTimeout(() => {
