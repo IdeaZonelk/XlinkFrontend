@@ -956,7 +956,7 @@ function ViewSaleBody() {
                     />
                 )}
             </div>
-            <div className="absolute top-0 left-0 w-full">
+            <div className="absolute top-24 left-0 w-full">
                 {error && (
                     <p className="text-red-600 px-5 py-2 rounded-md bg-red-100 text-center mx-auto max-w-sm mt-24">
                         {error}
