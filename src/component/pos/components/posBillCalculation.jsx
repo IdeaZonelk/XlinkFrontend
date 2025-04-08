@@ -838,9 +838,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             {/* PAYING SECTION */}
             <div>
                 {showPayingSec && (
-                    <PayingSection
+                   <PayingSection
                         handlePopupClose={handlePopupClose}
-                        calculateTotalPrice={calculateTotalPrice}
                         totalItems={totalItems}
                         totalPcs={totalPcs}
                         profit={profit}
@@ -849,15 +848,21 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         discount={discount}
                         productDetails={productDetailsForPrinting}
                         handleBillReset={handleBillReset}
+                        setSelectedCategoryProducts={setSelectedCategoryProducts}
+                        setSelectedBrandProducts={setSelectedBrandProducts}
+                        setSearchedProductData={setSearchedProductData}
                         setProductData={setProductData}
                         selectedCustomer={selectedCustomer}
                         discountType={discountType}
                         warehouse={warehouse}
                         responseMessage={responseMessage}
                         setResponseMessage={setResponseMessage}
-                        setProgress={setProgress}
                         setReloadStatus={setReloadStatus}
                         offerPercentage={offerPercentage}
+                        calculateTotalPrice={calculateTotalPrice}
+                        setError={setError}
+                        setProgress={setProgress}
+                        setSelectedOffer={setSelectedOffer}
                     />
                 )}
             </div>
