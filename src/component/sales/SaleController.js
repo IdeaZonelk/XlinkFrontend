@@ -501,7 +501,6 @@ export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus
         ...commonSaleData,
         productsData,
     };
-
     try {
         let endpoint = '';
         if (window.location.pathname === '/posSystem') {
