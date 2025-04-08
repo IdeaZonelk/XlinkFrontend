@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, } from "react";
-import ReactToPrint from "react-to-print";
-import PrintInvoice from "./printInvoice";
 import { fetchAllData } from "../utils/fetchAllData";
 import axios from "axios";
 import { handleSave } from '../../sales/SaleController'
 import { decryptData } from '../../utill/encryptionUtils';
 import { useCurrency } from '../../../context/CurrencyContext';
 import formatWithCustomCommas from '../../utill/NumberFormate';
+import { useReactToPrint } from 'react-to-print';
+import Barcode from 'react-barcode';
 
 const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, totalPcs, calculateTotalQty, profit, tax, shipping, discount, productDetails, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, grandTotal, setError, setProgress, setSelectedOffer }) => {
     const [receivedAmount, setReceivedAmount] = useState('');
@@ -16,20 +16,43 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
     const [paymentStatus, setPaymentStatus] = useState('paid');
     const printRef = useRef();
     const [registerData, setRegisterData] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState('')
     const date = new Date().toISOString().split('T')[0];
     const totalPrice = calculateTotalPrice();
     const [decryptedUser, setDecryptedUser] = useState(null);
     const [preFix, setPreFix] = useState('');
     const { currency } = useCurrency();
-    const [amounts, setAmounts] = useState({
-        cash: '',
-        card: '',
-        bank_transfer: '',
-    });
+    const [invoiceData, setInvoiceData] = useState([]);
+    const [printTrigger, setPrintTrigger] = useState(false);
+    const [amounts, setAmounts] = useState({ cash: '', card: '', bank_transfer: '',});
     const [validationFailed, setValidationFailed] = useState(false);
     const [invoiceNumber, setInvoiceNumber] = useState(null);
+    const [settings, setSettings] = useState({
+        companyName: '',
+        companyMobile: '',
+        companyAddress: '',
+        logo: '',
+        email: '',
+        currency: '',
+    });
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/getSettings`);
+                setSettings({
+                    companyName: data.companyName || '',
+                    companyMobile: data.companyMobile || '',
+                    companyAddress: data.address || '',
+                    logo: data.logo || '',
+                    email: data.email || '',
+                    currency: data.currency || '',
+                });
+            } catch (error) {
+                console.error("[DEBUG] Error fetching settings:", error);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleAmountChange = (type, value) => {
         setAmounts(prevState => {
@@ -37,7 +60,7 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                 ...prevState,
                 [type]: value
             };
-            console.log("Updated amounts:", updatedAmounts); // Log the updated amounts
+            console.log("Updated amounts:", updatedAmounts);
             return updatedAmounts;
         });
     };
@@ -86,7 +109,7 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
         setNote('');
         setPaymentStatus('paid');
         handleBillReset();
-        handlePopupClose();
+        // handlePopupClose();
     };
 
     useEffect(() => {
@@ -130,8 +153,6 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
 
     const updateProductQuantities = async (productDetails) => {
         try {
-
-            // Create an array of restructured product details
             setSelectedOffer('');
             const reStructuredProductDetails = productDetails.map(product => {
                 const name = product.name;
@@ -157,7 +178,6 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                 };
             });
 
-            // Set selectedProduct to reStructuredProductDetails
             const selectedProduct = reStructuredProductDetails;
             const paymentTypesArray = Object.keys(amounts).reduce((acc, type) => {
                 if (Number(amounts[type]) > 0) {
@@ -165,8 +185,6 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                 }
                 return acc;
             }, {});
-
-            console.log("Corrected Payment Types Array:", paymentTypesArray);
 
             handleSave(
                 calculateTotalPrice(),
@@ -188,7 +206,10 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                 setInvoiceNumber,
                 setResponseMessage,
                 setError,
-                setProgress
+                setProgress,
+                setInvoiceData,
+                note,
+                calculateBalance(),
             );
             console.log("type of setProgress", setProgress);
             await fetchAllData();
@@ -198,22 +219,25 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
         }
     };
 
-    const handleSubmitPayment = async () => {
-        if (!validatePaymentStatus()) return; // Prevent submission if validation fails
+    const handleSubmitPayment = async (shouldPrint) => {
+        if (!validatePaymentStatus()) return;
 
         try {
             const invoiceNumber = await updateProductQuantities(productDetails);
+            if (shouldPrint) {
+                setPrintTrigger(true);
+            } else {
+                handlePopupClose();
+            }
             handlePrintAndClose();
-            setSelectedOffer('')
+            setSelectedOffer('');
         } catch (error) {
             console.error('Error updating product quantities:', error);
         }
     };
 
-
     useEffect(() => {
         const fetchReportData = async () => {
-            setLoading(true);
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findRegisterData`);
                 // Check if response data contains an array and access the first item
@@ -227,12 +251,35 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
             } catch (err) {
                 console.error('Error fetching report data:', err);
                 setError('Failed to fetch report data');
-            } finally {
-                setLoading(false);
-            }
+            } 
         };
         fetchReportData();
     }, []);
+
+    const handlePrint = useReactToPrint({
+        content: () => printRef.current,
+        onBeforeGetContent: () => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve();
+                }, 300);
+            });
+        },
+        onAfterPrint: () => {
+            setPrintTrigger(false);
+            handlePopupClose();
+        }
+    });
+
+    useEffect(() => {
+        if (invoiceData.invoiceNumber && printTrigger) {
+            const timeout = setTimeout(() => {
+                console.log("Is printRef loaded?", printRef.current?.innerText);
+                handlePrint();
+            }, 300);
+            return () => clearTimeout(timeout);
+        }
+    }, [invoiceData, printTrigger, handlePrint]);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -333,43 +380,19 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                                 </button>
 
                                 <button
-                                    className="px-4 py-2 button-bg-color text-white rounded-md"
-                                    onClick={handleSubmitPayment}
+                                    className="px-4 py-2 mr-2 button-bg-color text-white rounded-md"
+                                    onClick={() => handleSubmitPayment(true)}
                                     type="button"
                                 >
-                                    Submit Payment
+                                    Submit & Print Bill
                                 </button>
 
-                                <ReactToPrint
-                                    trigger={() => (
-                                        <button
-                                            className="px-4 py-2 ml-2 button-bg-color text-white rounded-md"
-                                            type="button"
-                                        >
-                                            Submit & Print Bill
-                                        </button>
-                                    )}
-                                    content={() => printRef.current}
-                                    onBeforeGetContent={async () => {
-                                        if (!validatePaymentStatus()) {
-                                            return Promise.reject(); // Prevent print if validation fails
-                                        }
-
-                                        try {
-                                            await updateProductQuantities(productDetails); // Ensure sale is saved
-                                            console.log('Sale saved successfully before printing');
-                                            return Promise.resolve();
-                                        } catch (error) {
-                                            console.error('Error saving sale before printing:', error);
-                                            alert('Failed to save the sale. Please try again.');
-                                            return Promise.reject(); // Prevent printing if saving fails
-                                        }
-                                    }}
-                                    onAfterPrint={() => {
-                                        handlePrintAndClose(); // Handle additional logic after printing
-                                    }}
-
-                                />
+                                <button
+                                    className="px-4 py-2 button-bg-color text-white rounded-md"
+                                    onClick={() => handleSubmitPayment(false)}
+                                    type="button">
+                                    Submit Payment
+                                </button>
                             </div>
                         </div>
 
@@ -405,34 +428,130 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
                                 </tr>
                             </tbody>
                         </table>
+
+                        <div style={{ visibility: "hidden", position: "absolute", top: 0, left: 0 }}>
+                            <div ref={printRef} className="p-2 pb-10 pt-8 bg-white text-gray-800 border border-gray-300 w-[80mm]">
+                                <div className="print-container">
+                                    {/* Company Header Section */}
+                                    <div className="text-center mb-4">
+                                        <h1 className="text-2xl font-bold pb-1">{settings.companyName || 'Your Company Name'}</h1>
+                                        <p className="text-xs">{settings.companyAddress || 'Company Address'}</p>
+                                        <p className="text-xs">{settings.companyMobile || 'Phone: XXX-XXX-XXXX'}</p>
+                                    </div>
+
+                                    {/* Invoice Meta Data */}
+                                    <div className="flex justify-between text-xs mb-2">
+                                        <p className="flex">SALESMAN: {invoiceData.cashierUsername}</p>
+                                        <p className="flex">RECEIPT NO: {invoiceData.invoiceNumber}</p>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <p className="w-full m-0 p-0 border-b border-dashed border-gray-400"></p>
+
+                                    {/* Customer Details */}
+                                    <div className="my-2 text-xs">
+                                        <p>Date: {invoiceData.date}</p>
+                                        <p>Customer: {invoiceData.customer}</p>
+                                        <p>Payment Status: {invoiceData.paymentStatus}</p>
+                                    </div>
+
+                                    {/* Products Table */}
+                                    <table className="w-full text-xs mt-2" style={{ borderCollapse: "collapse" }}>
+                                        <thead>
+                                            <tr className="">
+                                                <th className="text-left py-0.5">
+                                                    <div className="flex items-center">PRODUCT</div>
+                                                </th>
+                                                <th className="text-left py-0.5">
+                                                    <div className="flex items-center">PRICE</div>
+                                                </th>
+                                                <th className="text-left py-0.5">
+                                                    <div className="flex items-center">QTY</div>
+                                                </th>
+                                                <th className="text-right py-0.5">
+                                                    <div className="flex justify-end items-center">AMOUNT ({currency})</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {invoiceData.productsData?.map((product, index) => (
+                                                <tr key={product.currentID || index} className="">
+                                                    <td className="py-0.5 text-left">
+                                                        <div className="flex items-center">{product.name}</div>
+                                                    </td>
+                                                    <td className="py-0.5 text-left">
+                                                        <div className="flex items-center">{formatWithCustomCommas(product.price)}</div>
+                                                    </td>
+                                                    <td className="py-0.5 text-left">
+                                                        <div className="flex items-center">{product.quantity}</div>
+                                                    </td>
+                                                    <td className="py-0.5 text-right">
+                                                        <div className="flex justify-end items-center">{formatWithCustomCommas(product.subtotal)}</div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+
+                                    </table>
+
+                                    {/* Payment Summary */}
+                                    <div className="mt-2 text-xs">
+                                        <div className="flex justify-between">
+                                            <span>Sale Total:</span>
+                                            <span>{currency} {formatWithCustomCommas(invoiceData.grandTotal)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Discount:</span>
+                                            <span>{currency} {formatWithCustomCommas(invoiceData.discount ? invoiceData.discount : 0.00)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Balance:</span>
+                                            <span>{currency} {formatWithCustomCommas(invoiceData.cashBalance ? invoiceData.cashBalance : 0.00)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex mt-2 text-xs">
+                                            <span>Note:</span>
+                                            <span>{invoiceData.note}</span>
+                                        </div>
+
+                                    {/* Payment Details */}
+                                    <div className="mt-2 text-xs">
+                                        <p className="border-t border-dashed border-gray-400 pt-2">Payment Details:</p>
+                                        {invoiceData.paymentType?.map((payment, index) => (
+                                            <div key={index} className="flex justify-between">
+                                                <span>{payment.type}:</span>
+                                                <span>{currency} {formatWithCustomCommas(payment.amount)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Footer Section */}
+                                    <div className="mt-2 text-center text-xs">
+                                        <p className="border-t border-dashed border-gray-400 pt-2">
+                                            *** EXCHANGE OF PRODUCTS IN RE-SALEBALE CONDITION WITH RECEIPT AND THE PRICE TAG IS POSSIBLE WITHIN 07 DAYS ***<br />
+                                            THANK YOU FOR SHOPPING WITH US!<br /><br />
+                                            System by IDEAZONE
+                                        </p>
+
+                                        {/* Barcode Centered */}
+                                        <div className="flex justify-center mt-2">
+                                            <Barcode
+                                                value={invoiceData.invoiceNumber}
+                                                width={1.5}
+                                                height={40}
+                                                fontSize={16}
+                                                className="m-0 p-0"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                {/* Render PrintInvoice here but hide it */}
-                <div style={{ display: 'none' }}>
-                    <PrintInvoice
-                        ref={printRef}
-                        invoiceNumber={invoiceNumber}
-                        productDetails={productDetails}
-                        total={totalPrice}
-                        totalItems={totalItems}
-                        totalPcs={totalPcs}
-                        receivedAmount={totalReceivedAmount}
-                        returnAmount={returnAmount}
-                        tax={tax}
-                        shipping={shipping}
-                        discount={discount}
-                        paymentAmounts={amounts} // Add this line
-                        paymentStatus={paymentStatus}
-                        selectedCustomer={selectedCustomer}
-                        registerData={registerData}
-                        note={note}
-                        offerPercentage={offerPercentage}
-                    />
-                </div>
-                <div>
-                    {errors && <p className="text-green-500 mt-5 text-center">{errors}</p>}
-                </div>
                 <div className="flex relative justify-center mt-2 ml-0 mr-0 text-center">
                     {responseMessage && (
                         <p className="text-color px-5 py-2 rounded-md bg-green-100 mt-5 text-center  mx-auto max-w-sminline-block">
