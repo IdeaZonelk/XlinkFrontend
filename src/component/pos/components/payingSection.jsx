@@ -282,7 +282,7 @@ const PayingSection = ({ handlePopupClose, calculateTotalPrice, totalItems, tota
     }, [invoiceData, printTrigger, handlePrint]);
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className="bg-white w-[1200px] h-[700px] p-6 rounded-md shadow-lg z-50">
                 <h2 className="text-xl font-semibold">Make Payment</h2>
                 <div className="flex mt-4">
