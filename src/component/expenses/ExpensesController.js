@@ -2,7 +2,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 // Handle form submission to create a new expenses category
-export const handleFormSubmit = async (e, setLoading, expensesName, setExpensesName, setResponse, setError,navigate) => {
+export const handleFormSubmit = async (e, setLoading, expensesName, setExpensesName, setResponse, setError,navigate, setPopupVisible, setExCategoryData) => {
     e.preventDefault();
 
     const expensesData = { expensesName };
@@ -15,12 +15,18 @@ export const handleFormSubmit = async (e, setLoading, expensesName, setExpensesN
         // Clear form fields and display success message
         setExpensesName('');
         // setResponse('Expenses category created successfully.');
-                         toast.success(
-                                    "Expenses category created successfully",
-                                    { autoClose: 2000 },
-                                    { className: "custom-toast" }
-                                );
-                                window.location.href = '/viewExpensesCategory';
+        toast.success(
+            "Expenses category created successfully",
+            { autoClose: 2000 },
+            { className: "custom-toast" }
+        );
+        
+        // ✅ Close Popup
+        setPopupVisible(false);
+        // ✅ Clear Input
+        setExpensesName('');
+        // ✅ Refresh the list
+        return true;
         console.log('Expenses created successfully:', response.data.message);
     } catch (error) {
         let errorMessage = "An unexpected error occurred. Please try again.";
@@ -32,6 +38,7 @@ export const handleFormSubmit = async (e, setLoading, expensesName, setExpensesN
                 { className: "custom-toast" }
             );
             // errorMessage = error.response.data?.message || "Failed to create expenses category. Please try again.";
+            
         } else if (error.request) {
             // Request was made but no response received
             toast.error(
@@ -45,6 +52,7 @@ export const handleFormSubmit = async (e, setLoading, expensesName, setExpensesN
         }
 
         console.error('Error creating expenses category:', errorMessage);
+        return false;
     } finally {
         setLoading(false); // Stop loading indicator
     }
@@ -102,7 +110,7 @@ export const fetchExpensesById = async (id, setEditExpensesName, setSelectedExpe
 };
 
 // Update an expense category
-export const updateExpenses = async (e, selectedExpensesCatId, editExpensesName, setEditExpensesName, setResponse, setIsPopUpEdit, setError,navigate) => {
+export const updateExpenses = async (e, selectedExpensesCatId, editExpensesName, setEditExpensesName, setResponse, setIsPopUpEdit, setError,navigate, setExCategoryData, setLoading) => {
     e.preventDefault();
 
     const updatedExpensesData = { editExpensesName };
@@ -116,15 +124,24 @@ export const updateExpenses = async (e, selectedExpensesCatId, editExpensesName,
             { autoClose: 2000 },
             { className: "custom-toast" }
         );
-        window.location.href = '/viewExpensesCategory';
+    
+        // ✅ Close Popup
+        setIsPopUpEdit(false);
+        // ✅ Clear Input
+        setEditExpensesName('');
+        // ✅ Refresh the list
+        return true;
         console.log('Expense updated successfully:', response.data.message);
     } catch (error) {
+        const errorMessage = error.response?.data?.message || "Error updating expense category.";
+  
         toast.error(
-            "Error updating expense category",
-            { autoClose: 2000 },
-            { className: "custom-toast" }
-        );
+            errorMessage,
+            { autoClose: 2000, className: "custom-toast" }
+                );
+  
         console.error('Error updating expense:', error);
+        return false;
     }
 };
 
