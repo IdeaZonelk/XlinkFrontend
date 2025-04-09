@@ -329,9 +329,11 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
         if (response.data && response.data.cash) {
           const cashID = response.data.cash._id;
           const cashierUsername = response.data.cash.username;
+          const name = response.data.cash.name;
           toast.success(response.data.message ||'New cash record created successfully!', { autoClose: 2000 }, { className: "custom-toast" } );
           sessionStorage.setItem('cashRegisterID', cashID);
           sessionStorage.setItem('cashierUsername', cashierUsername);
+          sessionStorage.setItem('name',name);
 
           setShowModal(false);
           navigate('/posSystem');
