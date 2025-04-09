@@ -440,7 +440,7 @@ export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus
         .filter((type) => paymentType[type] && Number(amounts[type]) > 0)
         .map((type) => ({ type, amount: Number(amounts[type]) }));
 
-    const cashierUsername = sessionStorage.getItem('cashierUsername');
+    const cashierUsername = sessionStorage.getItem('name');
     const defaultWarehouse = sessionStorage.getItem('defaultWarehouse') || 'Unknown';
 
     // **Define productsData FIRST**
