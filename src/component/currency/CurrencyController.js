@@ -13,7 +13,9 @@ export const handleFormSubmit = async (
     setCurrencySymbole,
     setcurrenciCreatingResponse,
     setError,
-    navigate
+    navigate,
+    setIsPopupOpen,
+    setRefreshKey
 ) => {
     e.preventDefault();
     setError('')
@@ -39,10 +41,11 @@ export const handleFormSubmit = async (
             { autoClose: 2000 },
             { className: "custom-toast" }
         );
-        // Redirect after success
-        setTimeout(() => {
-            window.location.href = '/viewCurrency';
-        }, 1000);
+        
+         // Close popup and refresh table
+         setIsPopupOpen(false);
+         setRefreshKey(prev => prev + 1);
+        
     } catch (error) {
         const errorMessage =
             error.response?.data?.message ||
@@ -120,7 +123,7 @@ export const fetchCurrencyById = async (id, setEditCurrencyName, setEditCurrency
     }
 };
 
-export const updateCurrency = async (e, selectedCurrencyId, editcurrencyName, editcurrencyCode, editcurrencySymbole, setEditCurrencyName, setEditCurrencyCode, setEditCurrencySymbole, setResponse, setError, setIsPopupOpen, navigate) => {
+export const updateCurrency = async (e, selectedCurrencyId, editcurrencyName, editcurrencyCode, editcurrencySymbole, setEditCurrencyName, setEditCurrencyCode, setEditCurrencySymbole, setResponse, setError, setIsPopupOpen, navigate, setRefreshKey, setSelectedCurrencyId, setIsPopUpEdit) => {
     e.preventDefault();
     const updatedCurrencyData = {
         editcurrencyName,
@@ -141,11 +144,13 @@ export const updateCurrency = async (e, selectedCurrencyId, editcurrencyName, ed
             { autoClose: 2000 },
             { className: "custom-toast" }
         );
-        setTimeout(() => {
-            window.location.href = '/viewCurrency';
-        }, 1000);
-
-        setIsPopupOpen(false);
+        // Close popup, clear form, reset selection
+        setIsPopUpEdit(false);
+        setSelectedCurrencyId(null);
+        setEditCurrencyName('');
+        setEditCurrencyCode('');
+        setEditCurrencySymbole('');
+        setRefreshKey(prev => prev + 1);
 
         // Fetch updated data
         //fetchSaleData();

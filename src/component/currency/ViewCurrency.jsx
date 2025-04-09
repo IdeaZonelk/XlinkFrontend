@@ -326,7 +326,7 @@ function ViewCurrencyBody() {
 
                                         {/* Form content */}
                                         <h2 className="text-xl font-semibold mb-4 text-gray-700">Update Currency</h2>
-                                        <form onSubmit={(e) => updateCurrency(e, selectedCurrencyId, editcurrencyName, editcurrencyCode, editcurrencySymbole, setEditCurrencyName, setEditCurrencyCode, setEditCurrencySymbole, setResponse, setIsPopupOpen, setError, navigate)} className="space-y-4">
+                                        <form onSubmit={(e) => updateCurrency(e, selectedCurrencyId, editcurrencyName, editcurrencyCode, editcurrencySymbole, setEditCurrencyName, setEditCurrencyCode, setEditCurrencySymbole, setResponse, setIsPopupOpen, setError, navigate, setRefreshKey, setSelectedCurrencyId, setIsPopUpEdit)} className="space-y-4">
                                             <div className='mt-10'>
                                                 <label className="block text-left text-sm font-medium text-gray-700">Currency Name <span className='text-red-500'>*</span></label>
                                                 <input
@@ -410,7 +410,7 @@ function ViewCurrencyBody() {
 
                         {/* Form content */}
                         <h2 className="text-xl font-semibold mb-4 text-gray-700">Create Currency</h2>
-                        <form onSubmit={(e) => handleFormSubmit(e, setLoading, currencyName, currencyCode, currencySymbole, setCurrencyName, setCurrencyCode, setCurrencySymbole, setcurrenciCreatingResponse, setError, navigate)}>
+                        <form onSubmit={(e) => handleFormSubmit(e, setLoading, currencyName, currencyCode, currencySymbole, setCurrencyName, setCurrencyCode, setCurrencySymbole, setcurrenciCreatingResponse, setError, navigate, setIsPopupOpen, setRefreshKey)}>
                             <div className='mt-10'>
                                 <label className="text-left block text-sm font-medium text-gray-700">Currency Name <span className='text-red-500'>*</span></label>
                                 <input
@@ -454,15 +454,6 @@ function ViewCurrencyBody() {
                                 >
                                     Save
                                 </button>
-                            </div>
-
-                            {/* Error and Response Messages */}
-                            <div className='mt-5'>
-                                {currenciCreatingResponse && (
-                                    <p className="text-color px-5 py-2 rounded-md bg-green-100 mt-5 text-center  mx-auto max-w-sminline-block">
-                                        {currenciCreatingResponse}
-                                    </p>
-                                )}
                             </div>
                         </form>
                     </div>
