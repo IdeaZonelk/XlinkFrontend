@@ -209,7 +209,7 @@ export const handleSubmitBrand = async (
   };
   
 
-export const handleSupplierSubmit = async (
+  export const handleSupplierSubmit = async (
     event,
     username,
     name,

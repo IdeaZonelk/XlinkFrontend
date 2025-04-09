@@ -1835,6 +1835,8 @@ const handleCategoryLogoChange = async (e) => {
               setNIC={setNIC}
               mobile={mobile}
               setMobile={setMobile}
+              error={error}
+              responseMessage={responseMessage}
               handleSupplierSubmit={handleSupplierSubmit}
               handleSupplierClear={handleSupplierClear}
               setError={setError}

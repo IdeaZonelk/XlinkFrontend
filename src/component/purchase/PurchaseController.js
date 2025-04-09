@@ -497,12 +497,12 @@ export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehou
         navigate('/viewPurchaseReturns', { state: { refresh: true } });
     } catch (error) {
         console.error('Error creating sale:', error);
-        toast.success(
+        toast.error(
             error.response?.data?.message || 'Failed to return Purchase',
                      { autoClose: 2000 },
                      { className: "custom-toast" }
                    );
-        setResponseMessage('');
+        setError('');
     }
     finally {
         setProgress(false); // Hide loading bar

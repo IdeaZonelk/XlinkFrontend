@@ -483,8 +483,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                                     <td className="py-0.5 text-left">
                                                         <div className="flex items-center">{formatWithCustomCommas(product.price)}</div>
                                                     </td>
-                                                    <td className="py-0.5 text-left">
-                                                        <div className="flex items-center">{product.quantity}</div>
+                                                    <td className="py-0.5 text-center">
+                                                        <div className="flex justify-center items-center">{product.quantity}</div>
                                                     </td>
                                                     <td className="py-0.5 text-right">
                                                         <div className="flex justify-end items-center">{formatWithCustomCommas(product.subtotal)}</div>
@@ -499,15 +499,15 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                     <div className="mt-2 text-xs">
                                         <div className="flex justify-between">
                                             <span>Sale Total:</span>
-                                            <span>{currency} {formatWithCustomCommas(invoiceData.grandTotal)}</span>
+                                            <span> {formatWithCustomCommas(invoiceData.grandTotal)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Discount:</span>
-                                            <span>{currency} {formatWithCustomCommas(invoiceData.discount ? invoiceData.discount : 0.00)}</span>
+                                            <span> {formatWithCustomCommas(invoiceData.discount ? invoiceData.discount : 0.00)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Balance:</span>
-                                            <span>{currency} {formatWithCustomCommas(invoiceData.cashBalance ? invoiceData.cashBalance : 0.00)}</span>
+                                            <span> {formatWithCustomCommas(invoiceData.cashBalance ? invoiceData.cashBalance : 0.00)}</span>
                                         </div>
                                     </div>
 
