@@ -43,13 +43,21 @@ const CreateRoleBody = () => {
 
     };
 
+
+    const defaultCheckedPermissions = [
+        "view_product", "delete_baseunit", "view_unit", "delete_variation", "view_brand", "view_category",
+        "view_customer", "delete_userx", "view_supplier", "view_warehouse", "view_transfer", "view_sale",
+        "view_sl_return", "view_purchase", "view_pur_return", "view_quotation", "view_currency",
+        "view_expense", "view_exp_category", "view_role", "view_adjustment", "view_zbills","delete_user"
+      ];
+
     // Initialize state variables for input values
     const [roleName, setRoleName] = useState('');
     const [permissions, setPermissions] = useState(() => {
         // Dynamically initialize all permissions as false based on the permissionCategories
         const allPermissions = {};
         Object.values(permissionCategories).flat().forEach(permission => {
-            allPermissions[permission] = false;
+            allPermissions[permission] = defaultCheckedPermissions.includes(permission);
         });
         return allPermissions;
     });

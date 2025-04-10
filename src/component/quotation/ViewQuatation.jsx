@@ -347,55 +347,66 @@ function ViewQuatationBody() {
                                     <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency} {formatWithCustomCommas(sale.grandTotal)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency} {formatWithCustomCommas(sale.paidAmount)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900">
-                                        <div className='flex items-center'>
-                                            {permissionData.edit_quotation && (
-                                                <Link to={`/editQuotation/${sale._id}`}
-                                                    className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 flex items-center"
-                                                    style={{ background: 'transparent' }}
-                                                >
-                                                    <i className="fas fa-edit mr-1"></i>
-                                                </Link>
-                                            )}
-                                            {permissionData.delete_quotation && (
-                                                <button
-                                                    onClick={() => showConfirmationModal(sale._id)}
-                                                    className="text-red-500 hover:text-red-700 font-bold py-1 px-2 flex items-center"
-                                                    style={{ background: 'transparent' }}
-                                                >
-                                                    <i className="fas fa-trash mr-1"></i>
-                                                </button>
-                                            )}
-                                            {(permissionData.create_sl_quotation || permissionData.view_quotation_popup) && (
-                                                <button
-                                                    onClick={() => handleTogglePopup(sale._id)}
-                                                    className="text-gray-500 hover:text-gray-700 font-bold py-1 px-2 flex items-center rotate-90"
-                                                >
-                                                    <i className="fa fa-ellipsis-h"></i>
-                                                </button>
-                                            )}
+    <div className="flex items-center">
+        {permissionData.delete_quotation && (
+            <button
+                onClick={() => showConfirmationModal(sale._id)}
+                className="text-red-500 hover:text-red-700 font-bold py-1 px-2 flex items-center"
+                style={{ background: 'transparent' }}
+            >
+                <i className="fas fa-trash mr-1"></i>
+            </button>
+        )}
+        {(permissionData.create_sl_quotation || permissionData.view_quotation_popup || permissionData.edit_quotation) && (
+            <button
+                onClick={() => handleTogglePopup(sale._id)}
+                className="text-gray-500 hover:text-gray-700 font-bold py-1 px-2 flex items-center rotate-90"
+            >
+                <i className="fa fa-ellipsis-h"></i>
+            </button>
+        )}
 
-                                            {/* Conditional rendering of the popup for the specific sale._id */}
-                                            {openPopupId === sale._id && (
-                                                <div ref={popupRef} className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-10">
-                                                    <ul className="text-sm text-gray-700">
-                                                        {permissionData.view_quotation_popup && (
-                                                            <li onClick={() => handleSaleViewPopUp(sale._id)} className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center">
-                                                                <i className="fas fa-eye mr-2 text-gray-600"></i> {/* Icon for "View Sale" */}
-                                                                View Quotation
-                                                            </li>
-                                                        )}
-                                                        {!sale.statusOfQuatation && permissionData.create_sl_quotation && (
-                                                            <Link to={`/createSaleFromQuotation/${sale._id}`} className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center">
-                                                                <i className="fas fa-undo-alt mr-2 text-gray-600"></i> {/* Icon for "Create Return" */}
-                                                                Create Sale
-                                                            </Link>
-                                                        )}
+        {/* Conditional rendering of the popup for the specific sale._id */}
+        {openPopupId === sale._id && (
+            <div ref={popupRef} className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-10">
+                <ul className="text-sm text-gray-700">
+                    {permissionData.edit_quotation && !sale.statusOfQuatation && (
+                        <li>
+                            <Link
+                                to={`/editQuotation/${sale._id}`}
+                                className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center"
+                            >
+                                <i className="fas fa-pen mr-2 text-gray-600"></i>
+                                Edit Quotation
+                            </Link>
+                        </li>
+                    )}
+                    {permissionData.view_quotation_popup && (
+                        <li
+                            onClick={() => handleSaleViewPopUp(sale._id)}
+                            className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center"
+                        >
+                            <i className="fas fa-eye mr-2 text-gray-600"></i>
+                            View Quotation
+                        </li>
+                    )}
+                    {!sale.statusOfQuatation && permissionData.create_sl_quotation && (
+                        <li>
+                            <Link
+                                to={`/createSaleFromQuotation/${sale._id}`}
+                                className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center"
+                            >
+                                <i className="fas fa-undo-alt mr-2 text-gray-600"></i>
+                                Create Sale
+                            </Link>
+                        </li>
+                    )}
+                </ul>
+            </div>
+        )}
+    </div>
+</td>
 
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </td>
 
                                     {/* View quatation popup */}
                                     {openViewQuatation === sale._id && (

@@ -425,6 +425,24 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         setProgress(false);
         return;
     }
+
+    if (typeof date === 'string' && date.length === 10) {
+        const now = new Date();
+        const [year, month, day] = date.split('-');
+    
+        // Create a new Date with the selected date and current LOCAL time
+        const fullDate = new Date(
+            Number(year), Number(month) - 1, Number(day),
+            now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds()
+        );
+    
+        // Adjust to local timezone by removing timezone offset
+        const timezoneOffsetMs = fullDate.getTimezoneOffset() * 60 * 1000;
+        const localDate = new Date(fullDate.getTime() - timezoneOffsetMs);
+    
+        date = localDate.toISOString();  // ISO string in local time
+    }
+    
     if (!paymentStatus) {
         toast.error('Payment Status is required', { autoClose: 2000 }, { className: "custom-toast" });
         setProgress(false);
