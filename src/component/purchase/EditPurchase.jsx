@@ -172,7 +172,7 @@ function EditPurchaseBody() {
             newQty = Math.max(1, newQty);
             const productPrice = prev[index]?.price || 0;
             const productTaxRate = prev[index]?.taxRate || 0;
-            const newSubtotal = (productPrice * newQty) + (productPrice * newQty * productTaxRate / 100);
+            const newSubtotal = (productPrice * newQty) + (productPrice * newQty * productTaxRate);
 
             const updatedSaleReturnData = prev.map((item, i) =>
                 i === index
