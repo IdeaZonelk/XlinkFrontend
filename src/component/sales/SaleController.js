@@ -567,7 +567,7 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
 
 //HANDLE UPDATE SALE
 export const handleUpdateSale = async (
-    id, grandTotal, profit, orderStatus, paymentStatus, PaidAmount, paymentType, amounts, shipping,
+    id, grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
     discountType, discount, tax, warehouse, selectedCustomer,
     productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate
 ) => {
@@ -576,7 +576,9 @@ export const handleUpdateSale = async (
     setProgress(true)
 
     if (!Array.isArray(productData)) {
-        setError('Invalid sale return data format. Expected an array.');
+        console.error('Invalid productData:', productData);
+        setError('Invalid sale data format. Expected an array.');
+        setProgress(false);
         return;
     }
 
