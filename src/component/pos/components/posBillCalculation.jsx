@@ -484,7 +484,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             </div>
 
             <div style={{ minHeight: '252px' }}>
-                <div className="overflow-y-auto scroll-container" style={{ maxHeight: '260px' }}>
+            <div className="overflow-y-auto scroll-container" style={{ maxHeight: '245px' }}>
                     <table className="min-w-full table-auto">
                         <thead>
                             <tr>
@@ -599,7 +599,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </table>
                 </div>
             </div >
-            <div className="mt-10">
+            <div className="mt-5">
                 <div className="px-4 py-2 text-left text-gray-500 text-base text-xl text-right">
                     <h1>Total Items: {totalItems}</h1>
                 </div>

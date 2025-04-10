@@ -174,7 +174,6 @@ function PosSystemBody({ defaultWarehouse }) {
 
     useEffect(() => {
         if (productData.length > 0) {
-            console.log("Product Data for selected warehouse:", productData);
         }
     }, [productData]);
 
@@ -266,7 +265,7 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [searchedProductData]);
 
-    
+
     const handleAddingProduct = (product) => {
         setProductBillingHandling((prevBilling) => {
             const selectedWarehouse = warehouse || sessionStorage.getItem("defaultWarehouse");
@@ -353,7 +352,7 @@ function PosSystemBody({ defaultWarehouse }) {
                 return prevBilling;
             }
             return prevBilling;
-            
+
         });
 
         setTimeout(() => {
@@ -1024,46 +1023,53 @@ function PosSystemBody({ defaultWarehouse }) {
                         </div>
 
                         {/* Popup for Hold list */}
-                        {isHoldList && heldProducts && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 z-50">
-                                <div className="bg-white w-[600px] max-h-[450px] p-6 rounded-md shadow-lg overflow-y-auto ">
+                        {isHoldList && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                                <div className="bg-white w-[600px] max-h-[450px] p-6 rounded-md shadow-lg overflow-y-auto">
                                     <h2 className="text-xl font-semibold mb-4 text-gray-700">Held Products</h2>
 
-                                    {/* Table to display held products */}
-                                    <table className="min-w-full bg-white border">
-                                        <thead>
-                                            <tr>
-                                                <th className="border px-4 py-2 text-gray-600">ID</th>
-                                                <th className="border px-4 py-2 text-gray-600">Reference No</th>
-                                                <th className="border px-4 py-2 text-gray-600">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {heldProducts.map((product) => (
-                                                <tr key={product._id}>
-                                                    <td className="border px-4 py-2 text-left">{product._id}</td>
-                                                    <td className="border px-4 py-2 text-left">{product.referenceNo}</td>
-                                                    <td className="border px-4 py-2 flex text-left">
-                                                        {/* Edit and Delete actions */}
-                                                        <button
-                                                            className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 flex items-center"
-                                                            style={{ background: 'transparent' }}
-                                                            onClick={() => handleEditHoldProduct(product)}
-                                                        >
-                                                            <i className="fas fa-edit mr-1"></i>
-                                                        </button>
-                                                        <button
-                                                            className="text-red-500 hover:text-red-700 font-bold py-1 px-2"
-                                                            style={{ background: 'transparent' }}
-                                                            onClick={() => handleDeleteHoldProduct(product._id, heldProducts, setHeldProducts)}
-                                                        >
-                                                            <i className="fas fa-trash"></i>
-                                                        </button>
-                                                    </td>
+                                    {/* Handle no held products */}
+                                    {heldProducts && heldProducts.length === 0 ? (
+                                        <div className="text-center text-gray-500">
+                                            <p>No held products available.</p>
+                                        </div>
+                                    ) : (
+                                        /* Table to display held products */
+                                        <table className="min-w-full bg-white border">
+                                            <thead>
+                                                <tr>
+                                                    <th className="border px-4 py-2 text-gray-600">ID</th>
+                                                    <th className="border px-4 py-2 text-gray-600">Reference No</th>
+                                                    <th className="border px-4 py-2 text-gray-600">Actions</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {heldProducts.map((product) => (
+                                                    <tr key={product._id}>
+                                                        <td className="border px-4 py-2 text-left">{product._id}</td>
+                                                        <td className="border px-4 py-2 text-left">{product.referenceNo}</td>
+                                                        <td className="border px-4 py-2 flex text-left">
+                                                            {/* Edit and Delete actions */}
+                                                            <button
+                                                                className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 flex items-center"
+                                                                style={{ background: 'transparent' }}
+                                                                onClick={() => handleEditHoldProduct(product)}
+                                                            >
+                                                                <i className="fas fa-edit mr-1"></i>
+                                                            </button>
+                                                            <button
+                                                                className="text-red-500 hover:text-red-700 font-bold py-1 px-2"
+                                                                style={{ background: 'transparent' }}
+                                                                onClick={() => handleDeleteHoldProduct(product._id, heldProducts, setHeldProducts)}
+                                                            >
+                                                                <i className="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
 
                                     <div className="flex justify-end mt-4">
                                         <button
@@ -1144,9 +1150,9 @@ function PosSystemBody({ defaultWarehouse }) {
                                                     {registerData.map((reg) => (
                                                         <tr key={reg._id}>
                                                             <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"><p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">{reg.openTime}</p></td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{username || 'Unknown'}</td>
+                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{reg.username || 'Unknown'}</td>
                                                             <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{reg.name}</td>
-                                                            <td className="px-4 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">{currency} {formatWithCustomCommas(reg.cashHandIn)}</p></td>
+                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">{currency} {formatWithCustomCommas(reg.cashHandIn)}</p></td>
                                                             <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">{currency} {formatWithCustomCommas(reg.totalBalance)}</p></td>
                                                         </tr>
                                                     ))}
@@ -1428,7 +1434,7 @@ function PosSystemBody({ defaultWarehouse }) {
             {/* Produc billing section in right */}
             <div className="flex justify-between mt-2 w-full h-screen ">
                 <div className="w-[35%] h-screen rounded-[15px] bg-white p-4">
-                   <div>
+                    <div>
                         <BillingSection
                             productBillingHandling={productBillingHandling}
                             setProductBillingHandling={setProductBillingHandling}
@@ -1439,8 +1445,8 @@ function PosSystemBody({ defaultWarehouse }) {
                             warehouse={warehouse}
                             setReloadStatus={setReloadStatus}
                             setHeldProductReloading={setHeldProductReloading}
-                            setSelectedCategoryProducts={setSelectedCategoryProducts} 
-                            setSelectedBrandProducts={setSelectedBrandProducts} 
+                            setSelectedCategoryProducts={setSelectedCategoryProducts}
+                            setSelectedBrandProducts={setSelectedBrandProducts}
                             setSearchedProductData={setSearchedProductData}
                             setError={setError}
                         />
