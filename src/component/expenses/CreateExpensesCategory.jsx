@@ -134,8 +134,9 @@ function ViewExpensesCategoryBody() {
     };
 
     const handleTogglePopupEdit = () => {
-        window.location.reload();
-        setIsPopUpEdit(!isPopupEdit);
+        setIsPopUpEdit(false);
+        setSelectedExpensesCatId(null);
+        setEditExpensesName('');
     };
 
     const handleDelete = async (_id) => {
@@ -287,7 +288,12 @@ function ViewExpensesCategoryBody() {
 
                         {/* Form content */}
                         <h2 className="text-xl text-gray-700 font-semibold mb-4">Create Expenses Category</h2>
-                        <form onSubmit={(e) => handleFormSubmit(e, setLoading, expensesName, setExpensesName, setResponseMessage, setError, navigate)}>
+                        <form onSubmit={ async (e) => {
+                            const isSuccess = await handleFormSubmit(e, setLoading, expensesName, setExpensesName, setResponseMessage, setError, navigate, setPopupVisible, fetchExpensesCatData, setExCatergoryData, setError );
+                            if (isSuccess) {
+                                fetchExpensesCatData(setExCatergoryData, setLoading, setError);
+                              }
+                        } }>
                             <div className='mt-10'>
                                 <label className="text-left block text-sm font-medium text-gray-700">Expenses Category <span className='text-red-500'>*</span></label>
                                 <input
@@ -327,7 +333,12 @@ function ViewExpensesCategoryBody() {
 
                         {/* Form content */}
                         <h2 className="text-xl font-semibold mb-4 text-gray-700">Edit Expenses Category </h2>
-                        <form onSubmit={(e) => updateExpenses(e, selectedExpensesCatId, editExpensesName, setEditExpensesName, setResponseMessage, setIsPopUpEdit, setError, navigate)}>
+                        <form onSubmit={ async (e) => {
+                            const isUpdated = await updateExpenses(e, selectedExpensesCatId, editExpensesName, setEditExpensesName, setResponseMessage, setIsPopUpEdit, setError, navigate,fetchExpensesCatData, setExCatergoryData, setLoading);
+                            if (isUpdated) {
+                                fetchExpensesCatData(setExCatergoryData, setLoading, setError);
+                              }
+                        } }>
                             <div className='mt-5'>
                                 <label className="block text-left text-sm font-medium text-gray-700">Expenses Category <span className='text-red-500'>*</span></label>
                                 <input
