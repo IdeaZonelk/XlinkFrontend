@@ -42,6 +42,7 @@ function CreateSaleBody() {
     const [invoiceData, setInvoiceData] = useState([]);
     const [balance, setBalance] = useState(0);
     const [paymentStatus, setPaymentStatus] = useState('');
+    const [shouldPrint, setShouldPrint] = useState(false);
     const [paymentType, setPaymentType] = useState({
         cash: false,
         card: false,
@@ -244,6 +245,9 @@ function CreateSaleBody() {
 
         fetchSettings();
     }, [decryptedUser]);
+
+    const handlePrintAndClose = () => {
+    };
 
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh]  p-5'>
@@ -662,7 +666,9 @@ function CreateSaleBody() {
                                 setProgress,
                                 setInvoiceData,
                                 note,
-                                balance
+                                balance,
+                                handlePrintAndClose,
+                                shouldPrint
                             )} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save sale
                             </button>

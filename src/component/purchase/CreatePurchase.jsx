@@ -778,6 +778,7 @@ const handleImageChange = async (e, setError) => {
             name="text"
             type="text"
             required
+            disabled={!warehouse}
             value={searchTerm}
             onChange={(e) => handleProductSearch(e, setSearchTerm, setFilteredProducts, warehouse)}
             placeholder={searchTerm ? "" : "        Search..."}
@@ -810,6 +811,9 @@ const handleImageChange = async (e, setError) => {
             ))}
         </ul>
     )}
+      {!warehouse && (
+                            <p className="text-red-500 text-sm mt-1 text-left">Please select a warehouse to search products.</p>
+                        )}
 </div>
 
 

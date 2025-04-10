@@ -184,8 +184,9 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
   const handleLogout = () => {
     const cashRegisterID = sessionStorage.getItem('cashRegisterID');
     const cashierUsername = sessionStorage.getItem('cashierUsername');
+    const name = sessionStorage.getItem('name');
 
-    if (cashRegisterID && cashierUsername) {
+    if (cashRegisterID && cashierUsername && name) {
       setShowLogoutModal(true);
     } else {
       performLogout();
@@ -229,6 +230,7 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
 
         sessionStorage.setItem('cashRegisterID', activeCashRegister._id);
         sessionStorage.setItem('cashierUsername', activeCashRegister.username);
+        sessionStorage.setItem('name', activeCashRegister.name);
 
         navigate('/posSystem');
         return true;
@@ -329,9 +331,11 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
         if (response.data && response.data.cash) {
           const cashID = response.data.cash._id;
           const cashierUsername = response.data.cash.username;
+          const name = response.data.cash.name;
           toast.success(response.data.message ||'New cash record created successfully!', { autoClose: 2000 }, { className: "custom-toast" } );
           sessionStorage.setItem('cashRegisterID', cashID);
           sessionStorage.setItem('cashierUsername', cashierUsername);
+          sessionStorage.setItem('name',name);
 
           setShowModal(false);
           navigate('/posSystem');

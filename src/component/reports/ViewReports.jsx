@@ -11,6 +11,7 @@ import { handleExportPdf } from '../utill/ExportingPDF';
 import { useCurrency } from '../../context/CurrencyContext';
 import formatWithCustomCommas from '../utill/NumberFormate';
 import Fillter from '../../img/filter.png';
+import Draggable from 'react-draggable';
 
 function ViewReportBody() {
     // State management
@@ -25,7 +26,7 @@ function ViewReportBody() {
     const [totalPurchaseReturnAmount, setTotalPurchaseReturn] = useState(0);
     const [searchedCustomerSale, setSearchedCustomerSale] = useState(null);
     const [warehouseData, setWarehouseData] = useState([]);
-    const [warehouse, setWarehouse] = useState(['all'])
+    const [warehouse, setWarehouse] = useState('all')
     const [activeTable, setActiveTable] = useState('sales');
     const [loading, setLoading] = useState(false);
     const [fillterOptionPopUp, setFiltterOptionPopUp] = useState(false)
@@ -60,7 +61,9 @@ function ViewReportBody() {
 
     useEffect(() => {
         const fetchReportData = async () => {
+            setLoading(true);
             try {
+                setLoading(true);
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/getReportData/${warehouse}`);
                 setSaleData(response.data.data.sales);
                 setSaleReturnData(response.data.data.saleReturns);
@@ -103,34 +106,35 @@ function ViewReportBody() {
 
     useEffect(() => {
         const params = new URLSearchParams();
-    
+
         const warehouseValue = Array.isArray(warehouse) ? warehouse : [warehouse];
         const orderStatusValue = Array.isArray(orderStatus) ? orderStatus : [orderStatus];
         const paymentStatusValue = Array.isArray(paymentStatus) ? paymentStatus : [paymentStatus];
         const paymentTypeValue = Array.isArray(paymentType) ? paymentType : [paymentType];
-    
+
         // Ensure "all" is included in the params when selected
         params.append("orderStatus", orderStatusValue.includes("all") ? "all" : orderStatusValue.join(","));
         params.append("paymentStatus", paymentStatusValue.includes("all") ? "all" : paymentStatusValue.join(","));
         params.append("paymentType", paymentTypeValue.includes("all") ? "all" : paymentTypeValue.join(","));
         params.append("warehouse", warehouseValue.includes("all") ? "all" : warehouseValue.join(","));
-    
+
         if (date) {
             params.append("date", date);
         }
-    
+
         const paramsString = params.toString();
         setFilterParams(paramsString);
-    
-    }, [warehouse, orderStatus, paymentStatus, paymentType, date]); 
-    
+
+    }, [warehouse, orderStatus, paymentStatus, paymentType, date]);
+
 
     useEffect(() => {
-        if (!filterParams) return; 
+        if (!filterParams) return;
         const getFilteredReportData = async () => {
             setLoading(true);
 
             try {
+                setLoading(true);
                 const url = `${process.env.REACT_APP_BASE_URL}/api/getFilteredReportData?${filterParams}`;
                 const response = await axios.get(url);
 
@@ -456,82 +460,88 @@ function ViewReportBody() {
                         <img src={Fillter} alt='Fillter' className='w-10 h-10' />
                     </button>
 
+
                     {fillterOptionPopUp && (
-                        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex pb-10 justify-center items-center">
-                            <div className="bg-white w-[350px] sm:w-[400px] p-6 rounded-xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn" >
-                                <button
-                                    onClick={() => setFiltterOptionPopUp(false)}
-                                    className="absolute top-4 right-4 text-gray-600 hover:text-red-500 transition-all"
-                                >
-                                    <img
-                                        className="w-5 h-5"
-                                        src="https://th.bing.com/th/id/OIP.Ej48Pm2kmEsDdVNyEWkW0AHaHa?rs=1&pid=ImgDetMain"
-                                        alt="close"
-                                    />
-                                </button>
-                                <h1 className='text-center text-gray-600 font-semi-bold'>Fillters</h1>
-                                <div className='mt-5'>
-                                    <label className="text-left block text-sm font-medium text-gray-700">Status</label>
-                                    <select
-                                        value={orderStatus}
-                                        onChange={(e) => setOrderStatus(e.target.value)}
-                                        className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
-                                    >
-                                        <option value="">Select Order Status</option>
-                                        <option value="all">All</option>
-                                        <option value="ordered">Ordered</option>
-                                        <option value="pending">Pending</option>
-                                    </select>
-                                </div>
+                        <div className="fixed inset-0 bg-gray-900 w-full bg-opacity-50 flex pb-10 justify-center items-center">
+                            <Draggable>
+                                <div>
+                                    <div className="bg-white w-[350px] sm:w-[400px] p-6 rounded-xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn" >
+                                        <button
+                                            onClick={() => setFiltterOptionPopUp(false)}
+                                            className="absolute top-4 right-4 text-gray-600 hover:text-red-500 transition-all"
+                                        >
+                                            <img
+                                                className="w-5 h-5"
+                                                src="https://th.bing.com/th/id/OIP.Ej48Pm2kmEsDdVNyEWkW0AHaHa?rs=1&pid=ImgDetMain"
+                                                alt="close"
+                                            />
+                                        </button>
+                                        <h1 className='text-center text-gray-600 font-semi-bold'>Fillters</h1>
+                                        <div className='mt-5'>
+                                            <label className="text-left block text-sm font-medium text-gray-700">Status</label>
+                                            <select
+                                                value={orderStatus}
+                                                onChange={(e) => setOrderStatus(e.target.value)}
+                                                className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
+                                            >
+                                                <option value="">Select Order Status</option>
+                                                <option value="all">All</option>
+                                                <option value="ordered">Ordered</option>
+                                                <option value="pending">Pending</option>
+                                            </select>
+                                        </div>
 
-                                {/* Payment Status Select */}
-                                <div className='mt-5'>
-                                    <label className="text-left block text-sm font-medium text-gray-700">Payment Status</label>
-                                    <select
-                                        value={paymentStatus}
-                                        onChange={(e) => setPaymentStatus(e.target.value)}
-                                        className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
-                                    >
-                                        <option value="">Select Payment Status</option>
-                                        <option value="all">All</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="unpaid">Unpaid</option>
-                                    </select>
-                                </div>
+                                        {/* Payment Status Select */}
+                                        <div className='mt-5'>
+                                            <label className="text-left block text-sm font-medium text-gray-700">Payment Status</label>
+                                            <select
+                                                value={paymentStatus}
+                                                onChange={(e) => setPaymentStatus(e.target.value)}
+                                                className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
+                                            >
+                                                <option value="">Select Payment Status</option>
+                                                <option value="all">All</option>
+                                                <option value="paid">Paid</option>
+                                                <option value="unpaid">Unpaid</option>
+                                            </select>
+                                        </div>
 
-                                {/* Payment Type Select */}
-                                <div className='mt-5'>
-                                    <label className="text-left block text-sm font-medium text-gray-700">Payment Type</label>
-                                    <select
-                                        value={paymentType}
-                                        onChange={(e) => setPaymentType(e.target.value)}
-                                        className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
-                                    >
-                                        <option value="">Select Payment Type</option>
-                                        <option value="all">All</option>
-                                        <option value="cash">Cash</option>
-                                        <option value="card">Card</option>
-                                        <option value="check">Check</option>
-                                        <option value="bank_transfer">Bank Transfer</option>
-                                    </select>
-                                </div>
+                                        {/* Payment Type Select */}
+                                        <div className='mt-5'>
+                                            <label className="text-left block text-sm font-medium text-gray-700">Payment Type</label>
+                                            <select
+                                                value={paymentType}
+                                                onChange={(e) => setPaymentType(e.target.value)}
+                                                className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
+                                            >
+                                                <option value="">Select Payment Type</option>
+                                                <option value="all">All</option>
+                                                <option value="cash">Cash</option>
+                                                <option value="card">Card</option>
+                                                <option value="check">Check</option>
+                                                <option value="bank_transfer">Bank Transfer</option>
+                                            </select>
+                                        </div>
 
-                                <div className="mt-5 mb-1"> {/* Use flex-1 here as well */}
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Date </label>
-                                    <input
-                                        id="date"
-                                        name="date"
-                                        type="date"
-                                        required
-                                        value={date}
-                                        onChange={(e) => setDate(e.target.value)}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border- pl-5 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
+                                        <div className="mt-5 mb-1"> {/* Use flex-1 here as well */}
+                                            <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Date </label>
+                                            <input
+                                                id="date"
+                                                name="date"
+                                                type="date"
+                                                required
+                                                value={date}
+                                                onChange={(e) => setDate(e.target.value)}
+                                                autoComplete="given-name"
+                                                className="block w-full rounded-md border- pl-5 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </Draggable>
                         </div>
                     )}
+
 
                     {loading ? (
                         <Box sx={{ width: '100%', position: "absolute", top: "0", left: "0", margin: "0", padding: "0" }}>

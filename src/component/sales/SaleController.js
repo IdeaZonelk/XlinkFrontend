@@ -370,7 +370,7 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData,note, cashBalance) => {
+export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false ) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
@@ -425,6 +425,24 @@ export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus
         setProgress(false);
         return;
     }
+
+    if (typeof date === 'string' && date.length === 10) {
+        const now = new Date();
+        const [year, month, day] = date.split('-');
+    
+        // Create a new Date with the selected date and current LOCAL time
+        const fullDate = new Date(
+            Number(year), Number(month) - 1, Number(day),
+            now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds()
+        );
+    
+        // Adjust to local timezone by removing timezone offset
+        const timezoneOffsetMs = fullDate.getTimezoneOffset() * 60 * 1000;
+        const localDate = new Date(fullDate.getTime() - timezoneOffsetMs);
+    
+        date = localDate.toISOString();  // ISO string in local time
+    }
+    
     if (!paymentStatus) {
         toast.error('Payment Status is required', { autoClose: 2000 }, { className: "custom-toast" });
         setProgress(false);
@@ -440,7 +458,7 @@ export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus
         .filter((type) => paymentType[type] && Number(amounts[type]) > 0)
         .map((type) => ({ type, amount: Number(amounts[type]) }));
 
-    const cashierUsername = sessionStorage.getItem('cashierUsername');
+    const cashierUsername = sessionStorage.getItem('name');
     const defaultWarehouse = sessionStorage.getItem('defaultWarehouse') || 'Unknown';
 
     // **Define productsData FIRST**
@@ -517,9 +535,32 @@ export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus
 
         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}${endpoint}`, finalSaleData);
         if (response.data.status === 'success') {
-            toast.success('Sale created successfully!', { autoClose: 2000, className: "custom-toast" });
-            setInvoiceData(response.data.sale);
-            console.log(response.data.sale);
+            // Store the invoice data for potential printing
+            setInvoiceData(response.data);
+            
+            // Only print if shouldPrint is true
+            if (shouldPrint) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none'; 
+                document.body.appendChild(iframe);
+              
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(response.data.html);
+                iframeDoc.close();
+              
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                }, 500);
+            }
+            
+            handlePrintAndClose();
+            toast.success('Sale created successfully!', { 
+                autoClose: 2000, 
+                className: "custom-toast" 
+            });
         }
     } catch (error) {
         console.error('Error creating sale:', error);
@@ -544,7 +585,7 @@ export const handleSave = async ( grandTotal, profit, orderStatus, paymentStatus
 
 //HANDLE UPDATE SALE
 export const handleUpdateSale = async (
-    id, grandTotal, profit, orderStatus, paymentStatus, PaidAmount, paymentType, amounts, shipping,
+    id, grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
     discountType, discount, tax, warehouse, selectedCustomer,
     productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate
 ) => {
@@ -553,7 +594,9 @@ export const handleUpdateSale = async (
     setProgress(true)
 
     if (!Array.isArray(productData)) {
-        setError('Invalid sale return data format. Expected an array.');
+        console.error('Invalid productData:', productData);
+        setError('Invalid sale data format. Expected an array.');
+        setProgress(false);
         return;
     }
 

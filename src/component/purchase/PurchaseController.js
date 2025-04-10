@@ -502,7 +502,7 @@ export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehou
                      { autoClose: 2000 },
                      { className: "custom-toast" }
                    );
-        setResponseMessage('');
+        setError('');
     }
     finally {
         setProgress(false); // Hide loading bar
