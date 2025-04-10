@@ -190,7 +190,6 @@ function CreateTransferBody() {
                             name="text"
                             type="text"
                             required
-                            disabled={!warehouseFrom}
                             value={searchTerm}
                             onChange={(e) => handleProductSearch(e, setSearchTerm, setFilteredProducts, warehouseFrom)}
                             placeholder={searchTerm ? "" : "        Search..."}
@@ -210,9 +209,6 @@ function CreateTransferBody() {
                                     </li>
                                 ))}
                             </ul>
-                        )}
-                         {!warehouseFrom && (
-                            <p className="text-red-500 text-sm mt-1 text-left">Please select a warehouse to search products.</p>
                         )}
                     </div>
 
