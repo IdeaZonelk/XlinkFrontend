@@ -200,8 +200,83 @@ export const CategoryModal = ({ addCatergoryModel, setAddCategoryOpen, handleSub
 
 export const SupplierModel = ({
     addSupplierModel, setAddSupplierOpen, email, setEmail, country, setCountry, city, setCity, address, setAddress, name, setName, companyName,
-    setCompanyName, nic, setNIC, mobile, setMobile, handleSupplierSubmit, handleSupplierClear, setError, setResponseMessage, setProgress, etAddSupplierOpen
+
+    setCompanyName, nic, setNIC, mobile, setMobile, error, responseMessage, handleSupplierSubmit, handleSupplierClear, setError, setResponseMessage, setProgress, etAddSupplierOpen
+
 }) => {
+
+    const validateAndSubmitSupplier = (
+        e,
+        email,
+        name,
+        companyName,
+        nic,
+        country,
+        city,
+        mobile,
+        address,
+        setError,
+        setResponseMessage,
+        setProgress,
+        setAddSupplierOpen,
+        handleSupplierClear,
+        handleSupplierSubmit
+      ) => {
+        e.preventDefault(); // Prevent default form submit behavior
+        setError(''); // Clear previous errors
+        setResponseMessage('');
+        setProgress(true); // Show loading bar if you want
+      
+        let isValid = true;
+      
+        const normalizedEmail = email.toLowerCase();
+      
+        // Email Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
+        if (!emailRegex.test(normalizedEmail)) {
+            setError('Username must be a valid email address (example: user@gmail.com)');
+            setProgress(false);
+            isValid = false;
+        }
+      
+        // Mobile Validation
+        const mobileRegex = /^\+94\d{9}$/;
+        if (!mobileRegex.test(mobile)) {
+          setError('Invalid mobile number. Format: +94xxxxxxxxx');
+          setProgress(false);
+          isValid = false;
+        }
+      
+        // NIC Validation
+        const newNICRegex = /^\d{12}$/;
+        const oldNICRegex = /^\d{9}[VXvx]$/;
+        if (!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
+          setError('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
+          setProgress(false);
+          isValid = false;
+        }
+      
+        // If validation passes, call the original submit
+        if (isValid) {
+          handleSupplierSubmit(
+            e,
+            normalizedEmail,
+            name,
+            companyName,
+            nic,
+            country,
+            city,
+            mobile,
+            address,
+            setError,
+            setResponseMessage,
+            setProgress,
+            setAddSupplierOpen,
+            handleSupplierClear
+          );
+        }
+      };
+
     if (!addSupplierModel) return null;
     return (
         <div className="fixed inset-0 bg-black mt-20 bg-opacity-50 flex justify-center items-center z-50">
@@ -342,10 +417,36 @@ export const SupplierModel = ({
                     </div>
 
                     <div className="mt-10 flex justify-start">
-                        <button type="button" onClick={(e) => handleSupplierSubmit(e, email, name, companyName, nic, country, city, mobile, address, setError, setResponseMessage, setProgress, setAddSupplierOpen, handleSupplierClear)} className="button-bg-color button-hover-color text-white px-4 py-2 rounded-md">Save</button>
-                        <button type="button" onClick={handleSupplierClear} className="ml-2 bg-gray-600 text-white px-4 py-2 rounded-md">Clear</button>
+                        <button type="button" onClick={(e) => validateAndSubmitSupplier(
+                            e,
+                            email,
+                            name,
+                            companyName,
+                            nic,
+                            country,
+                            city,
+                            mobile,
+                            address,
+                            setError,
+                            setResponseMessage,
+                            setProgress,
+                            setAddSupplierOpen,
+                            handleSupplierClear,
+                            handleSupplierSubmit
+                        )}
+                            className="button-bg-color button-hover-color text-white px-4 py-2 rounded-md">Save</button>
+                      <button type="button" onClick={handleSupplierClear} className="ml-2 bg-gray-600 text-white px-4 py-2 rounded-md">Clear</button>
+
+                        {/* <button type="button" onClick={handleSupplierClear} className="ml-2 bg-gray-600 text-white px-4 py-2 rounded-md">Clear</button> */}
+
                     </div>
                 </form>
+                {/* Error and Response Messages */}
+                {error && (
+                    <p className="text-red-600 px-5 py-2 rounded-md bg-red-100 mt-5 text-center mx-auto max-w-sm">
+                    {error}
+                    </p>
+                    )}
             </div>
         </div>
     );

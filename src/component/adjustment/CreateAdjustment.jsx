@@ -218,6 +218,7 @@ function CreateAdjustmentBody() {
                             name="text"
                             type="text"
                             required
+                            disabled={!warehouse}
                             value={searchTerm}
                             onChange={(e) =>
                                 handleProductSearch(
@@ -249,6 +250,9 @@ function CreateAdjustmentBody() {
                                     </li>
                                 ))}
                             </ul>
+                        )}
+                         {!warehouse && (
+                            <p className="text-red-500 text-sm mt-1 text-left">Please select a warehouse to search products.</p>
                         )}
                     </div>
 
