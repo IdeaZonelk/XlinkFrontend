@@ -623,6 +623,7 @@ function PosSystemBody({ defaultWarehouse }) {
             toast.success('POS close successfully!', { autoClose: 2000 }, { className: "custom-toast" });
             sessionStorage.removeItem('cashRegisterID');
             sessionStorage.removeItem('cashierUsername');
+            sessionStorage.removeItem('name');
             setIsPopupOpen(false);
             navigate('/dashboard');
 
