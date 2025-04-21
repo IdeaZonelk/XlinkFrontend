@@ -22,14 +22,18 @@ function ClickedCustomerReport() {
     useEffect(() => {
         const fetchReportData = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/allCustomerReportById/${name}`);
+                if (!name) return;
+                
+                const response = await axios.get(
+                    `${process.env.REACT_APP_BASE_URL}/api/allCustomerReportById/${encodeURIComponent(name)}`
+                );
                 setCustomerData(response.data);
             } catch (err) {
                 console.error('Error fetching report data:', err);
-                setError('Failed to fetch report data');
+                setError(err.response?.data?.message || 'Failed to fetch report data');
             }
         };
-
+    
         fetchReportData();
     }, [name]);
 
