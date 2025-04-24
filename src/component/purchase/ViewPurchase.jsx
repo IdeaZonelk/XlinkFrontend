@@ -440,8 +440,14 @@ function ViewPurchaseBody() {
                                     <td className="px-6 py-5 whitespace-nowrap text-left text-m text-gray-900">{new Date(purchased.date).toLocaleDateString()}</td>
                                     <td className="px-6 py-5 whitespace-nowrap text-left text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{purchased.orderStatus}</p></td>
                                     <td className="px-6 py-5 whitespace-nowrap text-left text-m text-gray-900">
-                                        <p className={`rounded-[5px] text-center p-[6px] ${purchased.paymentStatus === 'paid' ? 'bg-green-100 text-green-500' : purchased.paymentStatus === 'Partial' ? 'bg-yellow-100 text-yellow-500' :
-                                            'bg-red-100 text-red-500'}`}>
+                                        <p className={`rounded-[5px] text-center p-[6px] ${
+                                            purchased.paymentStatus?.toLowerCase() === 'paid'
+                                                ? 'bg-green-100 text-green-500'
+                                                : purchased.paymentStatus?.toLowerCase() === 'partial'
+                                                ? 'bg-yellow-100 text-yellow-500'
+                                                : 'bg-red-100 text-red-500'
+                                        }`}>
+
                                             {purchased.paymentStatus}
                                         </p>
                                     </td>
