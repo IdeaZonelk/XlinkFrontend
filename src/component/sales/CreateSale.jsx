@@ -11,8 +11,12 @@ import Box from '@mui/material/Box';
 import formatWithCustomCommas from '../utill/NumberFormate';
 import { useCurrency } from '../../context/CurrencyContext';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+
 
 function CreateSaleBody() {
+    const navigate = useNavigate();
+
     // State management
     const { currency } = useCurrency()
     const [warehouseData, setWarehouseData] = useState([]);
@@ -247,6 +251,31 @@ function CreateSaleBody() {
     }, [decryptedUser]);
 
     const handlePrintAndClose = () => {
+    // Reset all relevant state
+    setWarehouse('');
+    setSearchTerm('');
+    setSearchCustomer('');
+    setFilteredCustomer([]);
+    setSelectedCustomer([]);
+    setFilteredProducts([]);
+    setSelectedProduct([]);
+    setDiscount('');
+    setShipping('');
+    setTax('');
+    setOrderStatus('');
+    setPaymentStatus('');
+    setDiscountType('');
+    setAmounts({ cash: '', card: '', bank_transfer: '' });
+    setPaymentType({ cash: false, card: false, bank_transfer: false });
+    setError('');
+    setResponseMessage('');
+    setBalance(0);
+    setShouldPrint(false);
+    setInvoiceNumber(null);
+    setInvoiceData([]);
+
+    // Redirect to sale view page
+    navigate('/viewSale');
     };
 
     return (

@@ -933,6 +933,12 @@ function EditSaleBody() {
                             </div>
                         </div>
                     </div>
+                    <div className="mt-1 text-right text-lg font-semibold">
+                        Balance: {currency} {formatWithCustomCommas(
+                            (total - Object.values(amounts).reduce((acc, val) => acc + (Number(val) || 0), 0)).toFixed(2)
+                        )}
+                    </div>
+
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {formatWithCustomCommas(total)}
                     </div>
@@ -943,6 +949,7 @@ function EditSaleBody() {
                                 : '0.00'
                         }
                     </div>
+                    
                     <button
                         onClick={handleUpdateClick}
                         className="mt-5 submit w-[200px] text-white rounded py-2 px-4"
