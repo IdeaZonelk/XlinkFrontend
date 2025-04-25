@@ -50,6 +50,7 @@ function CreatePurchaseBody() {
     const [paymentType, setPaymentType] = useState('');
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [name, setProductName] = useState("");
+    const [code, setCode] = useState('');
       const [category, setCategory] = useState("");
       const [brand, setBrands] = useState("");
       const [barcode, setBarcode] = useState("");
@@ -592,6 +593,7 @@ const handleImageChange = async (e, setError) => {
         // Ensure warehouseValues is an object
         const formData = new FormData();
         formData.append("name", name);
+        formData.append("code", code);
         if (image) {
           formData.append("image", image);
         }
@@ -1109,6 +1111,27 @@ const handleImageChange = async (e, setError) => {
                         maxLength={20}
                         onChange={(e) => setProductName(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                  {/* Product Code */}
+                  <div className="flex-1">
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
+                      Product code <span className='text-red-500'>*</span>
+                    </label>
+                    <div className="mt-2">
+                      <input
+                        id="code"
+                        name="code"
+                        type="text"
+                        required
+                        onChange={(e) => setCode(e.target.value)}
+                        placeholder="Enter code"
+                        value={code}
+                        className="block w-full lg:w-80 rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                       />
                     </div>
                   </div>
