@@ -164,7 +164,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 const selectedVariation = product.variation;
                 const price = product.price;
                 const barcodeQty = product.qty || 1;
-                const oderTax = product.tax;
+                const orderTax = product.tax;
                 const specialDiscount = product.specialDiscount || 0;
 
                 return {
@@ -176,7 +176,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     selectedVariation,
                     price,
                     barcodeQty,
-                    oderTax,
+                    orderTax,
                 };
             });
 

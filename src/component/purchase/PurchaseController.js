@@ -445,6 +445,11 @@ export const handleSave = async (grandTotal, orderStatus, paymentStatus, payment
 export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehouse, supplier, selectedProduct, date, _id, setError, setResponseMessage, setProgress, navigate) => {
     setProgress(true)
 
+    if (!note) {
+        toast.error('Reason is Required',{ autoClose: 2000 },{ className: "custom-toast" });
+        setProgress(false)
+        return;
+    }
     const commonPurchaseData = {
         // refferenceId: referenceId,
         date,
