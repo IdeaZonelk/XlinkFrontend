@@ -261,7 +261,7 @@ function ViewTransferBody() {
   }, []);
 
   return (
-    <div className="relative bg-[#eff3f7] absolute top-[80px] left-[18%] w-[82%] h-[100vh] p-5">
+    <div className="relative bg-[#F9FAFB] absolute top-[80px] left-[18%] w-[82%] h-[100vh] p-5">
       <div className="flex justify-between mb-4">
         <div className="relative w-full max-w-md">
           <form

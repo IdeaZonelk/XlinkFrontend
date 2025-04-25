@@ -13,6 +13,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css'
 import { useCurrency } from '../../context/CurrencyContext';
 import { UserContext } from '../../context/UserContext';
+import { useReactToPrint } from 'react-to-print';
 
 function ViewSaleBody() {
     // State variables
@@ -22,6 +23,7 @@ function ViewSaleBody() {
     const [loading, setLoading] = useState(false);
     const [openPopupId, setOpenPopupId] = useState(null);
     const popupRef = useRef(null);
+    const printRef = useRef();
     const [openViewSale, setOpenViewSale] = useState(null);
     const [openViewPayment, setViewPayment] = useState(null);
     const [filteredSaleData, setFilteredSaleData] = useState(saleData);
@@ -339,6 +341,29 @@ function ViewSaleBody() {
         }, 100); // Adjust debounce delay as needed
     };
 
+    const handlePrintInvoice = async (saleId) => {
+        try {
+          const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/printInvoice/${saleId}`);
+          if (response.data.html) {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+      
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(response.data.html);
+            iframeDoc.close();
+      
+            setTimeout(() => {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+              setTimeout(() => document.body.removeChild(iframe), 1000);
+            }, 500);
+          }
+        } catch (error) {
+          console.error("Error printing invoice:", error);
+        }
+      };
 
     // Handle keydown events
     const handleKeyDown = (e) => {
@@ -562,6 +587,15 @@ function ViewSaleBody() {
                                                                     Create Return
                                                                 </Link>
                                                             )}
+                                                            {permissionData.print_sale && (
+                                                            <li
+                                                                onClick={() => handlePrintInvoice(sale._id)}
+                                                                className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center"
+                                                            >
+                                                                <i className="fas fa-print mr-2 text-gray-600"></i>
+                                                                Print Invoice
+                                                            </li>
+                                                            )}
                                                         </ul>
                                                     </div>
                                                 )}
@@ -572,7 +606,7 @@ function ViewSaleBody() {
                                             <div ref={popupRef} className="overflow-y-auto scroll-container fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start overflow-y-auto py-10 z-50">
                                                 <div className="bg-white w-[1300px] p-8 rounded-md shadow-lg min-h-[100px]" data-aos="fade-down">
                                                     <div
-                                                        ref={targetRef}
+                                                        ref={el => { targetRef.current = el; printRef.current = el }}
                                                         className="w-[1250px] p-10 bg-white"
                                                         style={{
                                                             margin: '0 auto',

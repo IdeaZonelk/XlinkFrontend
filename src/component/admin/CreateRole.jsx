@@ -21,7 +21,7 @@ const CreateRoleBody = () => {
         manageSuppliers: ["create_supplier", "edit_supplier", "delete_supplier", "view_supplier", "import_supplier"],
         manageWarehouse: ["create_warehouse", "edit_warehouse", "delete_warehouse", "view_warehouse"],
         manageTransfer: ["create_transfer", "edit_transfer", "view_transfer", "delete_transfer", "view_transfer_popup"],
-        manageSales: ["create_sale", "edit_sale", "view_sale", "delete_sale", "show_payment", "return_sale", "view_sl_popup"],
+        manageSales: ["create_sale", "edit_sale", "view_sale", "delete_sale", "show_payment", "return_sale", "view_sl_popup", "print_sale"],
         manageSaleReturns: ["view_sl_return", "delete_sl_return", "edit_sl_return", "view_sl_return_popup"],
         managePurchases: ["create_purchase", "edit_purchase", "view_purchase", "delete_purchase", "return_purchase", "view_purchase_popup"],
         managePurchaseReturns: ["view_pur_return", "edit_pur_return", "delete_pur_return", "view_pur_return_popup"],
@@ -151,7 +151,7 @@ const CreateRoleBody = () => {
             manageSuppliers: ["create_supplier", "edit_supplier", "delete_supplier", "view_supplier", "import_supplier"],
             manageWarehouse: ["create_warehouse", "edit_warehouse", "delete_warehouse", "view_warehouse"],
             manageTransfer: ["create_transfer", "edit_transfer", "view_transfer", "delete_transfer", "view_transfer_popup"],
-            manageSales: ["create_sale", "edit_sale", "view_sale", "delete_sale", "show_payment", "return_sale", "view_sl_popup"],
+            manageSales: ["create_sale", "edit_sale", "view_sale", "delete_sale", "show_payment", "return_sale", "view_sl_popup", "print_sale"],
             manageSaleReturns: ["view_sl_return", "delete_sl_return", "edit_sl_return", "view_sl_return_popup"],
             managePurchases: ["create_purchase", "edit_purchase", "view_purchase", "delete_purchase", "return_purchase", "view_purchase_popup"],
             managePurchaseReturns: ["view_pur_return", "edit_pur_return", "delete_pur_return", "view_pur_return_popup"],
@@ -1077,6 +1077,17 @@ const CreateRoleBody = () => {
                                                 onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Sale Details</label>
+                                        </div>
+                                        <div className="flex items-center mt-2">
+                                            <input
+                                                type="checkbox"
+                                                id="checkbox-viewSlPopup"
+                                                name="print_sale"
+                                                className="checkbox-custom"
+                                                checked={permissions.print_sale}
+                                                onChange={handlePermissionChange}
+                                            />
+                                            <label className="text-lightgray-300 ml-4">Print Sale</label>
                                         </div>
                                         <div className="flex items-center mt-2">
                                             <input

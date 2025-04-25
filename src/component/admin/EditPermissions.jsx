@@ -1005,6 +1005,17 @@ const EditPermissionsBody = () => {
                                         <div className="flex items-center mt-2">
                                             <input
                                                 type="checkbox"
+                                                id="checkbox-printSale"
+                                                name="manageSales_print_sale"
+                                                className="checkbox-custom"
+                                                checked={permissions.manageSales?.print_sale || false}
+                                                onChange={handlePermissionChange}
+                                            />
+                                            <label className="text-lightgray-300 ml-4">Print Sale</label>
+                                        </div>
+                                        <div className="flex items-center mt-2">
+                                            <input
+                                                type="checkbox"
                                                 id="checkbox-deleteSale"
                                                 name="manageSales_delete_sale"
                                                 className="checkbox-custom"

@@ -23,22 +23,23 @@ function ClickedStokeReport() {
 
     useEffect(() => {
         const fetchReportData = async () => {
-            setLoading(true)
+            setLoading(true);
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findProductDetailsById/${id}`);
-                setSaleData(response.data.data.sales);
-                setSaleReturnData(response.data.data.saleReturns);
-                setPurchaseData(response.data.data.purchases);
-                setPurchaseReturnData(response.data.data.purchaseReturns);
+                
+                setSaleData(response.data.data.sales || []);
+                setSaleReturnData(response.data.data.saleReturns || []);
+                setPurchaseData(response.data.data.purchases || []);
+                setPurchaseReturnData(response.data.data.purchaseReturns || []);
+    
             } catch (err) {
                 console.error('Error fetching report data:', err);
                 setError('Failed to fetch report data');
-            }
-            finally {
-                setLoading(false)
+            } finally {
+                setLoading(false);
             }
         };
-
+    
         fetchReportData();
     }, [id]);
 
@@ -162,7 +163,6 @@ function ClickedStokeReport() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grand Total</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
                                     </tr>
@@ -183,11 +183,6 @@ function ClickedStokeReport() {
                                                     {sale.paymentStatus}
                                                 </p>
                                             </td>
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
-    <p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>
-        {sale.paymentType.map(pt => pt.type).join(' + ')}
-    </p>
-</td>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{currency}{' '}  {formatWithCustomCommas(sale.grandTotal)}</td>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{currency}{' '}  {formatWithCustomCommas(sale.paidAmount)}</td>
                                         </tr>
@@ -234,7 +229,6 @@ function ClickedStokeReport() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Type</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grand Total</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
                                     </tr>
@@ -252,7 +246,6 @@ function ClickedStokeReport() {
                                                     {purchased.paymentStatus}
                                                 </p>
                                             </td>
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>{purchased.paymentType}</p></td>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{currency}{' '}  {formatWithCustomCommas(purchased.grandTotal)}</td>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{currency}{' '}  {formatWithCustomCommas(purchased.paidAmount)}</td>
                                         </tr>

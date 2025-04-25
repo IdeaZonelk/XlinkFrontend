@@ -18,10 +18,10 @@ function EditPurchaseReturnBody() {
     const [selectedProduct, setSelectedProduct] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [note, setNote] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [saleReturnPayingData, setSaleReturnPayingData] = useState([])
     const [saleReturnData, setSaleReturnData] = useState([]);
+    const [note, setNote] = useState('');
     const [reason, setReason] = useState('');
     const [progress, setProgress] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
@@ -38,6 +38,14 @@ function EditPurchaseReturnBody() {
                     ...pq,
                     quantity: pq.quantity || Object.keys(pq.quantity)[0]
                 }));
+                const existingNote = response.data.note || '';
+                if (existingNote === "Damaged" || existingNote === "Expired") {
+                    setReason(existingNote);
+                    setNote('');
+                } else if (existingNote) {
+                    setReason("Other");
+                    setNote(existingNote);
+                }
                 setSaleReturnData(initializedProductsQty);
                 setSaleReturnPayingData(response.data);
                 setProgress(false);
@@ -133,11 +141,11 @@ function EditPurchaseReturnBody() {
     const handleReasonChange = (e) => {
         const selectedReason = e.target.value;
         setReason(selectedReason);
-        if (selectedReason !== 'Other') {
-            setNote(selectedReason);
-        } else {
-            setNote('');
-        }
+        if (selectedReason !== 'Other') setNote('');
+    };
+
+    const getFinalNote = () => {
+        return reason === 'Other' ? note : reason;
     };
 
     return (
@@ -347,7 +355,7 @@ function EditPurchaseReturnBody() {
                     </div>
 
                     <button
-                        onClick={() => handleUpdatePurchaseReturn(id, calculateTotal(), saleReturnPayingData.paidAmount, saleReturnPayingData.warehouse, saleReturnPayingData.supplier, saleReturnData, selectedDate, note, setError, setResponseMessage, setProgress, navigate)}
+                        onClick={() => handleUpdatePurchaseReturn(id, calculateTotal(), saleReturnPayingData.paidAmount, saleReturnPayingData.warehouse, saleReturnPayingData.supplier, saleReturnData, selectedDate, getFinalNote(), setError, setResponseMessage, setProgress, navigate)}
                         className="mt-5 submit w-[200px] text-white rounded py-2 px-4"
                     >
                         Update & Save

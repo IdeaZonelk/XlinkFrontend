@@ -177,7 +177,7 @@ function ViewUserBody() {
     };
 
     return (
-        <div className='bg-[#eff3f7] absolute top-[80px] left-[18%] w-[82%] min-h-[100vh] p-5'>
+        <div className='bg-[#F9FAFB] absolute top-[80px] left-[18%] w-[82%] min-h-[100vh] p-5'>
             <div className='flex justify-between mb-4'>
                 <div className="">
                     <div className="relative w-full max-w-md">
