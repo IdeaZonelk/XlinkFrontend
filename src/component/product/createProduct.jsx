@@ -10,8 +10,12 @@ import { useCurrency } from '../../context/CurrencyContext';
 import { searchCategory, searchBrands, searchSupplier, handleSubmitCategory, handleSubmitBrand, handleSupplierSubmit } from "./productFunctions";
 import CamIcon from '../../img/icons8-camera-100.png';
 import { BrandModal, CategoryModal, SupplierModel } from "./shortcutsModels";
+import { useNavigate } from 'react-router-dom';
+
 
 function CreateProductBody() {
+  const navigate = useNavigate();
+
   // State management for submit
   const [name, setProductName] = useState("");
   const [category, setCategory] = useState("");
@@ -488,6 +492,8 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
       });
 
       toast.success("Product created successfully!", { autoClose: 2000 });
+      handleClear();
+
     } catch (error) {
       if (error.response) {
         const { message } = error.response.data;
@@ -511,26 +517,37 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
   // Handle clear operation
   const handleClear = () => {
     setProductName("");
-    setBrands("");
+    setCode("");
     setCategory("");
-    setNote("");
+    setBrands("");
+    setSuplier("");
+    setBarcode("");
+    setBaseUnit("");
     setSaleUnit("");
     setPurchaseUnit("");
-    setQL("");
+    setQL(""); // Quantity Limitation
     setType("");
-    setStatus("");
-    setSuplier("");
+    setNote("");
+    setImage([]);
+    setSelectedWarehouse([]);
     setWarehouse([]);
+    setWarehouseValues({});
+    setWarehouseVariationValues({});
     setVariation("");
-    setBarcode("");
+    setVariationTypes([]);
+    setSelectedVariationTypes([]);
+    setVariationValues({});
+    setShowSections({});
     setError("");
     setResponseMessage("");
-    setVariationValues({});
-    setSelectedVariationTypes([]);
-    setShowSections({});
-    setImage([]);
-    inputRef.current.value = "";
+    setStatus("");
+
+    // 🛠 Clear file input manually
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
   };
+  
 
   const handleClearCatergoryModel = () => {
     setCatergory('');
@@ -772,6 +789,7 @@ const handleCategoryLogoChange = async (e) => {
                         required
                         placeholder="Enter name"
                         maxLength={20}
+                        value={name}
                         onChange={(e) => setProductName(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                       />
@@ -793,6 +811,7 @@ const handleCategoryLogoChange = async (e) => {
                         required
                         onChange={(e) => setCode(e.target.value)}
                         placeholder="Enter code"
+                        value={code}
                         className="block w-full lg:w-80 rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                       />
                     </div>
@@ -1235,6 +1254,7 @@ const handleCategoryLogoChange = async (e) => {
                         required
                         onChange={(e) => setQL(e.target.value)}
                         placeholder="Quantity Limitation"
+                        value={quantityLimit}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                       />
                     </div>
@@ -1257,6 +1277,7 @@ const handleCategoryLogoChange = async (e) => {
                         id="note"
                         name="note"
                         placeholder="note"
+                        value={note}
                         onChange={(e) => setNote(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                       />
