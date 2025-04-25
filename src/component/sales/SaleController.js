@@ -370,7 +370,7 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false ) => {
+export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false, shouldPrintKOT = false ) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
@@ -552,8 +552,27 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
                 setTimeout(() => {
                     iframe.contentWindow.focus();
                     iframe.contentWindow.print();
-                    setTimeout(() => document.body.removeChild(iframe), 1000);
-                }, 500);
+                   
+                     // KOT printing logic
+        if (shouldPrintKOT && response.data.kotHtml) {
+            const kotIframe = document.createElement('iframe');
+            kotIframe.style.display = 'none';
+            document.body.appendChild(kotIframe);
+
+            const kotDoc = kotIframe.contentDocument || kotIframe.contentWindow.document;
+            kotDoc.open();
+            kotDoc.write(response.data.kotHtml);
+            kotDoc.close();
+
+            setTimeout(() => {
+                kotIframe.contentWindow.focus();
+                kotIframe.contentWindow.print();
+                setTimeout(() => document.body.removeChild(kotIframe), 1000);
+            }, 500);
+        }
+
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 500);
             }
             
             handlePrintAndClose();
