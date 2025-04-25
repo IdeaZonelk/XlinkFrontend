@@ -92,7 +92,8 @@ function PosSystemBody({ defaultWarehouse }) {
     const [inputs, setInputs] = useState({
         amount20: 0, amount50: 0, amount100: 0, amount500: 0, amount1000: 0, amount5000: 0, amount1: 0, amount2: 0, amount5: 0, amount10: 0,
     });
-
+    const [ProductNameOrCode, setProductNameOrCode] = useState('')
+    const [searchedProductDataByName, setSearchedProductDataByName] = useState([]);
     const selectedWarehouseAccess = permissionData?.warehousePermissions?.[warehouse]?.access ?? false;
     const { currency } = useCurrency();
 
@@ -463,7 +464,6 @@ function PosSystemBody({ defaultWarehouse }) {
             return;
         }
 
-
         try {
             const response = await axios.post(
                 `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
@@ -827,6 +827,56 @@ function PosSystemBody({ defaultWarehouse }) {
         return total;
     };
 
+    const handleRealTimeSearch = async (searchTerm) => {
+        if (searchTerm.trim() === "") {
+            setSearchedProductDataByName([]);
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findProductByName`, {
+                params: {
+                    keyword: searchTerm,
+                    warehouse: warehouse
+                },
+            });
+
+            // Directly set the product array, not nested
+            setSearchedProductDataByName(response.data.products || []);
+        } catch (error) {
+            console.error("Error searching products:", error);
+            setSearchedProductDataByName([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Debounce function to limit how often we search
+    const debounce = (func, delay) => {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    };
+
+    // Debounced version of our search function
+    const debouncedSearch = debounce(handleRealTimeSearch, 300);
+
+    // Handle input change
+    const handleInputNameChange = (e) => {
+        const value = e.target.value;
+        setProductNameOrCode(value);
+        if (value.trim() === "") {
+            setSearchedProductDataByName([]); // Clear results when input is empty
+        } else {
+            debouncedSearch(value);
+        }
+    };
+
+    useEffect(() => {
+        console.log("Combined products:", combinedProductData);
+    }, [searchedProductData, combinedProductData]);
 
     return (
         <div className="bg-[#eff3f7] absolute w-full h-screen p-2 overflow-hidden">
@@ -844,7 +894,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                 onChange={handleFindUser}
                             />
                             <button type="submit" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
-                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
                                     <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
                                 </svg>
@@ -876,7 +926,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                 onClick={() => setIsModalOpen(true)}
                             >
                                 <img
-                                    className="w-[30px] h-[30px] hover:scale-110 transition-transform duration-300"
+                                    className="w-[20px] h-[20px] hover:scale-110 transition-transform duration-300"
                                     src={User}
                                     alt="add user"
                                 />
@@ -980,35 +1030,62 @@ function PosSystemBody({ defaultWarehouse }) {
                     </div>
                 </div>
 
-                <div className="w-[65%] ml-2 rounded-[15px] relative items-center h-[80px] bg-white flex">
-                    <form
-                        ref={inputRef}
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            handleProductSubmit(Productkeyword, setLoading, setSearchedProductData, setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setError);
-                        }}
-                        className="absolute top-0 left-0 w-full flex items-center justify-between gap-2"
-                    >
-                        <input
-                            name="Productkeyword"
-                            type="text"
-                            placeholder="Find Product By name or code"
-                            className="searchBox w-full sm:w-[78%] md:w-[32%] lg:w-[36%] xl:w-[44%] 2xl:w-[53%] m-2 pl-10 pr-2 py-5 border border-gray-300 rounded-[10px] shadow-sm focus:border-transparent"
-                            value={Productkeyword}
-                            ref={inputRef}
-                            onChange={(e) => {
-                                setProductKeyword(e.target.value);
-                            }}
-                        />
-                        <p type="button" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
-                            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
-                                <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
-                            </svg>
-                        </p>
-                    </form>
+                <div className="w-[65%] ml-2 rounded-[15px] relative h-[80px] bg-white flex flex-col lg:flex-row items-start lg:items-center">
+                    <div className="w-1/2 flex flex-col sm:w-full sm:flex-row gap-2">
+                        {/* Search by Code */}
+                        <div className="relative w-full flex flex-col sm:flex-row items-center justify-between gap-2 mr-4">
+                            <form
+                                ref={inputRef}
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleProductSubmit(Productkeyword, setLoading, setSearchedProductData, setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setError);
+                                }}
+                                className="relative w-full sm:w-auto flex-grow"
+                            >
+                                <input
+                                    name="Productkeyword"
+                                    type="text"
+                                    placeholder="Find By code"
+                                    className="searchBox w-full m-2 pl-10 pr-2 py-5 border border-gray-300 rounded-[10px] shadow-sm focus:border-transparent"
+                                    value={Productkeyword}
+                                    ref={inputRef}
+                                    onChange={(e) => {
+                                        setProductKeyword(e.target.value);
+                                    }}
+                                />
+                                <p type="button" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
+                                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
+                                        <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
+                                    </svg>
+                                </p>
+                            </form>
+
+                            {/* Search by Name */}
+                            <form
+                                onSubmit={handleSubmit}
+                                className="relative w-full sm:w-auto flex-grow"
+                            >
+                                <input
+                                    name="Productkeyword"
+                                    type="text"
+                                    placeholder="Find By Name / code"
+                                    className="searchBox w-full m-2 pl-10 pr-2 py-5 border border-gray-300 rounded-[10px] shadow-sm focus:border-transparent"
+                                    value={ProductNameOrCode}
+                                    onChange={handleInputNameChange}
+                                />
+                                <p type="button" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
+                                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
+                                        <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
+                                    </svg>
+                                </p>
+                            </form>
+                        </div>
+                    </div>
+
                     {/* Action Buttons */}
-                    <div className="absolute top-0 right-0 flex gap-[1px] items-center justify-end">
+                    <div className="flex items-center gap-0 h-[78px]  justify-end md:mt-2 md:mb-2 sm:justify-between sm:bg-white sm:w-[99.5%] sm:ml-1 sm:mb-80 sm:mr-1 rounded-xl leading-none box-border">
                         <div className="relative p-2 m-2 w-[65px] h-[65px] border bg-[#44BC8D] rounded-[10px] flex items-center justify-center">
                             <button onClick={() => handleHoldOpen(setIsHoldList)}>
                                 <img className="w-[45px] h-[45px]" src={Menu} alt="" />
@@ -1433,7 +1510,7 @@ function PosSystemBody({ defaultWarehouse }) {
             {/* MAIN BODY SECTION */}
             {/* Produc billing section in right */}
             <div className="flex justify-between mt-2 w-full h-screen ">
-                <div className="w-[35%] h-screen rounded-[15px] bg-white p-4">
+                <div className="w-[35%] h-screen rounded-[15px] bg-white p-2">
                     <div>
                         <BillingSection
                             productBillingHandling={productBillingHandling}
@@ -1456,7 +1533,7 @@ function PosSystemBody({ defaultWarehouse }) {
                 <div className="w-[64.8%] ml-2 rounded-[15px] h-screen bg-white " >
                     {/* Brands selection section */}
                     <ProductFilters setFilters={setFilters} setLoading={setLoading} />
-                    <div className='h-32'>
+                    <div className='h-32 sm:mt-40 md:mt-0 xl:mt-0 xxl:mt-0 '>
                         {/* Brands selection section */}
                         <div id="brands-scroll-container" className="flex space-x-2 overflow-x-scroll scrollbar-hide smooth-scroll my-2 mx-2" onWheel={(e) => handleHorizontalScroll(e, 'brands-scroll-container')}>
                             <div className="flex space-x-2">
@@ -1573,7 +1650,7 @@ function PosSystemBody({ defaultWarehouse }) {
 
                                 <div className="grid px-[10px] bg-white sm:gap-x-2 sm:gap-y-3 md:gap-x-2 md:gap-y-4 lg:gap-x-2 lg:gap-y-4 xl:gap-x-2 xl:gap-y-4 2xl:gap-x-6 2xl:gap-y-6"
                                     style={{ gridTemplateColumns: `repeat(auto-fill, minmax(176px, 1fr))` }}>
-                                    {combinedProductData.map((p) => {
+                                    {(searchedProductDataByName.length > 0 ? searchedProductDataByName : combinedProductData).map((p) => {
                                         const warehouseName = p.warehouse ? Object.keys(p.warehouse)[0] : null;
                                         const warehouseData = warehouseName ? p.warehouse[warehouseName] : null;
                                         const isSelectable = canSelectProduct(warehouseName);
@@ -1594,6 +1671,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         tax: getTax(p),
                                                         discount: getDiscount(p),
                                                         ptype: p.ptype,
+                                                        warranty: p.warranty,
                                                         warehouse: p.warehouse || {},
                                                         variation: p.variation,
                                                         variationType: p.variationType || "Unknown",
