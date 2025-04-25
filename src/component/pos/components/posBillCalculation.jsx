@@ -8,7 +8,7 @@ import { UserContext } from '../../../context/UserContext';
 import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
-const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, setSelectedCustomer, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError}) => {
+const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, setSelectedCustomer, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
@@ -71,7 +71,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             updatedProducts[selectedProductIndex].specialDiscount = parseFloat(specialDiscount) || 0;
             setProductBillingHandling(updatedProducts);
             setSpecialDiscountPopUp(false);
-            setSelectedProductIndex(null); // Reset selected product index
+            setSelectedProductIndex(null);
 
             setTimeout(() => {
                 calculateTotalPrice();
@@ -170,11 +170,11 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                 console.error('Error generating reference number:', error);
             }
         };
-    
+
         if (showProductHolding) {
             fetchReferenceNumber();
         }
-    }, [showProductHolding]); 
+    }, [showProductHolding]);
 
 
     const handleIncrement = (index) => {
@@ -453,19 +453,19 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             alert('Reference Number and products are required');
             return;
         }
-    
+
         const dataToSend = {
             referenceNo: refferenceNumber,  // Use the generated reference number
             products: productDetailsForHolding
         };
-    
+
         try {
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/holdProducts`, dataToSend);
-    
+
             if (response.status === 201) {
                 console.log('Hold successful:', response.data);
                 sessionStorage.setItem('heldProducts', JSON.stringify(productDetailsForHolding));
-    
+
                 handleBillReset();  // Reset billing after holding products
                 setShowProductHolding(false);  // Close the popup
                 setHeldProductReloading(true); // Trigger reloading of held products
@@ -474,24 +474,24 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             console.error('Error saving held products:', error);
         }
     };
-    
+
 
     return (
         <div>
             <div className='flex justify-between'>
-                <h2 className="text-lg font-semibold mb-4 text-gray-500"> {new Date().toLocaleDateString('en-GB')} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h2>
+                <h2 className="text-lg font-semibold text-sm mb-4 text-gray-500"> {new Date().toLocaleDateString('en-GB')} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h2>
                 <h2 className="text-lg font-semibold mb-4 text-gray-500">{selectedCustomer}</h2>
             </div>
 
-            <div style={{ minHeight: '252px' }}>
-            <div className="overflow-y-auto scroll-container" style={{ maxHeight: '245px' }}>
+            <div style={{ minHeight: '260px' }}>
+                <div className="overflow-y-auto scroll-container" style={{ maxHeight: '245px' }}>
                     <table className="min-w-full table-auto">
                         <thead>
                             <tr>
                                 <th className="px-4 py-2 text-left text-gray-500 text-base">Product</th>
                                 <th className="px-4 py-2 text-left text-gray-500 text-base">Quantity</th>
                                 <th className="px-4 py-2 text-left text-gray-500 text-base">Price</th>
-                                <th className="px-4 py-2 text-left text-gray-500 text-base">Sub Total</th>
+                                <th className="px-4 py-2 text-left text-gray-500 text-base">Sub</th>
                                 <th className="px-2 py-2 text-left text-gray-500 text-base text-right">#</th>
                             </tr>
                         </thead>
@@ -599,7 +599,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </table>
                 </div>
             </div >
-            <div className="mt-5">
+            <div className="mt-8">
                 <div className="px-4 py-2 text-left text-gray-500 text-base text-xl text-right">
                     <h1>Total Items: {totalItems}</h1>
                 </div>
@@ -609,13 +609,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             </div>
 
             {/* Container for Discount, Shipping, and Tax Inputs */}
-            <div className='fixed bottom-8 w-[32.5%]'>
-                <div className='flex'>
+            <div className='fixed w-full justify-between mt-4 relative bottom-0 w-[32.5%]'>
+                <div className="flex gap-2 px-[9px] justify-between py-1 mt-0 w-[100%]">
                     {permissionData.assign_offer && (
-                        <div className="flex gap-4 px-4 py-1 mt-4 w-[100%]'">
+                        <div className="flex md:w-1/2 gap-2 py-1 mt-4 w-full">
                             <select
                                 onChange={handleDiscountType}
-                                className="w-[143px] bg-black bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                                className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                             >
                                 <option value=''>Discount type</option>
                                 <option value='fixed'>Fixed</option>
@@ -624,31 +624,31 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         </div>
                     )}
                     {permissionData.assign_offer && (
-                        <div className="relative mt-5 w-[29.5%]">
-                            <input
-                                onChange={handleDiscount}
-                                value={discount}
-                                type="text"
-                                placeholder="Discount"
-                                className="w-full  bg-black bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-2 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
-                            />
-                            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
-                                {discountSymbole}
-                            </span>
+                        <div className="flex md:w-1/2 py-1 mt-4 w-full">
+                            <div className="relative w-full">
+                                <input
+                                    onChange={handleDiscount}
+                                    value={discount}
+                                    type="text"
+                                    placeholder="Discount"
+                                    className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-2 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                                />
+                                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500">
+                                    {discountSymbole}
+                                </span>
+                            </div>
                         </div>
                     )}
-                   
                 </div>
 
-                <div className='flex gap-4 px-4 py-1 mt-2'>
-                     {permissionData.assign_offer && (
-                        <div className="flex gap-4 w-[100%]'">
+                <div className='flex w-full gap-2 px-1.5 py-1 mt-0'>
+                    {permissionData.assign_offer && (
+                        <div className="relative w-[32%]">
                             <button
                                 onClick={(e) => setOpenOffersModel(true)}
-                                className="flex submit w-[145px] text-white px-4 py-2 rounded-md hover:opacity-90"
+                                className="w-full bg-white bg-opacity-[1%] submit rounded-md h-[45px] py-2 px-3 pr-10 text-white font-semibold sm:text-sm"
                             >
-                                <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
-                                Add Offers
+                                Offers
                             </button>
                         </div>
                     )}
@@ -658,20 +658,20 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                             value={tax}
                             type="text"
                             placeholder="Tax"
-                            className="w-full bg-black bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                         />
                         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
                             %
                         </span>
                     </div>
 
-                    <div className="relative w-[32%]">
+                    <div className="relative w-[32.1%]">
                         <input
                             onChange={handleShippng}
                             value={shipping}
                             type="text"
                             placeholder="Shipping"
-                            className="w-full bg-black bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                         />
                         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
                             {currency}
@@ -798,7 +798,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                 )}
 
                 {/* Buttons Section */}
-                <div className="flex gap-4 px-4 py-1 mt-2 w-[100%]">
+                <div className="flex gap-2 px-1.5 py-1 mt-0 w-[100%]">
                     <button
                         onClick={handleBillReset}
                         className="button-dark-color w-[32%] rounded-md px-4 py-3 text-white font-semibold text-sm shadow-md focus:outline-none"
@@ -838,7 +838,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             {/* PAYING SECTION */}
             <div>
                 {showPayingSec && (
-                   <PayingSection
+                    <PayingSection
                         handlePopupClose={handlePopupClose}
                         totalItems={totalItems}
                         totalPcs={totalPcs}
@@ -876,12 +876,12 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                             <div className='mt-5'>
                                 <label className="block text-sm font-medium leading-6 text-gray-900">Add a Refference number</label>
                                 <input
-    value={refferenceNumber}
-    type="text"
-    readOnly
-    placeholder="Reference number"
-    className="block w-full mb-10 mt-2 rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
-/>
+                                    value={refferenceNumber}
+                                    type="text"
+                                    readOnly
+                                    placeholder="Reference number"
+                                    className="block w-full mb-10 mt-2 rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
+                                />
 
                             </div>
                             <table className="w-full table-auto border-collapse border border-gray-300">
