@@ -1086,6 +1086,7 @@ function PosSystemBody({ defaultWarehouse }) {
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-0 h-[78px] justify-end md:mt-2 md:mb-2 sm:justify-between sm:bg-white sm:w-full sm:mr-1 rounded-xl leading-none box-border">
+
                         <div className="relative p-2 m-2 w-[65px] h-[65px] border bg-[#44BC8D] rounded-[10px] flex items-center justify-center">
                             <button onClick={() => handleHoldOpen(setIsHoldList)}>
                                 <img className="w-[45px] h-[45px]" src={Menu} alt="" />
@@ -1533,7 +1534,9 @@ function PosSystemBody({ defaultWarehouse }) {
                 <div className="w-[64.8%] ml-2 rounded-[15px] h-screen bg-white " >
                     {/* Brands selection section */}
                     <ProductFilters setFilters={setFilters} setLoading={setLoading} />
+
                     <div className='h-32 sm:mt-40 md:mt-0 xl:mt-0 xxl:mt-0'>
+
                         {/* Brands selection section */}
                         <div id="brands-scroll-container" className="flex space-x-2 overflow-x-scroll scrollbar-hide smooth-scroll my-2 mx-2" onWheel={(e) => handleHorizontalScroll(e, 'brands-scroll-container')}>
                             <div className="flex space-x-2">
