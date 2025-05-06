@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, } from "react";
 import { fetchAllData } from "../utils/fetchAllData";
 import axios from "axios";
+import '../../../styles/login.css';
 import { handleSave } from '../../sales/SaleController'
 import { decryptData } from '../../utill/encryptionUtils';
 import { useCurrency } from '../../../context/CurrencyContext';
@@ -36,6 +37,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         email: '',
         currency: '',
     });
+    const [showKotConfirm, setShowKotConfirm] = useState(false);
+    const kotRef = useRef(null);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -153,7 +156,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     }, [decryptedUser]);
 
 
-    const updateProductQuantities = async (productDetails, shouldPrint = false) => {
+    const updateProductQuantities = async (productDetails, shouldPrint = false, shouldPrintKOT = false) => {
         try {
             setSelectedOffer('');
             const reStructuredProductDetails = productDetails.map(product => {
@@ -213,7 +216,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 note,
                 calculateBalance(),
                 handlePrintAndClose,
-                shouldPrint
+                shouldPrint,
+                shouldPrintKOT
             );
             console.log("type of setProgress", setProgress);
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
@@ -223,11 +227,11 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         }
     };
 
-    const handleSubmitPayment = async (shouldPrint) => {
+    const handleSubmitPayment = async (shouldPrint , shouldPrintKOT = false) => {
         if (!validatePaymentStatus()) return;
     
         try {
-            await updateProductQuantities(productDetails, shouldPrint); // Pass shouldPrint
+            await updateProductQuantities(productDetails, shouldPrint, shouldPrintKOT); 
             if (shouldPrint) {
                 setPrintTrigger(true);
                 await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
@@ -241,6 +245,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
             console.error('Error updating product quantities:', error);
         }
     };
+    
 
     useEffect(() => {
         const fetchReportData = async () => {
@@ -414,11 +419,12 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
 
                                 <button
                                     className="px-4 py-2 button-bg-color text-white rounded-md"
-                                    onClick={() => handleSubmitPayment(true)}
+                                    onClick={() => setShowKotConfirm(true)}
                                     type="button"
                                 >
                                     Submit & Print Bill
                                 </button>
+
 
                             </div>
                         </div>
@@ -591,6 +597,34 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     )}
                 </div>
             </div>
+            {showKotConfirm && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-[400px] text-center">
+            <h3 className="text-lg font-semibold mb-4">Do you want to print the KOT bill too?</h3>
+            <div className="flex justify-center gap-4">
+                <button
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md"
+                    onClick={() => {
+                        setShowKotConfirm(false);
+                        handleSubmitPayment(true, false);
+                    }}
+                >
+                    No, Just Print Bill
+                </button>
+                <button
+                    className="px-4 py-2 submit text-white rounded-md"
+                    onClick={() => {
+                        setShowKotConfirm(false);
+                        handleSubmitPayment(true, true); 
+                    }}
+                >
+                    Yes, Print KOT Too
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
         </div>
     );
 };
