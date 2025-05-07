@@ -554,22 +554,22 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
                     iframe.contentWindow.print();
                    
                      // KOT printing logic
-        if (shouldPrintKOT && response.data.kotHtml) {
-            const kotIframe = document.createElement('iframe');
-            kotIframe.style.display = 'none';
-            document.body.appendChild(kotIframe);
+        // if (shouldPrintKOT && response.data.kotHtml) {
+        //     const kotIframe = document.createElement('iframe');
+        //     kotIframe.style.display = 'none';
+        //     document.body.appendChild(kotIframe);
 
-            const kotDoc = kotIframe.contentDocument || kotIframe.contentWindow.document;
-            kotDoc.open();
-            kotDoc.write(response.data.kotHtml);
-            kotDoc.close();
+        //     const kotDoc = kotIframe.contentDocument || kotIframe.contentWindow.document;
+        //     kotDoc.open();
+        //     kotDoc.write(response.data.kotHtml);
+        //     kotDoc.close();
 
-            setTimeout(() => {
-                kotIframe.contentWindow.focus();
-                kotIframe.contentWindow.print();
-                setTimeout(() => document.body.removeChild(kotIframe), 1000);
-            }, 500);
-        }
+        //     setTimeout(() => {
+        //         kotIframe.contentWindow.focus();
+        //         kotIframe.contentWindow.print();
+        //         setTimeout(() => document.body.removeChild(kotIframe), 1000);
+        //     }, 500);
+        // }
 
         setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 500);
