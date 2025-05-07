@@ -156,7 +156,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     }, [decryptedUser]);
 
 
-    const updateProductQuantities = async (productDetails, shouldPrint = false, shouldPrintKOT = false) => {
+    const updateProductQuantities = async (productDetails, shouldPrint = false) => {
         try {
             setSelectedOffer('');
             const reStructuredProductDetails = productDetails.map(product => {
@@ -216,8 +216,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 note,
                 calculateBalance(),
                 handlePrintAndClose,
-                shouldPrint,
-                shouldPrintKOT
+                shouldPrint
             );
             console.log("type of setProgress", setProgress);
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
@@ -227,11 +226,11 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         }
     };
 
-    const handleSubmitPayment = async (shouldPrint , shouldPrintKOT = false) => {
+    const handleSubmitPayment = async (shouldPrint) => {
         if (!validatePaymentStatus()) return;
     
         try {
-            await updateProductQuantities(productDetails, shouldPrint, shouldPrintKOT); 
+            await updateProductQuantities(productDetails, shouldPrint); 
             if (shouldPrint) {
                 setPrintTrigger(true);
                 await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
@@ -419,7 +418,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
 
                                 <button
                                     className="px-4 py-2 button-bg-color text-white rounded-md"
-                                    onClick={() => setShowKotConfirm(true)}
+                                    onClick={() => handleSubmitPayment(true)}
                                     type="button"
                                 >
                                     Submit & Print Bill
@@ -597,7 +596,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     )}
                 </div>
             </div>
-            {showKotConfirm && (
+            {/* {showKotConfirm && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
         <div className="bg-white p-6 rounded-lg shadow-lg w-[400px] text-center">
             <h3 className="text-lg font-semibold mb-4">Do you want to print the KOT bill too?</h3>
@@ -623,7 +622,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
             </div>
         </div>
     </div>
-)}
+)} */}
 
         </div>
     );
