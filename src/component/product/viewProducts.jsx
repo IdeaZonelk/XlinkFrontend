@@ -31,10 +31,6 @@ function ViewProductsBody() {
   const { currency } = useCurrency()
   const [permissionData, setPermissionData] = useState({});
   const { userData } = useContext(UserContext);
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const searchInputRef = useRef(null);
 
   useEffect(() => {
     if (userData?.permissions) {
@@ -159,144 +155,30 @@ function ViewProductsBody() {
   const handleInputChange = (e) => {
     const value = e.target.value;
     setKeyword(value);
-    setSelectedSuggestionIndex(-1); // Reset selection
 
     if (debounceTimeout.current) {
       clearTimeout(debounceTimeout.current);
     }
-
     debounceTimeout.current = setTimeout(() => {
       if (value.trim() === "") {
         setError("");
         setResponseMessage("");
-        setSearchedProduct(productData);
-        setSuggestions([]);
-        setShowSuggestions(false);
+        setSearchedProduct(productData); // Reset to full list
       } else {
-        // Get suggestions from all products via API
-        getSuggestions(value);
-        // Also search in current results
-        searchProduct(value);
+        searchProduct(value); // Call the search API with the entered query
       }
-    }, 300);
+    }, 100); // Adjust debounce delay as needed
   };
+
 
   // Handle keydown events
   const handleKeyDown = (e) => {
-    if (!showSuggestions || suggestions.length === 0) {
-      // If no suggestions, handle backspace for clearing search
-      if (e.key === 'Backspace' && e.target.value === '') {
-        setSearchedProduct(productData);
-        setError("");
-      }
-      return;
+    const value = e.target.value;
+
+    // If backspace is pressed and the input becomes empty, reset the searchedBaseUnits
+    if (e.key === 'Backspace' && value === '') {
+      setSearchedProduct([]);
     }
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev =>
-          prev < suggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedSuggestionIndex(prev =>
-          prev > 0 ? prev - 1 : suggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < suggestions.length) {
-          handleSuggestionClick(suggestions[selectedSuggestionIndex]);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setShowSuggestions(false);
-        setSelectedSuggestionIndex(-1);
-        if (searchInputRef.current) {
-          searchInputRef.current.blur();
-        }
-        break;
-      case 'Backspace':
-        // Handle backspace when input becomes empty
-        if (e.target.value === '') {
-          setSearchedProduct(productData);
-          setError("");
-        }
-        break;
-      default:
-        break;
-    }
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    setKeyword(suggestion.name);
-    setShowSuggestions(false);
-    setSelectedSuggestionIndex(-1);
-
-    // Clear any debounce timeout
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-
-    // Search for the selected product immediately
-    searchProduct(suggestion.name);
-
-    // Optional: Focus back to input after a short delay
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.blur(); // Remove focus to hide any mobile keyboards
-      }
-    }, 100);
-  };
-
-
-  const getSuggestions = async (query) => {
-    if (!query.trim() || query.length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    try {
-      // Use your existing search endpoint
-      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/searchProduct`, {
-        params: { keyword: query }
-      });
-
-      if (response.data.products && response.data.products.length > 0) {
-        // Limit to first 8 results for suggestions
-        const suggestionList = response.data.products.slice(0, 8).map(product => ({
-          id: product._id,
-          name: product.name,
-          code: product.code,
-          image: product.image
-        }));
-
-        setSuggestions(suggestionList);
-        setShowSuggestions(true);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  // helper function to highlight matched text
-  const highlightText = (text, query) => {
-    if (!query.trim()) return text;
-
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-    return parts.map((part, index) =>
-      part.toLowerCase() === query.toLowerCase() ?
-        <span key={index} className="bg-yellow-200 font-medium">{part}</span> : part
-    );
   };
 
   const getPriceRange = (product) => {
@@ -483,21 +365,19 @@ function ViewProductsBody() {
     <div className="relative background-white absolute top-[80px] left-[18%] w-[82%] min-h-[100vh] p-5">
       <div className="flex justify-between mb-4">
         <div className="relative w-full max-w-md">
-          <form className="flex items-center" onSubmit={(e) => e.preventDefault()}>
+          <form className="flex items-center">
             <input
-              ref={searchInputRef}
               name="keyword"
               type="text"
               placeholder="Search by name or code..."
-              className="searchBox w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="searchBox w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
               value={keyword}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              autoComplete="off"
             />
             <button
-              type="button"
-              className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none"
+              type="submit"
+              className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"
             >
               <svg
                 className="h-5 w-5"
@@ -518,42 +398,6 @@ function ViewProductsBody() {
               </svg>
             </button>
           </form>
-
-          {/* Suggestions Dropdown */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto">
-              {suggestions.map((suggestion, index) => (
-                <div
-                  key={suggestion.id}
-                  className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50 flex items-center space-x-3 transition-colors duration-150 ${index === selectedSuggestionIndex ? 'bg-blue-50 border-blue-200' : ''
-                    }`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSuggestionClick(suggestion);
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent input blur
-                  }}
-                  onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                >
-                  <img
-                    src={suggestion.image || ProductIcon}
-                    alt={suggestion.name}
-                    className="w-8 h-8 object-cover rounded-full flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {highlightText(suggestion.name, keyword)}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      Code: {highlightText(suggestion.code, keyword)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
         <div className="flex items-center">
           {permissionData.create_product && (
