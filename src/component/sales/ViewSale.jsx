@@ -515,11 +515,24 @@ function ViewSaleBody() {
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{new Date(sale.date).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{sale.orderStatus}</p></td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
-                                            <p className={`rounded-[5px] text-center p-[6px] ${sale.paymentStatus === 'paid' ? 'bg-green-100 text-green-500' : sale.paymentStatus === 'partial' ? 'bg-yellow-100 text-yellow-500' :
-                                                'bg-red-100 text-red-500'}`}>
-                                                {sale.paymentStatus}
+                                            <p
+                                                className={`rounded-[5px] text-center p-[6px] ${sale.paymentStatus === 'partial' && sale.grandTotal - sale.paidAmount === 0
+                                                        ? 'bg-green-100 text-green-500'
+                                                        : sale.paymentStatus === 'partial'
+                                                            ? 'bg-yellow-100 text-yellow-500'
+                                                            : sale.paymentStatus === 'paid'
+                                                                ? 'bg-green-100 text-green-500'
+                                                                : 'bg-red-100 text-red-500'
+                                                    }`}
+                                            >
+                                                {
+                                                    sale.paymentStatus === 'partial' && sale.grandTotal - sale.paidAmount === 0
+                                                        ? 'paid'
+                                                        : sale.paymentStatus
+                                                }
                                             </p>
                                         </td>
+
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
                                             <p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>
                                                 {sale.paymentType.map(pt => pt.type).join(' + ')}

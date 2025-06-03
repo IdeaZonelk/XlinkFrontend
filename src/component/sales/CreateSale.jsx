@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { handleProductSelect, handleProductSearch, handleCustomerSearch, handleCustomerSelect, handleWarehouseChange, handleVariationChange, getProductCost, getDiscount, getQty, getPriceRange, handleDelete, handleQtyChange, getTax, handleSave } from './SaleController'
 import '../../styles/role.css';
@@ -62,6 +62,26 @@ function CreateSaleBody() {
     const [decryptedUser, setDecryptedUser] = useState(null);
     const [preFix, setPreFix] = useState('');
     const [invoiceNumber, setInvoiceNumber] = useState(null);
+
+    const dropdownRef = useRef(null); // Ref for the dropdown container
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target) &&
+                e.target.id !== 'text' // Ensure the input field doesn't close the dropdown
+            ) {
+                setFilteredProducts([]); // Close dropdown
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     useEffect(() => {
         const fetchAllWarehouses = async () => {
@@ -360,8 +380,8 @@ function CreateSaleBody() {
                         </div>
                     </form>
 
-                    <div className="flex-1 mt-5 relative">
-                        {/* Input Field */}
+                    {/*Product search*/}
+                    <div className="flex-1 mt-5 relative" ref={dropdownRef}>
                         <input
                             id="text"
                             name="text"
@@ -376,7 +396,7 @@ function CreateSaleBody() {
                         />
 
                         {filteredProducts.length > 0 && (
-                            <ul className="absolute left-0 z-10 w-full  text-left bg-white border border-gray-300 rounded-md shadow-lg mt-1">
+                            <ul className="absolute left-0 z-10 w-full text-left bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
                                 {filteredProducts.map((product) => (
                                     <li
                                         key={product._id}
