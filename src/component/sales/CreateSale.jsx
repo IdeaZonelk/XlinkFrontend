@@ -381,7 +381,7 @@ function CreateSaleBody() {
                     </form>
 
                     {/*Product search*/}
-                    <div className="flex-1 mt-5 relative" ref={dropdownRef}>
+                    <div className="flex-1 mt-5 relative" ref={dropdownRef}> 
                         <input
                             id="text"
                             name="text"
