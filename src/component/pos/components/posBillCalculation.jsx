@@ -915,7 +915,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                 <td className="px-4 py-2 border text-left">{currency} {formatWithCustomCommas((price * qty))}</td>
                                             </tr>
                                         );
-                                    })}
+                                    })}  
                                 </tbody>
                             </table>
 
