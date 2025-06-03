@@ -404,14 +404,11 @@ function EditProductBody() {
     const isFormValid =
         productData.name
         && productData.code
-        && productData.brand
         && productData.category
-        && productData.supplier
         && productData.ptype
         && productData.unit
         && productData.saleUnit
         && productData.purchase
-        && productData.status
         && productData.barcode
         && selectedWarehouse.length > 0
         && (productData.ptype !== "Variation" || Object.keys(selectedVariationTypes).length > 0);
@@ -668,7 +665,6 @@ function EditProductBody() {
                                             name="quantityLimit"
                                             type="text"
                                             value={productData.quantityLimit}
-                                            required
                                             onChange={(e) => setProductData({ ...productData, quantityLimit: e.target.value })}
                                             placeholder="Quantity Limitation:"
                                             className="block w-[90%]  rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -704,7 +700,7 @@ function EditProductBody() {
                                     <div className="flex-1 mb-4 lg:mb-0">
                                         <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                                Brand <span className='text-red-500'>*</span>
+                                                Brand
                                             </label>
 
                                             <div className="relative w-full max-w-md mt-2">
@@ -859,7 +855,7 @@ function EditProductBody() {
                                     <div className="flex-1 mb-4 lg:mb-0">
                                         <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                                Supplier <span className='text-red-500'>*</span>
+                                                Supplier
                                             </label>
 
                                             <div className="relative w-full max-w-md mt-2">
@@ -917,12 +913,11 @@ function EditProductBody() {
 
                                 {/*status*/}
                                 <div className="mt-7">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Status <span className='text-red-500'>*</span></label>
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Status </label>
                                     <div className="mt-2">
                                         <select
                                             id="status"
                                             name="status"
-                                            required
                                             value={productData.status}
                                             onChange={(e) => setProductData({ ...productData, status: e.target.value })}
                                             className="block w-[90%]  rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1081,7 +1076,7 @@ function EditProductBody() {
                                                 <div className="flex flex-col space-y-5">
                                                     <div>
                                                         <label className="block text-sm text-left font-medium leading-6 text-gray-900">
-                                                            Stock Alert <span className='text-red-500'>*</span>
+                                                            Stock Alert
                                                         </label>
                                                         <input
                                                             value={warehouse.stockAlert || ''}
@@ -1338,7 +1333,7 @@ function EditProductBody() {
 
                                                                         <div className="relative w-full">
                                                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                                                                Stock Alert <span className="text-red-500">*</span>
+                                                                                Stock Alert
                                                                             </label>
                                                                             <input
                                                                                 type="number"

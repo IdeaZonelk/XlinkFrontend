@@ -30,21 +30,29 @@ function CreateCustomerBody() {
         setProgress(true); // Show loading bar
 
         try {
-            // Email validation
-            const normalizedUsername = username.toLowerCase();
-            if (!normalizedUsername.includes('@')) {
-                const errorMsg = 'Username must be a valid email address containing "@"';
-                setError(errorMsg);
-                console.error(errorMsg);
+
+             // Validate required fields
+            if (!name || !mobile) {
+                setError('Name and mobile number are required.');
+                setProgress(false);
                 return;
             }
 
-            // Mobile number validation
-            const mobileRegex = /^\+94\d{9}$/;
+
+            // Optional: Email validation if provided
+            const normalizedUsername = username?.trim().toLowerCase();
+            if (normalizedUsername && !normalizedUsername.includes('@')) {
+                setError('Email must be a valid email address containing "@".');
+                setProgress(false);
+                return;
+            }
+            
+
+            // Mobile number validation: 10 digits starting with 0 (e.g., 0712345678)
+            const mobileRegex = /^0\d{9}$/;
             if (!mobileRegex.test(mobile)) {
-                const errorMsg = 'Invalid mobile number. Format: +94xxxxxxxxx';
-                setError(errorMsg);
-                console.error(errorMsg);
+                setError('Invalid mobile number. It must start with "0" and contain exactly 10 digits.');
+                setProgress(false);
                 return;
             }
 
@@ -52,7 +60,7 @@ function CreateCustomerBody() {
             const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
             const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
     
-            if (!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
+            if (nic &&!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
                 const errorMsg = 'NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).';
                 setError(errorMsg);
                 console.error(errorMsg);
@@ -61,13 +69,13 @@ function CreateCustomerBody() {
 
             // Customer data
             const customerData = {
-                username:normalizedUsername,
-                name,
-                nic,
-                country,
-                city,
-                mobile,
-                address,
+                username: normalizedUsername || '', // optional
+                name: name.trim(),
+                nic: nic?.trim() || '',
+                mobile: mobile.trim(),
+                address: address?.trim() || '',
+                country: country?.trim() || '',
+                city: city?.trim() || ''
             };
 
             // Axios request to add user
@@ -149,73 +157,7 @@ function CreateCustomerBody() {
                     <form onSubmit={handleSubmit}>
                         <div className="flex space-x-16">
                             <div className="flex-1">
-                                {/* Username field */}
-                                <div className="mt-2">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">User Name <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        required
-                                        placeholder='sample@gmail.com'
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        autoComplete="email"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
 
-                                {/* Country field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Country <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="country"
-                                        name="country"
-                                        type="text"
-                                        required
-                                        placeholder='Sri Lanka'
-                                        value={country}
-                                        onChange={(e) => setCountry(e.target.value)}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-
-                                {/* City field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">City <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="city"
-                                        name="city"
-                                        type="text"
-                                        required
-                                        placeholder='Kandy'
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-
-                                {/* Address field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Address <span className='text-red-500'>*</span></label>
-                                    <textarea
-                                        id="address"
-                                        name="address"
-                                        type="text"
-                                        required
-                                        placeholder='No 46,Rock view Garden Thennekumbura'
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-
-                            </div>
-
-                            <div className="flex-1">
                                 {/* Name field */}
                                 <div className="mt-2">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Name <span className='text-red-500'>*</span></label>
@@ -231,25 +173,74 @@ function CreateCustomerBody() {
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
                                 </div>
-
-                                {/* Date of Birth field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC <span className='text-red-500'>*</span></label>
+                                {/* Username field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Email</label>
                                     <input
-                                        id="nic"
-                                        name="nic"
-                                        type="text"
-                                        placeholder='200123456789'
-                                        required
-                                        value={nic}
-                                        onChange={(e) => setNIC(e.target.value)}
-                                        maxLength={12}
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        placeholder='sample@gmail.com'
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        autoComplete="email"
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
-                                </div>
+                                </div> */}
 
+                                {/* Country field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Country <span className='text-red-500'>*</span></label>
+                                    <input
+                                        id="country"
+                                        name="country"
+                                        type="text"
+                                        required
+                                        placeholder='Sri Lanka'
+                                        value={country}
+                                        onChange={(e) => setCountry(e.target.value)}
+                                        autoComplete="given-name"
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+                                {/* City field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">City <span className='text-red-500'>*</span></label>
+                                    <input
+                                        id="city"
+                                        name="city"
+                                        type="text"
+                                        required
+                                        placeholder='Kandy'
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        autoComplete="given-name"
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+                                {/* Address field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Address</label>
+                                    <textarea
+                                        id="address"
+                                        name="address"
+                                        type="text"
+                                        placeholder='No 46,Rock view Garden Thennekumbura'
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        autoComplete="given-name"
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+                            </div>
+
+                            <div className="flex-1">
+                                
                                 {/* Mobile number field */}
-                                <div className="mt-5">
+                                <div className="mt-2">
                                     <label htmlFor="mobile" className="block text-sm font-medium leading-6 text-gray-900 text-left">
                                         Mobile number <span className='text-red-500'>*</span>
                                     </label>
@@ -259,7 +250,7 @@ function CreateCustomerBody() {
                                             name="mobile"
                                             type="text"
                                             required
-                                            placeholder='+94 xx xxxx xxx'
+                                            placeholder='xxx xxxx xxx'
                                             value={mobile}
                                             onChange={(e) => {
                                                 const inputValue = e.target.value;
@@ -272,11 +263,28 @@ function CreateCustomerBody() {
                                                     e.preventDefault();
                                                 }
                                             }}
-                                            maxLength={12}
+                                            maxLength={10}
                                             className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                         />
                                     </div>
                                 </div>
+
+                                {/* Date of Birth field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC</label>
+                                    <input
+                                        id="nic"
+                                        name="nic"
+                                        type="text"
+                                        placeholder='200123456789'
+                                        value={nic}
+                                        onChange={(e) => setNIC(e.target.value)}
+                                        maxLength={12}
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+                                
                             </div>
                         </div>
                         <div className="container mx-auto text-left">

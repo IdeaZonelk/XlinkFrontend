@@ -423,16 +423,12 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
     name &&
     code &&
     warehouse &&
-    brand &&
     category &&
-    supplier &&
     ptype &&
     unit &&
     saleUnit &&
     purchase &&
-    status &&
-    barcode &&
-    quantityLimit;
+    barcode;
 
   //Handle submit for save product
   const handleSubmit = async (event) => {
@@ -943,7 +939,7 @@ const handleCategoryLogoChange = async (e) => {
                   <div className="mt-4">
                     <div className="flex mb-0 items-end justify-between">
                       <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                        Brand <span className='text-red-500'>*</span>
+                        Brand
                       </label>
                       <button
                         type="button"
@@ -1030,7 +1026,7 @@ const handleCategoryLogoChange = async (e) => {
                   <div className="mt-4">
                     <div className="flex mb-0 items-end justify-between">
                       <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                        Supplier <span className='text-red-500'>*</span>
+                        Supplier
                       </label>
                       <button
                         type="button"
@@ -1170,13 +1166,12 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Status <span className='text-red-500'>*</span>
+                      Status
                     </label>
                     <div className="mt-2">
                       <select
                         id="status"
                         name="status"
-                        required
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1253,14 +1248,13 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Quantity Limitation <span className='text-red-500'>*</span>
+                      Quantity Limitation
                     </label>
                     <div className="mt-2">
                       <input
                         id="QuantityLimitation"
                         name="QuantityLimitation"
                         type="text"
-                        required
                         onChange={(e) => setQL(e.target.value)}
                         placeholder="Quantity Limitation"
                         value={quantityLimit}
@@ -1476,7 +1470,7 @@ const handleCategoryLogoChange = async (e) => {
                             />
                           </div>
                           <label className="block mt-5 text-sm font-medium leading-6 text-gray-900 text-left">
-                            Stock Alert <span className="text-red-500">*</span>
+                            Stock Alert 
                           </label>
                           <input
                             type="number"
@@ -1696,7 +1690,7 @@ const handleCategoryLogoChange = async (e) => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Stock Alert <span className="text-red-500">*</span>
+                              Stock Alert 
                             </label>
                             <input
                               type="number"
