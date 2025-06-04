@@ -219,10 +219,18 @@ function ViewSaleBody() {
             setPaymentData(response.data.payments || []);
             setError(null);
         } catch (error) {
-            console.error('Error fetching payment data:', error);
-            toast.error('Error fetching payment data!', { autoClose: 3000 });
+            if (error.response && error.response.status === 404) {
+                // "Not Found" is not an error for this use case; just clear data
+                setPaymentData([]);
+            } else {
+                // Handle other errors as before
+                console.error('Error fetching payment data:', error);
+                toast.error('Error fetching payment data!', { autoClose: 3000 });
+            }
         }
     };
+
+
 
     const handleShowPaymentPopUp = (saleId) => {
         setPaymentData([]);
@@ -343,27 +351,27 @@ function ViewSaleBody() {
 
     const handlePrintInvoice = async (saleId) => {
         try {
-          const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/printInvoice/${saleId}`);
-          if (response.data.html) {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-      
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            iframeDoc.open();
-            iframeDoc.write(response.data.html);
-            iframeDoc.close();
-      
-            setTimeout(() => {
-              iframe.contentWindow.focus();
-              iframe.contentWindow.print();
-              setTimeout(() => document.body.removeChild(iframe), 1000);
-            }, 500);
-          }
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/printInvoice/${saleId}`);
+            if (response.data.html) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(response.data.html);
+                iframeDoc.close();
+
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                }, 500);
+            }
         } catch (error) {
-          console.error("Error printing invoice:", error);
+            console.error("Error printing invoice:", error);
         }
-      };
+    };
 
     // Handle keydown events
     const handleKeyDown = (e) => {
@@ -517,12 +525,12 @@ function ViewSaleBody() {
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
                                             <p
                                                 className={`rounded-[5px] text-center p-[6px] ${sale.paymentStatus === 'partial' && sale.grandTotal - sale.paidAmount === 0
-                                                        ? 'bg-green-100 text-green-500'
-                                                        : sale.paymentStatus === 'partial'
-                                                            ? 'bg-yellow-100 text-yellow-500'
-                                                            : sale.paymentStatus === 'paid'
-                                                                ? 'bg-green-100 text-green-500'
-                                                                : 'bg-red-100 text-red-500'
+                                                    ? 'bg-green-100 text-green-500'
+                                                    : sale.paymentStatus === 'partial'
+                                                        ? 'bg-yellow-100 text-yellow-500'
+                                                        : sale.paymentStatus === 'paid'
+                                                            ? 'bg-green-100 text-green-500'
+                                                            : 'bg-red-100 text-red-500'
                                                     }`}
                                             >
                                                 {
@@ -601,13 +609,13 @@ function ViewSaleBody() {
                                                                 </Link>
                                                             )}
                                                             {permissionData.print_sale && (
-                                                            <li
-                                                                onClick={() => handlePrintInvoice(sale._id)}
-                                                                className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center"
-                                                            >
-                                                                <i className="fas fa-print mr-2 text-gray-600"></i>
-                                                                Print Invoice
-                                                            </li>
+                                                                <li
+                                                                    onClick={() => handlePrintInvoice(sale._id)}
+                                                                    className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center"
+                                                                >
+                                                                    <i className="fas fa-print mr-2 text-gray-600"></i>
+                                                                    Print Invoice
+                                                                </li>
                                                             )}
                                                         </ul>
                                                     </div>
@@ -826,13 +834,46 @@ function ViewSaleBody() {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
+                                                                {/* Show initial payment if exists */}
+                                                                {sale.paidAmount > 0 && (
+                                                                    <tr>
+                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                            {new Date(sale.date).toLocaleDateString()}
+                                                                        </td>
+                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                            {currency}{' '}{formatWithCustomCommas(sale.grandTotal)}
+                                                                        </td>
+                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                            {currency}{' '}{formatWithCustomCommas(sale.paidAmount)}
+                                                                        </td>
+                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                            {sale.paymentType.map(pt => pt.type).join(' + ')}
+                                                                        </td>
+                                                                        <td className="px-4 py-4 whitespace-nowrap text-m text-gray-900 text-right">
+                                                                            {/* Initial payment can't be deleted */}
+                                                                            <div className="flex justify-center items-center">
+                                                                                <span className="text-gray-400">Initial Payment</span>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+
+                                                                {/* Show additional payments if any */}
                                                                 {paymentData && paymentData.length > 0 ? (
                                                                     paymentData.map((pd) => (
                                                                         <tr key={pd._id}>
-                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">{new Date(pd.currentDate).toLocaleDateString()}</td>
-                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency}{' '} {sale.grandTotal}</td>
-                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency}{' '} {pd.payingAmount ? pd.payingAmount : null}</td>
-                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">{pd.paymentType}</td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                                {new Date(pd.currentDate).toLocaleDateString()}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                                {currency}{' '}{formatWithCustomCommas(sale.grandTotal)}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                                {currency}{' '}{formatWithCustomCommas(pd.payingAmount || 0)}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
+                                                                                {pd.paymentType}
+                                                                            </td>
                                                                             <td className="px-4 py-4 whitespace-nowrap text-m text-gray-900 text-right">
                                                                                 <div className="flex justify-center items-center">
                                                                                     <button
@@ -847,24 +888,48 @@ function ViewSaleBody() {
                                                                         </tr>
                                                                     ))
                                                                 ) : (
-                                                                    <tr>
-                                                                        <td colSpan="4" className="text-center py-4">
-                                                                            No payment data available.
-                                                                        </td>
-                                                                    </tr>
+                                                                    // Only show "no payment" message if there was no initial payment either
+                                                                    !sale.paidAmount > 0 && (
+                                                                        <tr>
+                                                                            <td colSpan="5" className="text-center py-4">
+                                                                                No payment data available.
+                                                                            </td>
+                                                                        </tr>
+                                                                    )
                                                                 )}
                                                             </tbody>
                                                         </table>
                                                     </div>
                                                     <div className='flex items-center'>
-                                                        <button onClick={() => handleEditClick(sale._id)} className="px-6 flex items-center submit mt-5 text-white mr-2 h-[40px] rounded-md shadow-md transition">Create Payment</button>
-                                                        <button onClick={() => setViewPayment(false)} className="px-6 py-2 bg-gray-500 mt-5 text-white rounded-md shadow-md hover:bg-gray-600 transition">Close</button>
+                                                        {(sale.grandTotal - sale.paidAmount) === 0 ? (
+                                                            <button
+                                                                onClick={() => setViewPayment(false)}
+                                                                className="px-6 py-2 bg-gray-500 mt-5 text-white rounded-md shadow-md hover:bg-gray-600 transition"
+                                                            >
+                                                                Close
+                                                            </button>
+                                                        ) : (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleEditClick(sale._id)}
+                                                                    className="px-6 flex items-center submit mt-5 text-white mr-2 h-[40px] rounded-md shadow-md transition"
+                                                                >
+                                                                    Create Payment
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setViewPayment(false)}
+                                                                    className="px-6 py-2 bg-gray-500 mt-5 text-white rounded-md shadow-md hover:bg-gray-600 transition"
+                                                                >
+                                                                    Close
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                     <ConfirmationModal
                                                         isOpen={isModalOpen}
-                                                        onClose={() => setIsModalOpen(false)}  // Close modal
-                                                        onConfirm={() => handleDelete(saleToDelete)}  // Confirm delete
-                                                        message="Are you sure you want to delete this paymemt?"
+                                                        onClose={() => setIsModalOpen(false)}
+                                                        onConfirm={() => handleDelete(saleToDelete)}
+                                                        message="Are you sure you want to delete this payment?"
                                                     />
                                                 </div>
                                             </div>
