@@ -47,6 +47,7 @@ function CreateSuplierBody() {
         if (!mobileRegex.test(mobile)) {
             setError('Invalid mobile number. Format: 0xxxxxxxxx');
             isValid = false;
+            setProgress(false);
         }
 
         // NIC validation: Ensure it is exactly 12 characters long

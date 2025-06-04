@@ -85,6 +85,10 @@ const [categoryLogoPreview, setCategoryLogoPreview] = useState(null);
 const [brandLogo, setBrandLogo] = useState(null);
 const [brandLogoPreview, setBrandLogoPreview] = useState(null);
 
+const categoryRef = useRef(null);
+const brandRef = useRef(null);
+const supplierRef = useRef(null);
+
 
   useEffect(() => {
     console.log(warehouseVariationValues)
@@ -118,6 +122,25 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
       `${process.env.REACT_APP_BASE_URL}/api/findAllVariations`, setVariationData, (data) => data.variations || []
     );
   }, []);
+
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+      setCategoryData([]);
+    }
+    if (brandRef.current && !brandRef.current.contains(e.target)) {
+      setBrandData([]);
+    }
+    if (supplierRef.current && !supplierRef.current.contains(e.target)) {
+      setSuplierData([]);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   const fetchCategories = () => {
     fetchData(
@@ -874,8 +897,9 @@ const handleCategoryLogoChange = async (e) => {
                       </button>
                     </div>
 
-                    <div className="relative w-full mt-1">
+                    <div className="relative w-full mt-1 " ref={categoryRef}>
                       <form
+                        autoComplete="off"
                         className="flex items-center"
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -883,6 +907,7 @@ const handleCategoryLogoChange = async (e) => {
                         }}
                       >
                         <input
+                          autoComplete="off"
                           onChange={handleCategoryInput}
                           onKeyDown={handleKeyDownCat}
                           id="category"
@@ -960,8 +985,9 @@ const handleCategoryLogoChange = async (e) => {
                       </button>
                     </div>
 
-                    <div className="relative w-full mt-1">
+                    <div className="relative w-full mt-1" ref={brandRef}>
                       <form
+                        autoComplete="off"
                         className="flex items-center"
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -969,6 +995,7 @@ const handleCategoryLogoChange = async (e) => {
                         }}
                       >
                         <input
+                          autoComplete="off"
                           onChange={handleBrandInput}
                           onKeyDown={handleKeyDownBrand}
                           id="brand"
@@ -1047,8 +1074,9 @@ const handleCategoryLogoChange = async (e) => {
                       </button>
                     </div>
 
-                    <div className="relative w-full mt-1">
+                    <div className="relative w-full mt-1 " ref={supplierRef}>
                       <form
+                        autoComplete="off"
                         className="flex items-center"
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -1056,6 +1084,7 @@ const handleCategoryLogoChange = async (e) => {
                         }}
                       >
                         <input
+                          autoComplete="off"
                           onChange={handleSupplierInput}
                           onKeyDown={handleKeyDownSup}
                           id="supplier"

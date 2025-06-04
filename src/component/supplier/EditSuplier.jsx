@@ -66,7 +66,7 @@ function EditSuplierBody() {
             if (!isValidMobileInput(value) || value.length !== 10) {
                 setErrors(prevErrors => ({
                     ...prevErrors,
-                    mobile: 'Invalid mobile number. Must be 12 characters long.'
+                    mobile: 'Invalid mobile number. Must be 10 characters long.'
                 }));
             } else {
                 setErrors(prevErrors => ({
