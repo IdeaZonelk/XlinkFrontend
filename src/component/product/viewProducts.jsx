@@ -46,11 +46,11 @@ function ViewProductsBody() {
   useEffect(() => {
     if (userData?.permissions) {
       console.log("UserData received in useEffect:", userData);
-  
+
       setPermissionData(extractPermissions(userData.permissions));
     }
   }, [userData]);
-  
+
 
   const fetchUnitData = async () => {
     setLoading(true);
@@ -362,13 +362,13 @@ function ViewProductsBody() {
 
   const extractPermissions = (permissions) => {
     let extractedPermissions = {};
-  
+
     Object.keys(permissions).forEach((category) => {
       Object.keys(permissions[category]).forEach((subPermission) => {
         extractedPermissions[subPermission] = permissions[category][subPermission];
       });
     });
-  
+
     return extractedPermissions;
   };
 
@@ -411,16 +411,16 @@ function ViewProductsBody() {
           </form>
         </div>
         <div className="flex items-center">
-        {permissionData.create_product && (
-          <div>
-            <Link
-              to={"/createProduct"}
-              className="submit flex-none rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-60 text-center"
-            >
-              Create Product
-            </Link>
-          </div>
-        )}
+          {permissionData.create_product && (
+            <div>
+              <Link
+                to={"/createProduct"}
+                className="submit flex-none rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-60 text-center"
+              >
+                Create Product
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -511,33 +511,33 @@ function ViewProductsBody() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                       <div className="flex items-center justify-end">
-                      {permissionData.view_product && (
-                        <button
-                          className="text-[#35AF87] hover:text-[#16796E] font-bold py-1 px-2 mr-2 text-lg"
-                          onClick={() => handleViewProduct(p)}
-                          style={{ background: "transparent" }}
-                        >
-                          <i className="fas fa-eye mr-1"></i>
-                        </button>
-                      )}
-                      {permissionData.edit_product && (
-                        <Link
-                          to={`/editProduct/${p._id}`}
-                          className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 text-lg"
-                          style={{ background: "transparent" }}
-                        >
-                          <i className="fas fa-edit mr-1"></i>
-                        </Link>
-                      )}
-                      {permissionData.delete_product && (
-                        <button
-                          onClick={() => showConfirmationModal(p._id)}
-                          className="text-red-500 hover:text-red-700 font-bold py-1 px-2 text-lg"
-                          style={{ background: "transparent" }}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      )}
+                        {permissionData.view_product && (
+                          <button
+                            className="text-[#35AF87] hover:text-[#16796E] font-bold py-1 px-2 mr-2 text-lg"
+                            onClick={() => handleViewProduct(p)}
+                            style={{ background: "transparent" }}
+                          >
+                            <i className="fas fa-eye mr-1"></i>
+                          </button>
+                        )}
+                        {permissionData.edit_product && (
+                          <Link
+                            to={`/editProduct/${p._id}`}
+                            className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 text-lg"
+                            style={{ background: "transparent" }}
+                          >
+                            <i className="fas fa-edit mr-1"></i>
+                          </Link>
+                        )}
+                        {permissionData.delete_product && (
+                          <button
+                            onClick={() => showConfirmationModal(p._id)}
+                            className="text-red-500 hover:text-red-700 font-bold py-1 px-2 text-lg"
+                            style={{ background: "transparent" }}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -612,33 +612,33 @@ function ViewProductsBody() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                     <div className="flex items-center justify-end">
-                    {permissionData.view_product && (
-                      <button
-                        className="text-[#35AF87] hover:text-[#16796E] font-bold py-1 px-2 mr-2 text-lg"
-                        onClick={() => handleViewProduct(p)}
-                        style={{ background: "transparent" }}
-                      >
-                        <i className="fas fa-eye mr-1"></i>
-                      </button>
-                    )}
-                    {permissionData.edit_product && (
-                      <Link
-                        to={`/editProduct/${p._id}`}
-                        className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 text-lg"
-                        style={{ background: "transparent" }}
-                      >
-                        <i className="fas fa-edit mr-1"></i>
-                      </Link>
-                    )}
-                    {permissionData.delete_product && (
-                      <button
-                        onClick={() => showConfirmationModal(p._id)}
-                        className="text-red-500 hover:text-red-700 font-bold py-1 px-2 text-lg"
-                        style={{ background: "transparent" }}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    )}
+                      {permissionData.view_product && (
+                        <button
+                          className="text-[#35AF87] hover:text-[#16796E] font-bold py-1 px-2 mr-2 text-lg"
+                          onClick={() => handleViewProduct(p)}
+                          style={{ background: "transparent" }}
+                        >
+                          <i className="fas fa-eye mr-1"></i>
+                        </button>
+                      )}
+                      {permissionData.edit_product && (
+                        <Link
+                          to={`/editProduct/${p._id}`}
+                          className="text-blue-500 hover:text-blue-700 font-bold py-1 px-2 mr-2 text-lg"
+                          style={{ background: "transparent" }}
+                        >
+                          <i className="fas fa-edit mr-1"></i>
+                        </Link>
+                      )}
+                      {permissionData.delete_product && (
+                        <button
+                          onClick={() => showConfirmationModal(p._id)}
+                          className="text-red-500 hover:text-red-700 font-bold py-1 px-2 text-lg"
+                          style={{ background: "transparent" }}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

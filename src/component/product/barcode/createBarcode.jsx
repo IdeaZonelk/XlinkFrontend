@@ -41,6 +41,7 @@ function CreateBarcodeBody() {
   const { currency } = useCurrency();
   const [companyName, setCompanyName] = useState('');
   const totalBarcodes = generatedBarcodeValue?.length || 0;
+  const dropdownRef = useRef(null);
 
   // Fetch warehouse data
   const fetchData = async (url, setData, transformData) => {
@@ -65,6 +66,20 @@ function CreateBarcodeBody() {
       (data) => data.warehouses || []
     );
   }, []);
+
+    // Handle clicks outside the dropdown
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setFilteredProducts([]);
+        }
+      };
+  
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, []);
 
   // Calculate price range for products with variations
   const getPriceRange = (product, selectedVariation) => {
@@ -310,7 +325,7 @@ function CreateBarcodeBody() {
               </div>
               {/* Product search */}
               <div className="mt-5">
-                <label className="block text-left  text-sm text-left  font-medium leading-6 text-gray-900">
+                <label className="block text-left text-sm text-left font-medium leading-6 text-gray-900">
                   Product name
                 </label>
                 <div className="relative flex items-center w-[350px]">
@@ -348,12 +363,13 @@ function CreateBarcodeBody() {
                     </button>
                   )}
                   {filteredProducts.length > 0 && (
-                    <ul className="absolute top-12 left-0 z-10 w-[350px] bg-white border border-gray-300 rounded-md shadow-lg">
-                      {filteredProducts.map((product) => (
+                    <ul ref={dropdownRef} className="absolute top-12 left-0 z-10 w-[350px] bg-white border border-gray-300 rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                      {filteredProducts.map((product, index) => (
                         <li
                           key={product._id}
                           onClick={() => handleProductSelect(product)}
-                          className="cursor-pointer hover:bg-gray-100 px-4 text-left py-2"
+                          className={`cursor-pointer hover:bg-gray-100 px-4 text-left py-2 ${index !== filteredProducts.length - 1 ? 'border-b border-gray-100' : ''
+                            }`}
                         >
                           {product.name}
                         </li>
