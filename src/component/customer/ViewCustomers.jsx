@@ -339,7 +339,7 @@ function ViewCustomersBody() {
                     <table className="min-w-full bg-white border border-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th> */}
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created on</th>
@@ -349,10 +349,10 @@ function ViewCustomersBody() {
                         <tbody className="bg-white divide-y divide-gray-200">
                         {searchedCustomer.map((searchedCustomer) => (
                             <tr key={searchedCustomer._id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">{searchedCustomer.username}</td>
+                                {/* <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">{searchedCustomer.username}</td> */}
                                 <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">{searchedCustomer.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">{searchedCustomer.mobile}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-right justify-end">{new Date(searchedCustomer.createdAt).toLocaleDateString()}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left ">{new Date(searchedCustomer.createdAt).toLocaleDateString()}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 justify-end">
                                     <div className='flex items-center'>
                                         {permissionData.edit_customer && (

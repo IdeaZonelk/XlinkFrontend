@@ -31,83 +31,87 @@ function CreateProductCategoryBody() {
     const navigate = useNavigate();
 
     const handleLogoChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) {
-            setError("No file selected.");
-            return;
-        }
+    const file = e.target.files[0];
+    if (!file) {
+        setError("No file selected.");
+        return;
+    }
 
-        // Check file type (strictly allow only JPG files)
-        if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
-            setError("Only JPG files are allowed. Please upload a valid JPG file.");
-            alert("Only JPG files are allowed. Please upload a valid JPG file.");
-            inputRef.current.value = ""; // Clear the input field
-            return;
-        }
+    // Allow JPG and PNG formats
+    const validTypes = ["image/jpeg", "image/png"];
+    const validExtensions = [".jpg", ".jpeg", ".png"];
+    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
 
-        // Check file size (max 4MB)
-        const maxFileSizeMB = 4;
-        if (file.size / 1024 / 1024 > maxFileSizeMB) {
-            setError(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-            alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-            inputRef.current.value = ""; // Clear the input field
-            return;
-        }
-        // Compression 
-        const options = {
-            maxSizeMB: 0.02, // Target size (20KB in MB)
-            maxWidthOrHeight: 800, // Reduce dimensions to help with compression
-            useWebWorker: true, // Enable Web Worker for efficiency
-        };
+    if (!validTypes.includes(file.type) || !validExtensions.includes(fileExtension)) {
+        setError("Only JPG and PNG files are allowed. Please upload a valid image.");
+        alert("Only JPG and PNG files are allowed. Please upload a valid image.");
+        inputRef.current.value = "";
+        return;
+    }
 
-        try {
-            // Convert file to data URL to validate dimensions
-            const image = await imageCompression.getDataUrlFromFile(file);
-            const img = new Image();
-            img.src = image;
+    // Check file size (max 4MB)
+    const maxFileSizeMB = 4;
+    if (file.size / 1024 / 1024 > maxFileSizeMB) {
+        setError(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+        alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+        inputRef.current.value = "";
+        return;
+    }
 
-            // Check image aspect ratio (1:1 within 100px tolerance)
-            await new Promise((resolve, reject) => {
-                img.onload = () => {
-                    const width = img.width;
-                    const height = img.height;
-                    const tolerance = 100; // Allow 100px variance
-
-                    if (Math.abs(width - height) > tolerance) {
-                        setError("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        inputRef.current.value = ""; // Clear the input field
-                        reject();
-                    } else {
-                        resolve();
-                    }
-                };
-                img.onerror = () => {
-                    setError("Error loading image. Please try again.");
-                    inputRef.current.value = ""; // Clear the input field
-                    reject();
-                };
-            });
-
-            // Display the preview of the original image immediately
-            const originalPreviewUrl = URL.createObjectURL(file);
-            setLogoPreview(originalPreviewUrl);
-
-            // Compress the image asynchronously
-            const compressedBlob = await imageCompression(file, options);
-            // Convert compressed Blob to File with .jpg extension
-            const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-                type: "image/jpeg",
-            });
-
-            // Update state with the compressed image and its preview
-            setLogo(compressedFile);
-            setError("");
-        } catch (error) {
-            console.error("Compression Error:", error);
-            setError("Error during image processing. Please try again.");
-        }
+    // Compression options
+    const options = {
+        maxSizeMB: 0.02,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
     };
+
+    try {
+        const image = await imageCompression.getDataUrlFromFile(file);
+        const img = new Image();
+        img.src = image;
+
+        await new Promise((resolve, reject) => {
+            img.onload = () => {
+                const width = img.width;
+                const height = img.height;
+                const tolerance = 100;
+
+                if (Math.abs(width - height) > tolerance) {
+                    setError("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+                    alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+                    inputRef.current.value = "";
+                    reject();
+                } else {
+                    resolve();
+                }
+            };
+            img.onerror = () => {
+                setError("Error loading image. Please try again.");
+                inputRef.current.value = "";
+                reject();
+            };
+        });
+
+        // Show preview
+        const originalPreviewUrl = URL.createObjectURL(file);
+        setLogoPreview(originalPreviewUrl);
+
+        // Compress and convert to .jpg
+        const compressedBlob = await imageCompression(file, options);
+        const compressedFile = new File(
+            [compressedBlob],
+            file.name.replace(/\.[^/.]+$/, ".jpg"),
+            { type: "image/jpeg" }
+        );
+
+        setLogo(compressedFile);
+        setError("");
+    } catch (error) {
+        console.error("Compression Error:", error);
+        setError("Error during image processing. Please try again.");
+    }
+};
+
 
     const handleSubmit = (event) => {
         event.preventDefault();

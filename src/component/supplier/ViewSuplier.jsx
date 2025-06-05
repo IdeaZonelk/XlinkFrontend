@@ -373,9 +373,9 @@ function ViewSuplierBody() {
           <table className="min-w-full bg-white border border-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Username
-                </th>
+                </th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Supplier name
                 </th>
@@ -393,9 +393,9 @@ function ViewSuplierBody() {
             <tbody className="bg-white divide-y divide-gray-200">
               {searchedSuplier.map((searchedSuplier) => (
                 <tr key={searchedSuplier._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">
                     {searchedSuplier.username}
-                  </td>
+                  </td> */}
                   <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">
                     {searchedSuplier.name}
                   </td>
@@ -437,9 +437,9 @@ function ViewSuplierBody() {
           <table className="min-w-full bg-white border border-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Username
-                </th>
+                </th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Supplier name
                 </th>
@@ -457,9 +457,9 @@ function ViewSuplierBody() {
             <tbody className="bg-white divide-y divide-gray-200">
               {suplierData.map((suplier) => (
                 <tr key={suplier._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">
                     {suplier.username}
-                  </td>
+                  </td> */}
                   <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900 text-left">
                     {suplier.name}
                   </td>
