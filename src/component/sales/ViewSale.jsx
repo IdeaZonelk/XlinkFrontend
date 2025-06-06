@@ -835,28 +835,30 @@ function ViewSaleBody() {
                                                             </thead>
                                                             <tbody>
                                                                 {/* Show initial payment if exists */}
-                                                                {sale.paidAmount > 0 && (
-                                                                    <tr>
-                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
-                                                                            {new Date(sale.date).toLocaleDateString()}
-                                                                        </td>
-                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
-                                                                            {currency}{' '}{formatWithCustomCommas(sale.grandTotal)}
-                                                                        </td>
-                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
-                                                                            {currency}{' '}{formatWithCustomCommas(sale.paidAmount)}
-                                                                        </td>
-                                                                        <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-900">
-                                                                            {sale.paymentType.map(pt => pt.type).join(' + ')}
-                                                                        </td>
-                                                                        <td className="px-4 py-4 whitespace-nowrap text-m text-gray-900 text-right">
-                                                                            {/* Initial payment can't be deleted */}
-                                                                            <div className="flex justify-center items-center">
-                                                                                <span className="text-gray-400">Initial Payment</span>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
+                                                                {sale.paidAmount > 0 && (() => {
+                                                                    const totalPartialPayments = paymentData.reduce((sum, pd) => sum + (parseFloat(pd.payingAmount) || 0), 0);
+                                                                    const initialPayment = sale.paidAmount - totalPartialPayments;
+                                                                    return (
+                                                                        <tr>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-500">
+                                                                                {new Date(sale.date).toLocaleDateString()}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-500">
+                                                                                {currency}{' '}{formatWithCustomCommas(sale.grandTotal)}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-500">
+                                                                                {currency}{' '}{formatWithCustomCommas(initialPayment)}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-500">
+                                                                                {sale.paymentType.map(pt => pt.type).join(' + ')}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 whitespace-nowrap text-left text-m text-gray-500">
+                                                                                Initial Payment
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })()}
+
 
                                                                 {/* Show additional payments if any */}
                                                                 {paymentData && paymentData.length > 0 ? (
