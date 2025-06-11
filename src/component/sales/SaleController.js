@@ -381,7 +381,7 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false, shouldPrintKOT = false ) => {
+export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , shouldPrintKOT = false  ) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
@@ -477,11 +477,18 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         const currentID = product._id;
         const ptype = product.ptype;
         const variationValue = product.selectedVariation;
-        const price = product.price || getPriceRange(product, product.selectedVariation);
+
+        const quantity = product.barcodeQty || 1;
+        const wholesaleEnabled = product.wholesaleEnabled || false;
+        const wholesaleMinQty = product.wholesaleMinQty || 0;
+        const wholesalePrice = product.wholesalePrice || 0;
+
+        const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
+        const price = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
+
         const productCost = product.producrCost || getProductCost(product, product.selectedVariation);
         const discount = product.discount || getDiscount(product, product.selectedVariation);
         const specialDiscount = product.specialDiscount || 0;
-        const quantity = product.barcodeQty || 1;
         const stockQty = product.productQty - quantity;
         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
         const subtotal = ((price - discount - specialDiscount) * quantity) + ((price) * quantity * taxRate);
@@ -502,6 +509,10 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
             subtotal,
             productProfit,
             warehouse: warehouseId,
+            wholesaleEnabled,
+            wholesaleMinQty,
+            wholesalePrice,
+            wholesaleApplied: appliedWholesale
         };
     });
 
@@ -512,6 +523,7 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         tax,
         discountType: discountType || 'fixed',
         discount,
+        discountValue,
         shipping,
         paymentStatus,
         paymentType: paymentTypesArray,
