@@ -520,17 +520,24 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         return productBillingHandling
             .filter(product => product.ptype !== 'Base')
             .map(product => {
-                const discount = product.discount || 0;
-                const price = getApplicablePrice(product);
-                const tax = product.tax || 0;
-                const subTotal = (((price - discount) * product.qty) + ((price - discount) * product.qty * (tax) / 100)).toFixed(2);
+
+                const isVariation = product.ptype === 'Variation';
+                const selectedVariation = product.selectedVariation;
+                const variationData = isVariation ? product.variationValues?.[selectedVariation] || {} : {};
+
+                const discount = isVariation ? variationData.discount || 0 : product.discount || 0;
+                const tax = isVariation ? variationData.orderTax || 0 : product.tax || 0;
+                
+                const applicablePrice = getApplicablePrice(product);
+                const subTotal = (((applicablePrice - discount) * product.qty) + ((applicablePrice - discount) * product.qty * (tax) / 100)).toFixed(2);
 
                 let wholesaleEnabled = false;
                 let wholesaleMinQty = 0;
                 let wholesalePrice = 0;
 
+
+
                 if (product.ptype === 'Variation') {
-                    const variationData = product.variationValues?.[product.selectedVariation] || {};
                     wholesaleEnabled = variationData.wholesaleEnabled || false;
                     wholesaleMinQty = variationData.wholesaleMinQty || 0;
                     wholesalePrice = variationData.wholesalePrice || 0;

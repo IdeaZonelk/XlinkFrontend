@@ -210,6 +210,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
 
             const result = await handleSave(
                 calculateTotalPrice(),
+                baseTotal,
                 profit,
                 "ordered",
                 'paid',
@@ -235,7 +236,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 handlePrintAndClose,
                 shouldPrint,
                 discountValue,
-                baseTotal,
+                
             );
             console.log("type of setProgress", setProgress);
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
