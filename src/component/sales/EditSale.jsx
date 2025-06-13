@@ -1,14 +1,3 @@
-/*
- * Copyright (c) 2025 Ideazone (Pvt) Ltd
- * Proprietary and Confidential
- *
- * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
- * Use of this code is governed by a license agreement and an NDA.
- * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
- *
- * Contact info@ideazone.lk for more information.
- */
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { handleCustomerSelect, handleWarehouseChange, handleUpdateSale, handleProductSearch } from './SaleController'
@@ -58,8 +47,6 @@ function EditSaleBody() {
         const findSaleById = async () => {
             try {
                 setProgress(true);
-                console.log("Fetching sale by ID:", id);
-
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findSaleById/${id}`);
                 const fetchedProductsQty = Array.isArray(response.data?.productsData) ? response.data.productsData : [];
                 const initializedProductsQty = fetchedProductsQty.map(pq => ({
@@ -149,10 +136,93 @@ function EditSaleBody() {
         return product.discount || 0;
     };
 
+
+    const getApplicablePrice = (product) => {
+
+        console.log('getApplicablePrice called with product:💚💚💚💚💚💚💚 ', product);
+        const qty = product.quantity || 0;
+
+        if (product.ptype === 'Variation') {
+            const variation = product.variationValues?.[product.selectedVariation];
+            if (!variation) return product.productPrice || 0;
+
+            const hasWholesale = variation.wholesaleEnabled === true;
+            const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+
+            if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                return wholesalePrice;
+            }
+
+            return parseFloat(variation.productPrice || 0);
+        } else {
+            const hasWholesale = product.wholesaleEnabled === true;
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                return wholesalePrice;
+            }
+
+            return parseFloat(product.productPrice ?? product.price ?? 0);
+        }
+    };
+
+   const calculateBaseTotal = () => {
+        return saleReturProductData.reduce((acc, product) => {
+            const price = getApplicablePrice(product);
+            const quantity = product.quantity || 1;
+            const taxRate = product.taxRate || getTax(product, product.selectedVariation);
+            const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
+            const specialDiscount = product.specialDiscount || 0;
+            const discountedPrice = price - discount - specialDiscount;
+
+            const taxableAmount = price * quantity;
+            const taxAmount = taxableAmount * taxRate;
+
+            return acc + (discountedPrice * quantity) + taxAmount;
+        }, 0);
+    }
+
     // Update the calculateTotal function
     const calculateTotal = () => {
+        const newSubtotal =  calculateBaseTotal();
+
+        const newDiscountAmount = discountType === 'percentage'
+            ? (newSubtotal * (saleProduct.discount / 100))
+            : saleProduct.discount || 0;
+
+        const offerPercentage = parseFloat(saleProduct.offerPercentage) || 0;
+        const offerDiscountAmount = newSubtotal * (offerPercentage / 100);
+
+        // Calculate shipping and tax
+        const newShipping = parseFloat(saleProduct.shipping) || 0;
+        const overallTaxRate = saleProduct.tax ? parseFloat(saleProduct.tax) / 100 : 0;
+        const newTaxAmount = (newSubtotal) * overallTaxRate;
+
+        // Calculate final total
+        const newTotal = (newSubtotal - newDiscountAmount - offerDiscountAmount) + newTaxAmount + newShipping;
+        setTotal(newTotal.toFixed(2));
+        return newTotal;
+    };
+
+    const calculateProfitOfSale = () => {
+        const profitTotal = saleReturProductData.reduce((totalProfit, product) => {
+            const price = getApplicablePrice(product);
+            const productCost = product.productCost || (getProductCost(product, product.selectedVariation));
+            const productQty = product.quantity || 1;
+            const discount = Number(getDiscount(product, product.selectedVariation));
+            const specialDiscount = product.specialDiscount || 0;
+            const discountedPrice = price - discount - specialDiscount;
+
+            const totalProductCost = (productCost * productQty);
+            const subTotal = (discountedPrice * productQty);
+            const profitOfProduct = subTotal - totalProductCost;
+            return totalProfit + profitOfProduct;
+        }, 0);
+
         const newSubtotal = saleReturProductData.reduce((acc, product) => {
-            const price = product.price || product.productPrice || getPriceRange(product, product.selectedVariation) || 0;
+            const price = getApplicablePrice(product);
             const quantity = product.quantity || 1;
             const taxRate = product.taxRate || getTax(product, product.selectedVariation);
             const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
@@ -167,72 +237,40 @@ function EditSaleBody() {
 
             return acc + productSubtotal;
         }, 0);
-
-        const newDiscountAmount = discountType === 'percentage'
-            ? (newSubtotal * (saleProduct.discount / 100))
-            : saleProduct.discount || 0;
-
-        const offerPercentage = parseFloat(saleProduct.offerPercentage) || 0;
-        const offerDiscountAmount = newSubtotal * (offerPercentage / 100);
-
-        // Calculate shipping and tax
-        const newShipping = parseFloat(saleProduct.shipping) || 0;
-        const overallTaxRate = saleProduct.tax ? parseFloat(saleProduct.tax) / 100 : 0;
-        const newTaxAmount = (newSubtotal - newDiscountAmount - offerDiscountAmount) * overallTaxRate;
-
-        // Calculate final total
-        const newTotal = (newSubtotal - newDiscountAmount - offerDiscountAmount) + newTaxAmount + newShipping;
-        setTotal(newTotal.toFixed(2));
-        return newTotal;
-    };
-
-    const calculateProfitOfSale = () => {
-        const profitTotal = saleReturProductData.reduce((totalProfit, product) => {
-            const productPrice = product.price || product.productPrice || getPriceRange(product, product.selectedVariation) || 0;
-            const productCost = product.productCost || (getProductCost(product, product.selectedVariation));
-            const productQty = product.quantity || 1;
-            const discount = Number(getDiscount(product, product.selectedVariation));
-            const specialDiscount = product.specialDiscount || 0;
-            const discountedPrice = productPrice - discount - specialDiscount;
-
-            const totalProductCost = (productCost * productQty);
-            const subTotal = (discountedPrice * productQty);
-            const profitOfProduct = subTotal - totalProductCost;
-            return totalProfit + profitOfProduct;
-        }, 0);
+        
 
         let discountValue = 0;
         if (discountType === 'fixed') {
             discountValue = Number(saleProduct.discount);
         } else if (discountType === 'percentage') {
-            discountValue = (profitTotal * Number(saleProduct.discount)) / 100;
+            discountValue = (newSubtotal * Number(saleProduct.discount)) / 100;
         }
         const offerPercentage = parseFloat(saleProduct.offerPercentage) || 0;
-        const offerDiscountValue = (profitTotal * offerPercentage) / 100;
+        const offerDiscountValue = (newSubtotal * offerPercentage) / 100;
         const pureProfit = profitTotal - discountValue - offerDiscountValue;
 
         return pureProfit;
     };
 
-    useEffect(() => {
-        setSaleReturProductData(prevProducts =>
-            prevProducts.map(product => {
-                const price = product.price || getPriceRange(product, product.selectedVariation);
-                const quantity = product.quantity || 1;
-                const taxRate = product.taxRate * 100
-                    ? product.taxRate
-                    : getTax(product, product.selectedVariation);
-                const discount = getDiscount(product, product.selectedVariation);
-                const specialDiscount = product.specialDiscount || 0;
-                const discountedPrice = price - discount - specialDiscount;
-                const newSubtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
-                return {
-                    ...product,
-                    subtotal: newSubtotal.toFixed(2),
-                };
-            })
-        );
-    }, [saleReturProductData]);
+    // useEffect(() => {
+    //     setSaleReturProductData(prevProducts =>
+    //         prevProducts.map(product => {
+    //             const price = product.price || getPriceRange(product, product.selectedVariation);
+    //             const quantity = product.quantity || 1;
+    //             const taxRate = product.taxRate * 100
+    //                 ? product.taxRate
+    //                 : getTax(product, product.selectedVariation);
+    //             const discount = getDiscount(product, product.selectedVariation);
+    //             const specialDiscount = product.specialDiscount || 0;
+    //             const discountedPrice = price - discount - specialDiscount;
+    //             const newSubtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
+    //             return {
+    //                 ...product,
+    //                 subtotal: newSubtotal.toFixed(2),
+    //             };
+    //         })
+    //     );
+    // }, [saleReturProductData]);
 
     const handleUpdateClick = () => {
         // Ensure saleReturProductData is an array and has items
@@ -252,6 +290,7 @@ function EditSaleBody() {
         handleUpdateSale(
             id, 
             total, 
+            calculateBaseTotal().toFixed(2),
             calculateProfitOfSale().toFixed(2),
             saleProduct.orderStatus || 'pending', 
             saleProduct.paymentStatus || 'partial', 
@@ -299,10 +338,10 @@ function EditSaleBody() {
                 }
 
                 // Get product values
-                const price = item.productPrice || getPriceRange(item, item.selectedVariation) || 0;
+                const price = getApplicablePrice({ ...item, quantity: newQty });
                 const taxRate = item.source === 'frontend'
-                    ? (item.orderTax / 100) || (getTax(item, item.selectedVariation) / 100)
-                    : item.orderTax || getTax(item, item.selectedVariation);
+                    ? (item.taxRate) || (getTax(item, item.selectedVariation))
+                    : item.taxRate|| getTax(item, item.selectedVariation);
                 const discount = item.discount || getDiscount(item, item.selectedVariation) || 0;
                 const specialDiscount = item.specialDiscount || 0;
 
@@ -368,6 +407,7 @@ function EditSaleBody() {
                         quantity: adjustedQty,
                         discount: discount,
                         subtotal: newSubtotal.toFixed(2),
+                        taxRate: taxRate,
                     };
                 }
                 return product;
@@ -404,14 +444,11 @@ function EditSaleBody() {
     };
 
     useEffect(() => {
-        if (saleProduct && saleProduct.discountType) {
+        if (saleProduct?.discountType) {
             setDiscountType(saleProduct.discountType);
-            setSaleProduct((prevSaleProduct) => ({
-                ...prevSaleProduct,
-                discountType: saleProduct.discountType,
-            }));
         }
-    }, [saleProduct]);
+   }, [saleProduct?.discountType]);
+
 
     const handleDiscountType = (e) => {
         const value = e.target.value;
@@ -476,12 +513,25 @@ function EditSaleBody() {
 
     // Updated handleProductSelect to properly initialize tax for frontend products
     const handleProductSelect = (product) => {
+        
+        if (product.ptype === 'Variation' && !product.selectedVariation) {
+        const variations = Object.keys(product.variationValues || {});
+        if (variations.length > 0) {
+            product.selectedVariation = variations[0]; // assign the first variation
+        } else {
+            toast.error('No available variations found for this product.');
+            return;
+        }
+    }
         setSaleReturProductData((prevProducts) => {
             // Check for duplicate products
-            const isDuplicate = prevProducts.some(p =>
-                p._id === product._id &&
-                (!product.selectedVariation || p.selectedVariation === product.selectedVariation)
-            );
+            const isDuplicate = prevProducts.some(p => {
+                if (product.ptype === 'Variation') {
+                    return p._id === product._id && p.selectedVariation === product.selectedVariation;
+                } else {
+                    return p._id === product._id;
+                }
+            });
 
             if (isDuplicate) {
                 toast.error('This product is already added');
@@ -489,8 +539,9 @@ function EditSaleBody() {
             }
 
             // Initialize values
-            const price = product.productPrice || getPriceRange(product, product.selectedVariation) || 0;
-            const taxValue = product.orderTax / 100 || 0;
+            const price = getApplicablePrice(product);
+            const taxValue = product.orderTax / 100 || getTax(product, product.selectedVariation);
+            const orderTax = product.orderTax || getTax(product, product.selectedVariation) * 100 || 0;
             const discount = getDiscount(product, product.selectedVariation);
             const stockQty = getQty(product, product.selectedVariation);
 
@@ -507,7 +558,7 @@ function EditSaleBody() {
                 productCost: getProductCost(product, product.selectedVariation) || 0,
                 stockQty: stockQty,
                 taxRate: taxValue,
-                orderTax: taxValue,
+                orderTax: orderTax,
                 discount: discount,
                 specialDiscount: product.specialDiscount || 0,
                 variationValues: product.variationValues || {},
@@ -526,13 +577,11 @@ function EditSaleBody() {
 
     // Helper function to calculate product subtotal
     const calculateProductSubtotal = (product, variation, quantity = 1) => {
-        const price = variation && product.variationValues?.[variation]?.productPrice
-            ? product.variationValues[variation].productPrice
-            : product.productPrice || 0;
+        const price = getApplicablePrice(product);
 
         const taxRate = product.source === 'frontend'
-            ? (product.orderTax / 100 || getTax(product, variation) / 100)
-            : (product.orderTax || getTax(product, variation));
+            ? (product.orderTax / 100 || getTax(product, variation))
+            : (product.orderTax / 100 || getTax(product, variation));
 
         const discount = product.discount || getDiscount(product, variation) || 0;
         const specialDiscount = product.specialDiscount || 0;
@@ -590,6 +639,13 @@ function EditSaleBody() {
         });
         toast.success('Sale deleted successfully!', { autoClose: 2000 }, { className: "custom-toast" });
     };
+
+    useEffect(() => {
+        if (saleReturProductData.length > 0) {
+            calculateTotal();
+        }
+    }, [saleReturProductData, discountType, saleProduct.discount, saleProduct.tax, saleProduct.shipping, saleProduct.offerPercentage]);
+
 
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh] p-5 pb-10'>
@@ -734,8 +790,30 @@ function EditSaleBody() {
                                     {saleReturProductData.map((product, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const qty = product.quantity || 0;
+                                                        const isVariation = product.ptype === 'Variation';
+                                                        const variation = isVariation ? product.variationValues?.[product.selectedVariation] : null;
+
+                                                        const hasWholesale = isVariation
+                                                            ? variation?.wholesaleEnabled && qty >= (variation?.wholesaleMinQty || 0)
+                                                            : product.wholesaleEnabled && qty >= (product.wholesaleMinQty || 0);
+
+                                                        if (hasWholesale) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+
+                                                        return null;
+                                                    })()}
+                                                </div>
                                             </td>
+
 
                                             <td className="px-6 py-4  text-left whitespace-nowrap text-sm ">
                                                 <p className="rounded-[5px] text-center p-[6px] bg-green-100 text-green-500">
@@ -771,7 +849,7 @@ function EditSaleBody() {
 
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {formatWithCustomCommas(product.price || getPriceRange(product, product.selectedVariation))}
+                                                {currency} {formatWithCustomCommas(getApplicablePrice(product))}
                                             </td>
 
                                             {/* Subtotal */}

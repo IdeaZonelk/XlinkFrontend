@@ -377,8 +377,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     
         const taxAmount = (total * (parseFloat(tax) || 0) / 100);
         const shippingCost = parseFloat(shipping) || 0;
-        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);
-    
+        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
         total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost;
     
         return isNaN(total) ? "0.00" : total.toFixed(2);
@@ -679,12 +678,40 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                                                 {/* Product Price */}
                                                 <td className="px-4 py-2 text-sm text-gray-600 text-left">
-                                                    {currency} {formatWithCustomCommas(getApplicablePrice(product))}
+                                                    {(() => {
+                                                        const qty = product.qty || 0;
+                                                        const isVariation = !!product.selectedVariation;
+                                                        const variationData = isVariation ? product.variationValues?.[product.selectedVariation] : null;
+
+                                                        const hasWholesale = isVariation
+                                                            ? variationData?.wholesaleEnabled && qty >= variationData?.wholesaleMinQty
+                                                            : product.wholesaleEnabled && qty >= product.wholesaleMinQty;
+
+                                                        const originalPrice = isVariation
+                                                            ? parseFloat(variationData?.productPrice || product.price || 0)
+                                                            : parseFloat(product.productPrice || product.price || 0);
+
+                                                        const wholesalePrice = getApplicablePrice(product);
+
+                                                        return (
+                                                            <div className="flex flex-col">
+                                                                {hasWholesale && originalPrice > wholesalePrice && (
+                                                                    <span className="text-[11px] h-[12px] text-red-500 line-through">
+                                                                         {formatWithCustomCommas(originalPrice)}
+                                                                    </span>
+                                                                )}
+                                                                <span>
+                                                                     {formatWithCustomCommas(wholesalePrice)}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </td>
+
 
                                                 {/* Total Price = price * qty */}
                                                 <td className="px-4 py-2 text-sm text-gray-600 text-left">
-                                                    {currency} {formatWithCustomCommas(getRowSubtotal(product))}
+                                                     {formatWithCustomCommas(getRowSubtotal(product))}
                                                 </td>
 
                                                 {/* Delete Button */}
@@ -960,6 +987,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         discount={discount}
                         discountValue={calculateDiscountAmount(calculateBaseTotal())}
                         productDetails={productDetailsForPrinting}
+                        baseTotal={calculateBaseTotal()}
                         handleBillReset={handleBillReset}
                         setSelectedCategoryProducts={setSelectedCategoryProducts}
                         setSelectedBrandProducts={setSelectedBrandProducts}

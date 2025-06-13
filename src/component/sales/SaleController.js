@@ -381,7 +381,7 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , shouldPrintKOT = false  ) => {
+export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , baseTotal, shouldPrintKOT = false  ) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
@@ -484,15 +484,17 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         const wholesalePrice = product.wholesalePrice || 0;
 
         const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
-        const price = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
+        const applicablePrice = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
+
+        const price = product.price || getPriceRange(product, product.selectedVariation);
 
         const productCost = product.producrCost || getProductCost(product, product.selectedVariation);
         const discount = product.discount || getDiscount(product, product.selectedVariation);
         const specialDiscount = product.specialDiscount || 0;
         const stockQty = product.productQty - quantity;
         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-        const subtotal = ((price - discount - specialDiscount) * quantity) + ((price) * quantity * taxRate);
-        const productProfit = (((price - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
+        const subtotal = ((applicablePrice - discount - specialDiscount) * quantity) + ((applicablePrice) * quantity * taxRate);
+        const productProfit = (((applicablePrice - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
         const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
 
         return {
@@ -500,6 +502,8 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
             ptype,
             variationValue: variationValue || 'No variations',
             name: product.name,
+            appliedWholesale,
+            applicablePrice,
             price,
             discount,
             specialDiscount,
@@ -529,6 +533,7 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         paymentType: paymentTypesArray,
         orderStatus: orderStatus || 'ordered',
         paidAmount,
+        baseTotal,
         grandTotal: totalAmount,
         pureProfit: profitAmount,
         cashierUsername: cashierUsername || 'Unknown',
@@ -627,7 +632,7 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
 
 //HANDLE UPDATE SALE
 export const handleUpdateSale = async (
-    id, grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
+    id, grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
     discountType, discount, tax, warehouse, selectedCustomer,
     productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate
 ) => {
@@ -716,6 +721,7 @@ export const handleUpdateSale = async (
         orderStatus,
         paidAmount,
         pureProfit: profitAmount,
+        baseTotal,
         grandTotal: totalAmount,
         cashierUsername: cashierUsername ? cashierUsername : 'unknown',
         offerPercentage
@@ -726,14 +732,24 @@ export const handleUpdateSale = async (
         const currentID = product.currentID ? product.currentID : product._id;
         const ptype = product.ptype;
         const variationValue = product.variationValue ? product.variationValue : product.selectedVariation;
-        const price = product.productPrice ? product.productPrice : product.price || getPriceRange(product, product.selectedVariation);
-        const productCost = product.producrCost ? product.producrCost : getProductCost(product, product.selectedVariation);
         const quantity = product.quantity || 1;
+
+        const price = product.productPrice ? product.productPrice : product.price || getPriceRange(product, product.selectedVariation);
+
+        const wholesaleEnabled = product.wholesaleEnabled || false;
+        const wholesaleMinQty = product.wholesaleMinQty || 0;
+        const wholesalePrice = product.wholesalePrice || 0;
+
+        const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
+        const applicablePrice = appliedWholesale ? wholesalePrice : price;
+
+        const productCost = product.producrCost ? product.producrCost : getProductCost(product, product.selectedVariation);
+        
         const discount = getDiscount(product, product.selectedVariation) || 0;
         const specialDiscount = product.specialDiscount || 0;
         const taxRate = product.taxRate ? product.taxRate : product.taxRate ? product.taxRate : getTax(product, product.selectedVariation) / 100;
-        const subtotal = ((price - discount - specialDiscount) * quantity) + ((price) * quantity * taxRate);
-        const productProfit = (((price - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
+        const subtotal = ((applicablePrice - discount - specialDiscount) * quantity) + ((applicablePrice) * quantity * taxRate);
+        const productProfit = (((applicablePrice - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
         const warehouse = product.warehouse || null;
 
         return {
@@ -741,6 +757,8 @@ export const handleUpdateSale = async (
             ptype,
             variationValue: variationValue ? variationValue : 'No variations',
             name: product.name,
+            appliedWholesale,
+            applicablePrice,
             price,
             productProfit,
             quantity,
@@ -749,6 +767,9 @@ export const handleUpdateSale = async (
             taxRate,
             subtotal,
             warehouse,
+            wholesaleEnabled,
+            wholesaleMinQty,
+            wholesalePrice,
         };
     });
 
