@@ -138,8 +138,6 @@ function EditSaleBody() {
 
 
     const getApplicablePrice = (product) => {
-
-        console.log('getApplicablePrice called with product:💚💚💚💚💚💚💚 ', product);
         const qty = product.quantity || 0;
 
         if (product.ptype === 'Variation') {
@@ -206,6 +204,17 @@ function EditSaleBody() {
         return newTotal;
     };
 
+    const calculateTaxLessTotal = () => {
+        return saleReturProductData.reduce((acc, product) => {
+            const price = getApplicablePrice(product);
+            const quantity = product.quantity || 1;
+            const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
+            const specialDiscount = product.specialDiscount || 0;
+            const discountedPrice = price - discount - specialDiscount;
+            return acc + (discountedPrice * quantity);
+        }, 0);
+    };
+
     const calculateProfitOfSale = () => {
         const profitTotal = saleReturProductData.reduce((totalProfit, product) => {
             const price = getApplicablePrice(product);
@@ -221,24 +230,7 @@ function EditSaleBody() {
             return totalProfit + profitOfProduct;
         }, 0);
 
-        const newSubtotal = saleReturProductData.reduce((acc, product) => {
-            const price = getApplicablePrice(product);
-            const quantity = product.quantity || 1;
-            const taxRate = product.taxRate || getTax(product, product.selectedVariation);
-            const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
-            const specialDiscount = product.specialDiscount || 0;
-            const discountedPrice = price - discount - specialDiscount;
-
-            const taxableAmount = price * quantity;
-
-            const taxAmount = taxableAmount * taxRate;
-
-            const productSubtotal = (discountedPrice * quantity) + taxAmount;
-
-            return acc + productSubtotal;
-        }, 0);
-        
-
+        const newSubtotal = calculateTaxLessTotal();
         let discountValue = 0;
         if (discountType === 'fixed') {
             discountValue = Number(saleProduct.discount);

@@ -168,6 +168,21 @@ function CreateSaleBody() {
         return grandTotal;
     };
 
+    const calculateTaxLessTotal = () => {
+        let subtotal = selectedProduct.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.barcodeQty || 1;
+            const discount = Number(getDiscount(product, product.selectedVariation));
+
+            const discountedPrice = productPrice - discount
+
+            const subTotal = (discountedPrice * productQty);
+            return total + subTotal;
+
+        }, 0);
+        const total = subtotal;
+        return isNaN(total) ? 0 : total;
+    };
 
     const calculateProfitOfSale = () => {
         const profitTotal = selectedProduct.reduce((totalProfit, product) => {
@@ -184,11 +199,12 @@ function CreateSaleBody() {
 
         }, 0);
 
+        const totalPrice = calculateTaxLessTotal();
         let discountValue = 0;
         if (discountType === 'fixed') {
             discountValue = Number(discount);
         } else if (discountType === 'percentage') {
-            discountValue = (profitTotal * Number(discount)) / 100;
+            discountValue = (totalPrice * Number(discount)) / 100;
         }
 
         // Grand total = productTotal - discount + shipping + globalTax

@@ -388,6 +388,29 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     //     setTotalPrice(newTotal); // Ensure state updates the total price
     // }, [productBillingHandling]);
 
+    
+
+    const calculateTaxLessTotal = () => {
+        let subtotal = productBillingHandling
+            .filter(product => product.ptype !== 'Base')
+            .reduce((acc, product) => {
+                const variation = product.selectedVariation
+                    ? product.variationValues?.[product.selectedVariation]
+                    : null;
+
+                const price = getApplicablePrice(product);
+                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;                
+                const specialDiscount = parseFloat(product.specialDiscount) || 0;
+
+                const qty = product.qty || 0;
+
+                const netPrice = (price - discount - specialDiscount) * qty;
+                const productSubtotal = netPrice ;
+                return acc + productSubtotal;
+            }, 0);
+        const total = subtotal;
+        return isNaN(total) ? 0 : total;
+    };
 
     // Function to calculate the profit for a product
      const calculateProfit = () => {
@@ -412,13 +435,22 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                 return acc + profitOfProduct;
             }, 0);
+        
+        const totalPrice = calculateTaxLessTotal();
+        let discountAmount = 0;
+        if (discountType === 'fixed') {
+            discountAmount = parseFloat(discount) || 0;
+        } else if (discountType === 'percentage') {
+            discountAmount = (totalPrice * (parseFloat(discount) || 0) / 100);
+        }
+        const offerDiscountAmount = totalPrice * (parseFloat(offerPercentage) / 100);
+        const totalProfit = pureProfit - discountAmount - offerDiscountAmount;
 
-        const offerPercentageDecimal = parseFloat(offerPercentage) / 100;
-        pureProfit = pureProfit - (pureProfit * offerPercentageDecimal);
-
-        setProfit(pureProfit);
-        return pureProfit;
+        setProfit(totalProfit);
+        return totalProfit;
     };
+
+    
 
     const calculateDiscountAmount = (baseTotal) => {
         let discountAmount = 0;
