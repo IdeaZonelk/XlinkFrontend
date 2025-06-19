@@ -67,13 +67,25 @@ function EditQuatationBody() {
         }
     }, [id]);
 
+
+    const getApplicablePrice = (product) => {
+        const qty = product.quantity || 0;
+        
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(product.price || 0)
+    };
+
     const calculateTotal = () => {
         // Step 1: Sum all product subtotals including the tax for each product
         const subtotal = quatationProductData.reduce((acc, product, index) => {
             const productQty = quatationProductData[index]?.quantity || 1;
             const productTaxRate = quatationProductData[index]?.taxRate / 100 || 0;
             const discount = quatationProductData[index]?.discount || 0;
-            const productPrice = quatationProductData[index]?.price || 0;
+            const productPrice = getApplicablePrice(product) || 0;
             const discountedPrice = productPrice - discount;
 
             // Calculate subtotal based on the specified formula
@@ -174,21 +186,23 @@ function EditQuatationBody() {
             // Ensure the new quantity is within the valid range
             newQty = Math.max(1, Math.min(newQty, stockQty));
 
-            const productPrice = prev[index].price;
-            const productTaxRate = prev[index].taxRate;
-            const discount =  prev[index].discount;
-            const discountedPrice = productPrice - discount
-            const newSubtotal = ((discountedPrice) * newQty) + (productPrice * newQty * productTaxRate);
+            const updatedProduct = { ...prev[index], quantity: newQty };
+            const productPrice = getApplicablePrice(updatedProduct); // ✅ Apply wholesale logic
+            const discount = updatedProduct.discount || 0;
+            const taxRate = updatedProduct.taxRate || 0;
+            const discountedPrice = productPrice - discount;
+
+            const newSubtotal = (discountedPrice * newQty) + (productPrice * newQty * taxRate);
 
             const updatedQuatationProductData = prev.map((item, i) =>
                 i === index
-                    ? { ...item, quantity: newQty, subtotal: newSubtotal.toFixed(2) }
+                    ? { ...updatedProduct, subtotal: newSubtotal.toFixed(2) }
                     : item
             );
-            console.log('Updated State:', updatedQuatationProductData);
             return updatedQuatationProductData;
         });
     };
+
 
     const handleDelete = async (quatationID, productID) => {
         if (!quatationID || !productID) {
@@ -335,7 +349,21 @@ function EditQuatationBody() {
                                     {quatationProductData.map((product, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const price = getApplicablePrice(product);
+                                                        const basePrice = product.price ? parseFloat(product.price) : 0;
+                                                        if (price < basePrice) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm ">
@@ -366,7 +394,7 @@ function EditQuatationBody() {
 
                                             {/* Product Price */}
                                             <td className="px-6 text-left py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {product.price}
+                                                {currency} {formatWithCustomCommas(getApplicablePrice(product).toFixed(2))}
                                             </td>
 
                                             {/* Product Tax */}

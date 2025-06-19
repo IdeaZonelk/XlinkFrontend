@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { handleProductSelect, handleProductSearch, handleDelete } from '../sales/SaleController';
+import { handleProductSelect, handleProductSearch, handleDelete , getPriceRange } from '../sales/SaleController';
 import { handleCreateSale } from './QuatationController'
 import '../../styles/role.css';
 import { Link, useNavigate } from 'react-router-dom';
@@ -99,14 +99,40 @@ function CreateSaleFromQuatationBody() {
         fetchAllWarehouses();
     }, []);
 
+    const getApplicablePrice = (product) => {
+        const qty = product.quantity || 0;
+        
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(product.price || 0)
+    };
+
+    const calculateBaseTotal = () => {
+            return quatationProductData.reduce((acc, product, index) => {
+                const productQty = quatationProductData[index]?.quantity || 1;
+                const productTaxRate = quatationProductData[index]?.taxRate  || 0;
+                const price = getApplicablePrice(product);
+                const discount = product.discount || 0;
+                const discountedPrice = price - discount;
+                const productSubtotal = (discountedPrice * productQty) + (price * productQty * (productTaxRate || 0));
+
+                return acc + productSubtotal;
+        }, 0);
+        };
+
+
     const calculateTotal = () => {
         const subtotal = quatationProductData.reduce((acc, product, index) => {
             const productQty = quatationProductData[index]?.quantity || 1;
+            const productTaxRate = quatationProductData[index]?.taxRate  || 0;
+            const price = getApplicablePrice(product);
+            const discount = product.discount || 0;
+            const discountedPrice = price - discount;
+            const productSubtotal = (discountedPrice * productQty) + (price * productQty * (productTaxRate || 0));
 
-            const productTaxRate = quatationProductData[index]?.taxRate / 100 || 0;
-
-            // Calculate subtotal based on the specified formula
-            const productSubtotal = (product.price * productQty) + (product.price * productQty * (productTaxRate * 100));
             return acc + productSubtotal;
         }, 0);
 
@@ -126,6 +152,40 @@ function CreateSaleFromQuatationBody() {
         const paidAmount = Object.values(amounts).reduce((sum, value) => sum + (Number(value) || 0), 0);
         return total - paidAmount; // Balance = Grand Total - Paid Amount
     };
+
+    const calculateProfitOfSale = () => {
+        const profitTotal = quatationProductData.reduce((totalProfit, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productCost = Number(product.productCost || 0);
+            const productQty = product.quantity || 1;
+            const discount = Number(product.discount || 0);
+            const discountedPrice = productPrice - discount;
+
+            const totalProductCost = (productCost * productQty);
+            const subTotal = (discountedPrice * productQty);
+            const profitOfProduct = subTotal - totalProductCost;
+
+            return totalProfit + profitOfProduct;
+        }, 0);
+
+        const totalPrice = quatationProductData.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.quantity || 1;
+            const discount = Number(product.discount || 0);
+            const discountedPrice = productPrice - discount;
+            return total + (discountedPrice * productQty);
+        }, 0);
+
+        let discountValue = 0;
+        if (quatationData.discountType === 'fixed') {
+            discountValue = Number(quatationData.discount || 0);
+        } else if (quatationData.discountType === 'percentage') {
+            discountValue = (totalPrice * Number(quatationData.discount || 0)) / 100;
+        }
+
+        return profitTotal - discountValue;
+    };
+
 
     //Handle selected date
     useEffect(() => {
@@ -229,27 +289,31 @@ function CreateSaleFromQuatationBody() {
     };
 
     const handleQtyChange = (index, delta) => {
-        setQuatationProductData(prev => {
-            const currentQty = prev[index]?.quantity || 1;
-            let newQty = currentQty + delta;
-            const stockQty = prev[index]?.stockQty || 0;
+    setQuatationProductData(prev => {
+        const currentQty = prev[index]?.quantity || 1;
+        let newQty = currentQty + delta;
+        const stockQty = prev[index]?.stockQty || 0;
 
-            newQty = Math.max(1, Math.min(newQty, stockQty));
-            const discount = prev[index].discount
-            const productPrice = prev[index].price;
-            const discountedPrice = productPrice - discount;
-            const productTaxRate = prev[index].taxRate;
-            const newSubtotal = (discountedPrice * newQty) + (productPrice * newQty * productTaxRate);
+        newQty = Math.max(1, Math.min(newQty, stockQty));
 
-            const updatedQuatationProductData = prev.map((item, i) =>
-                i === index
-                    ? { ...item, quantity: newQty, subtotal: newSubtotal.toFixed(2) }
-                    : item
-            );
-            console.log('Updated State:', updatedQuatationProductData);
-            return updatedQuatationProductData;
-        });
-    };
+        const updatedProduct = { ...prev[index], quantity: newQty };
+        const productPrice = getApplicablePrice(updatedProduct); // ✅ use updated qty for price
+        const discount = updatedProduct.discount || 0;
+        const taxRate = updatedProduct.taxRate || 0;
+        const discountedPrice = productPrice - discount;
+
+        const newSubtotal = (discountedPrice * newQty) + (productPrice * newQty * taxRate);
+
+        const updatedQuatationProductData = prev.map((item, i) =>
+            i === index
+                ? { ...updatedProduct, subtotal: newSubtotal.toFixed(2) }
+                : item
+        );
+
+        return updatedQuatationProductData;
+    });
+};
+
 
     useEffect(() => {
         const encryptedUser = sessionStorage.getItem('user');
@@ -405,7 +469,21 @@ function CreateSaleFromQuatationBody() {
                                     {quatationProductData.map((product, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const price = getApplicablePrice(product);
+                                                        const basePrice = product.price ? parseFloat(product.price) : 0;
+                                                        if (price < basePrice) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
                                             </td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
@@ -440,7 +518,7 @@ function CreateSaleFromQuatationBody() {
 
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {product.price}
+                                                {currency} {formatWithCustomCommas(getApplicablePrice(product).toFixed(2))}
                                             </td>
 
                                             {/* Product Tax */}
@@ -600,7 +678,8 @@ function CreateSaleFromQuatationBody() {
                     <button
                         onClick={() => handleCreateSale(
                             quatationData._id,
-                            calculateTotal(), // grandTotal (instead of id)
+                            calculateTotal(),
+                            calculateBaseTotal().toFixed(2), // grandTotal (instead of id)
                             quatationData.orderStatus, // orderStatus
                             paymentStatus, // paymentStatus
                             paymentType,

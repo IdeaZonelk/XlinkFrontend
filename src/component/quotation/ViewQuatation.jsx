@@ -101,6 +101,15 @@ function ViewQuatationBody() {
         }
     };
 
+    const getApplicablePrice = (product) => {
+        const qty = product.quantity || 0;
+        const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+        const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+        return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+            ? wholesalePrice
+            : parseFloat(product.price || 0);
+    };
 
     // Fetch all customers
     useEffect(() => {
@@ -504,9 +513,25 @@ function ViewQuatationBody() {
                                                                 {sale.productsData.map((product) => (
                                                                     <tr key={product._id} className="text-gray-700">
                                                                         {/* <td className="text-left py-2 px-4 border-b">{product.currentID}</td> */}
-                                                                        <td className="text-left py-2 px-4 border-b">{product.name}</td>
+                                                                        <td className="text-left py-2 px-4 border-b">
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span>{product.name}</span>
+                                                                                {(() => {
+                                                                                const price = getApplicablePrice(product);
+                                                                                const basePrice = parseFloat(product.price || 0);
+                                                                                if (price < basePrice) {
+                                                                                    return (
+                                                                                    <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                                        W
+                                                                                    </span>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                                })()}
+                                                                            </div>
+                                                                        </td>
                                                                         <td className="py-2 text-left px-4 border-b">{product.variationValue ? product.variationValue : 'No Variations'}</td>
-                                                                        <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.price)}</td>
+                                                                        <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(getApplicablePrice(product))}</td>
                                                                         <td className="text-left py-2 px-4 border-b">{product.quantity}</td>
                                                                         <td className="py-2 px-4 border-b text-left">{product.taxRate * 100} %</td>
                                                                         <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.subtotal)}</td>

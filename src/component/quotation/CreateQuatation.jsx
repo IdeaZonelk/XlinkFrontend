@@ -84,9 +84,35 @@ function CreateQuatationBody() {
         setDate(formattedDate);
     }, []);
 
+    const getApplicablePrice = (product) => {
+        const qty = product.ptype === 'Variation'
+            ? product.variationValues?.[product.selectedVariation]?.barcodeQty || 0
+            : product.barcodeQty || 0;
+
+        if (product.ptype === 'Variation') {
+            const variation = product.variationValues?.[product.selectedVariation];
+            if (!variation) return parseFloat(product.productPrice || 0);
+
+            const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+
+            return variation.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(variation.productPrice || 0);
+        } else {
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(product.price || product.productPrice || 0);
+        }
+    };
+
+
     const calculateTotal = () => {
         const productTotal = selectedProduct.reduce((total, product) => {
-            const productPrice = Number(getPriceRange(product, product.selectedVariation));
+            const productPrice = Number(getApplicablePrice(product));
             const productQty = product.barcodeQty || 1;
             const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
             const discount = Number(getDiscount(product, product.selectedVariation));
@@ -392,7 +418,21 @@ function CreateQuatationBody() {
                                     {selectedProduct.map((product, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const price = getApplicablePrice(product);
+                                                        const basePrice = getPriceRange(product, product.selectedVariation);
+                                                        if (price < basePrice) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm "><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.productQty || getQty(product, product.selectedVariation)}</p></td>
@@ -423,7 +463,7 @@ function CreateQuatationBody() {
 
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {formatWithCustomCommas(getPriceRange(product, product.selectedVariation))}
+                                                {currency} {getApplicablePrice(product).toFixed(2)}
                                             </td>
 
                                             {/* Display Product Tax */}
@@ -436,7 +476,7 @@ function CreateQuatationBody() {
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {currency}  {
                                                     (() => {
-                                                        const price = getPriceRange(product, product.selectedVariation);
+                                                        const price = getApplicablePrice(product);
                                                         const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
                                                         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
                                                         const discount = getDiscount(product, product.selectedVariation);
@@ -589,7 +629,7 @@ function CreateQuatationBody() {
                     <div className="container mx-auto text-left">
                         <div className='mt-10 flex justify-start'>
                             <button onClick={() => handleSaveQuatation(
-                                calculateTotal().toFixed(2), orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
+                                calculateTotal().toFixed(2), orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate, getApplicablePrice)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save Quotation
                             </button>
                         </div>

@@ -236,22 +236,46 @@ function CreateSaleBody() {
         }
     };
 
-    const handleAmountChange = (type, value) => {
-        const numericValue = Number(value);
-        const totalAmount = Object.keys(amounts).reduce((acc, key) => acc + (Number(amounts[key]) || 0), 0);
-        const newTotalAmount = totalAmount - (Number(amounts[type]) || 0) + numericValue;
-        const saleTotal = Number(calculateTotal());
-    
-        if (newTotalAmount > saleTotal) {
-            toast.error('Total amount cannot exceed the total value of the sale.', { autoClose: 2000 }, { className: "custom-toast" });
-            return;
-        }
-    
-        setAmounts((prev) => ({
-            ...prev,
-            [type]: value,
-        }));
-    };
+   const handleAmountChange = (type, value) => {
+    const numericValue = parseFloat(value);
+
+    if (isNaN(numericValue)) {
+        toast.error('Invalid amount entered.', { autoClose: 2000 });
+        return;
+    }
+
+    const currentAmount = parseFloat(amounts[type]) || 0;
+
+    // Safely calculate total amount from current state
+    const totalAmount = Object.keys(amounts).reduce((acc, key) => {
+        const val = parseFloat(amounts[key]);
+        return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+
+    // Adjust total amount for the new value
+    const newTotalAmount = totalAmount - currentAmount + numericValue;
+
+    const saleTotal = parseFloat(calculateTotal());
+
+    // Round both to two decimal places to avoid floating point issues
+    const roundToTwo = (num) => Math.round(num * 100) / 100;
+    const roundedNewTotal = roundToTwo(newTotalAmount);
+    const roundedSaleTotal = roundToTwo(saleTotal);
+
+    if (roundedNewTotal > roundedSaleTotal) {
+        toast.error('Total amount cannot exceed the total value of the sale.', {
+            autoClose: 2000,
+            className: "custom-toast"
+        });
+        return;
+    }
+
+    // Update the amount state
+    setAmounts((prev) => ({
+        ...prev,
+        [type]: value,
+    }));
+};
 
     const handleCheckboxChange = (type) => {
         setPaymentType(prev => ({
