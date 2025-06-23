@@ -555,7 +555,7 @@ function ViewQuatationBody() {
                                                                 </tr>
                                                                 <tr>
                                                                     <td className="text-left py-2 px-4 border-b">Discount</td>
-                                                                    <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(sale.discount ? sale.discount : '0.00')}</td>
+                                                                    <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(sale.discountValue ? sale.discountValue :sale.discount )}</td>
                                                                 </tr>
                                                                 <tr>
                                                                     <td className="text-left py-2 px-4 border-b">Total</td>

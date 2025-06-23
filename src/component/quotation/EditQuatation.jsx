@@ -93,14 +93,17 @@ function EditQuatationBody() {
             return acc + productSubtotal;
         }, 0);
 
-        const discountAmount = discountType === 'percentage'
-            ? subtotal * (quatationData.discount / 100)
-            : quatationData.discount || 0;
+        let discountValue = 0;
+        if (quatationData.discountType === 'fixed') {
+            discountValue = Number(quatationData.discount || 0);
+        } else if (quatationData.discountType === 'percentage') {
+            discountValue = (subtotal * Number(quatationData.discount || 0)) / 100;
+        }
 
         const shipping = parseFloat(quatationData.shipping) || 0;
         const overallTaxRate = quatationData.tax ? parseFloat(quatationData.tax) / 100 : 0;
         const taxAmount = subtotal * overallTaxRate;
-        const total = (subtotal - discountAmount) + taxAmount + shipping;
+        const total = (subtotal - discountValue) + taxAmount + shipping;
         return total.toFixed(2);
     };
 
@@ -201,6 +204,27 @@ function EditQuatationBody() {
             discount: value
         });
     };
+
+    const calculateDiscountValue = () => {
+        const subtotal = quatationProductData.reduce((acc, product, index) => {
+            const productQty = quatationProductData[index]?.quantity || 1;
+            const productTaxRate = quatationProductData[index]?.taxRate / 100 || 0;
+            const discount = quatationProductData[index]?.discount || 0;
+            const productPrice = getApplicablePrice(product) || 0;
+            const discountedPrice = productPrice - discount;
+
+            // Calculate subtotal based on the specified formula
+            const productSubtotal = ((discountedPrice) * productQty) + ((productPrice) * productQty * (productTaxRate * 100));
+            return acc + productSubtotal;
+        }, 0);
+
+        const discountValue = quatationData.discountType === 'percentage'
+            ? (subtotal * Number(quatationData.discount || 0)) / 100
+            : Number(quatationData.discount || 0);
+
+        return discountValue;
+    };
+
 
     const handleTax = (e) => {
         setQuatationData({ ...quatationData, tax: e.target.value });
@@ -571,7 +595,7 @@ function EditQuatationBody() {
                         Profit: {currency} {formatWithCustomCommas(calculateProfitOfSale().toFixed(2))}
                     </div>
                     <button
-                        onClick={() => handleUpdateQuatation(id, calculateTotal(), quatationData.orderStatus, quatationData.paymentStatus, quatationData.paidAmount, quatationData.paymentType, quatationData.shipping, quatationData.discountType, quatationData.discount, quatationData.tax, quatationData.warehouse, quatationData.selectedCustomer, quatationProductData, selectedDate, setError, setResponseMessage, setProgress, navigate)}
+                        onClick={() => handleUpdateQuatation(id, calculateTotal(), quatationData.orderStatus, quatationData.paymentStatus, quatationData.paidAmount, quatationData.paymentType, quatationData.shipping, quatationData.discountType, quatationData.discount, calculateDiscountValue() , quatationData.tax, quatationData.warehouse, quatationData.selectedCustomer, quatationProductData, selectedDate, setError, setResponseMessage, setProgress, navigate)}
                         className="mt-5 submit w-[200px] text-white rounded py-2 px-4"
                     >
                         Update & Save

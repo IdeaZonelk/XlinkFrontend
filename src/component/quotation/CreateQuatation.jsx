@@ -202,6 +202,30 @@ function CreateQuatationBody() {
         }
         setDiscount(value);
     };
+
+    const calculateDiscountValue = () => {
+        const productTotal = selectedProduct.reduce((total, product) => {
+                const productPrice = Number(getApplicablePrice(product));
+                const productQty = product.barcodeQty || 1;
+                const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+                const discount = Number(getDiscount(product, product.selectedVariation));
+                const discountedPrice = productPrice - discount
+
+                const subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
+                return total + subTotal;
+            }, 0);
+
+        if (discountType === 'fixed') {
+            return Number(discount);
+        }
+
+        if (discountType === 'percentage') {
+            return (productTotal * Number(discount)) / 100;
+        }
+
+        return 0;
+    };
+
     useEffect(() => {
         if (discountType === 'fixed') {
             return setDiscountSymbole(currency);
@@ -681,7 +705,7 @@ function CreateQuatationBody() {
                     <div className="container mx-auto text-left">
                         <div className='mt-10 flex justify-start'>
                             <button onClick={() => handleSaveQuatation(
-                                calculateTotal().toFixed(2), orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate, getApplicablePrice)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
+                                calculateTotal().toFixed(2), orderStatus, paymentStatus, paymentType, shipping, discountType, discount, calculateDiscountValue(), tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate, getApplicablePrice)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save Quotation
                             </button>
                         </div>

@@ -198,6 +198,27 @@ function CreateSaleFromQuatationBody() {
     };
 
 
+    const calculateDiscountValue = () => {
+        const subtotal = quatationProductData.reduce((acc, product, index) => {
+                const productQty = quatationProductData[index]?.quantity || 1;
+                const productTaxRate = quatationProductData[index]?.taxRate  || 0;
+                const price = getApplicablePrice(product);
+                const discount = product.discount || 0;
+                const discountedPrice = price - discount;
+                const productSubtotal = (discountedPrice * productQty) + (price * productQty * (productTaxRate || 0));
+
+                return acc + productSubtotal;
+            }, 0);
+
+        const discountValue = quatationData.discountType === 'percentage'
+            ? (subtotal * Number(quatationData.discount || 0)) / 100
+            : Number(quatationData.discount || 0);
+
+        return discountValue;
+    };
+
+
+
     //Handle selected date
     useEffect(() => {
         if (quatationData.date) {
@@ -701,6 +722,7 @@ function CreateSaleFromQuatationBody() {
                             quatationData.shipping, // shipping
                             quatationData.discountType, // discountType
                             quatationData.discount, // discount
+                            calculateDiscountValue().toFixed(2), // discountValue
                             quatationData.tax, // tax
                             quatationData.warehouse, // warehouse
                             selectedCustomer, // customer

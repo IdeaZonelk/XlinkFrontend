@@ -46,7 +46,7 @@ export const handlePreview = (selectedProduct, grandTotal, paymentStatus, paymen
 
 
 //HANDLE SAVE PRODUCT
-export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage,setError, setProgress, statusOfQuatation, navigate, getApplicablePrice) => {   
+export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus, paymentType, shipping, discountType, discount, discountValue, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage,setError, setProgress, statusOfQuatation, navigate, getApplicablePrice) => {   
     setProgress(true);
     setResponseMessage('');
     setError('');
@@ -109,6 +109,7 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
         tax,
         discountType,
         discount,
+        discountValue,
         shipping,
         paymentStatus,
         paymentType,
@@ -210,7 +211,7 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
 
 export const handleUpdateQuatation = async (
     id, grandTotal, orderStatus, paymentStatus, paidAmount, paymentType, shipping,
-    discountType, discount, tax, warehouse, selectedCustomer,
+    discountType, discount, discountValue, tax, warehouse, selectedCustomer,
     productData, date, setError, setResponseMessage, setProgress, navigate
 ) => {
     setProgress(true);
@@ -233,6 +234,7 @@ export const handleUpdateQuatation = async (
         tax,
         discountType,
         discount,
+        discountValue,
         shipping,
         paymentStatus,
         paymentType,
@@ -241,11 +243,14 @@ export const handleUpdateQuatation = async (
         grandTotal: totalAmount,
     };
 
+    console.log('Common Sale Data: 💚💚💚💚💚💚💚💚😎🤖😎🤖🤖🤖', productData);
+
     // Create products data array
     const productsData = productData.map(product => {
         const currentID = product.currentID;
         const variationValue = product.variationValue;
         const price = product.price;
+        const productCost = product.productCost;
         const discount = product.discount;
         const ptype =product.ptype;
         const quantity = product.quantity || 1;
@@ -262,6 +267,7 @@ export const handleUpdateQuatation = async (
             name: product.name,
             ptype,
             price,
+            productCost,
             discount,
             quantity,
             taxRate,
@@ -315,7 +321,7 @@ export const handleUpdateQuatation = async (
 };
 
 //HANDLE SAVE PRODUCT
-export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount,tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit) => {
+export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount, discountValue, tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit) => {
     setProgress(true);
     setError('');
     setResponseMessage('')
@@ -404,6 +410,7 @@ export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,pa
         tax,
         discountType,
         discount,
+        discountValue,
         shipping,
         paymentStatus,
         paymentType: paymentTypesArray,
