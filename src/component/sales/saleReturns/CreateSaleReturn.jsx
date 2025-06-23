@@ -66,18 +66,17 @@ function CreateSaleReturnBody() {
                     console.warn('No data found for the given sale ID.');
                     return;
                 }
-                const sale = response.data; // Sale object with updated productsData
+                const sale = response.data;
                 const baseProductData = Array.isArray(sale.productsData) ? sale.productsData : []; // Ensure it's an array
 
                 const initializedProducts = baseProductData.map(product => {
-                    const price = parseFloat(product.price) || 0;
+                    const price = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
                     const quantity = parseInt(product.quantity, 10) || 1;
                     const taxRate = parseFloat(product.taxRate) || 0;
                     const discount = parseFloat(product.discount) || 0;
                     const discountedPrice = price - discount;
 
-                    const subtotal = discountedPrice * quantity * (1 + taxRate); // Calculate subtotal including tax
-
+                    const subtotal = (discountedPrice * quantity) + ( price * quantity * taxRate);
                     return {
                         ...product,
                         selectedVariation: product.variationValue || "No Variation",  // Handle null values
@@ -133,12 +132,12 @@ function CreateSaleReturnBody() {
 
     const calculateReturnAmount = () => {
         const productReturnTotal = selectedProduct.reduce((ReturnTotal, product) => {
-            const productPrice = product.price;
+            const productPrice = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
             const taxRate = product.taxRate;
             const productQty = product.returnQty || 0;
             const discount = product.discount;
             const discountedPrice = productPrice - discount;
-            const ReturningSubTotal = (discountedPrice * productQty) + ( discountedPrice * productQty * taxRate);
+            const ReturningSubTotal = (discountedPrice * productQty) + ( productPrice * productQty * taxRate);
             return ReturnTotal + ReturningSubTotal;
         }, 0);
 
@@ -296,7 +295,7 @@ function CreateSaleReturnBody() {
 
                                             {/* Product Price */}
                                             <td className="px-4 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {formatWithCustomCommas(product.price)}
+                                                {currency} {formatWithCustomCommas(product.appliedWholesale ? product.wholesalePrice : product.price)}
                                             </td>
 
                                             {/* Display Product Tax */}

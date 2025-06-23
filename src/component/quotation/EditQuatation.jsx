@@ -104,6 +104,39 @@ function EditQuatationBody() {
         return total.toFixed(2);
     };
 
+    const calculateProfitOfSale = () => {
+        const profitTotal = quatationProductData.reduce((totalProfit, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productCost = Number(product.productCost || 0);
+            const productQty = product.quantity || 1;
+            const discount = Number(product.discount || 0);
+            const discountedPrice = productPrice - discount;
+
+            const totalProductCost = (productCost * productQty);
+            const subTotal = (discountedPrice * productQty);
+            const profitOfProduct = subTotal - totalProductCost;
+
+            return totalProfit + profitOfProduct;
+        }, 0);
+
+        const totalPrice = quatationProductData.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.quantity || 1;
+            const discount = Number(product.discount || 0);
+            const discountedPrice = productPrice - discount;
+            return total + (discountedPrice * productQty);
+        }, 0);
+
+        let discountValue = 0;
+        if (quatationData.discountType === 'fixed') {
+            discountValue = Number(quatationData.discount || 0);
+        } else if (quatationData.discountType === 'percentage') {
+            discountValue = (totalPrice * Number(quatationData.discount || 0)) / 100;
+        }
+
+        return profitTotal - discountValue;
+    };
+
     useEffect(() => {
         if (quatationData.date) {
             const formattedDate = new Date(quatationData.date).toISOString().slice(0, 10);
@@ -533,6 +566,9 @@ function EditQuatationBody() {
                     </div>
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {formatWithCustomCommas(calculateTotal())}
+                    </div>
+                    <div className="mt-4 text-right text-lg font-semibold">
+                        Profit: {currency} {formatWithCustomCommas(calculateProfitOfSale().toFixed(2))}
                     </div>
                     <button
                         onClick={() => handleUpdateQuatation(id, calculateTotal(), quatationData.orderStatus, quatationData.paymentStatus, quatationData.paidAmount, quatationData.paymentType, quatationData.shipping, quatationData.discountType, quatationData.discount, quatationData.tax, quatationData.warehouse, quatationData.selectedCustomer, quatationProductData, selectedDate, setError, setResponseMessage, setProgress, navigate)}

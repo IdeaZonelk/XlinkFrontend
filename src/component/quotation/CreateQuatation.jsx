@@ -135,6 +135,55 @@ function CreateQuatationBody() {
         return grandTotal;
     };
 
+    const calculateTaxLessTotal = () => {
+        let subtotal = selectedProduct.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.barcodeQty || 1;
+            const discount = Number(getDiscount(product, product.selectedVariation));
+            const discountedPrice = productPrice - discount
+
+            const subTotal = (discountedPrice * productQty);
+            return total + subTotal;
+        }, 0);
+
+        const total = subtotal;
+        return isNaN(total) ? 0 : total;
+    };
+
+    // Function to calculate the profit for a product
+     const calculateProfit = () => {
+        let pureProfit = selectedProduct
+            .reduce((acc, product) => {
+                const variation = product.selectedVariation
+                ? product.variationValues?.[product.selectedVariation]
+                : null;
+
+                const price = getApplicablePrice(product);
+                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
+                const productCost = variation?.productCost !== undefined ? parseFloat(variation.productCost) : parseFloat(product.productCost) || 0;
+                const qty = product.barcodeQty || 0;
+                const specialDiscount = parseFloat(product.specialDiscount) || 0;
+                const newPrice = price - discount - specialDiscount;
+
+                const totalProductCost = (productCost * qty);
+                const subTotal = (newPrice * qty);
+                const profitOfProduct = subTotal - totalProductCost;
+
+                return acc + profitOfProduct;
+            }, 0);
+        
+        const totalPrice = calculateTaxLessTotal();
+        let discountAmount = 0;
+        if (discountType === 'fixed') {
+            discountAmount = parseFloat(discount) || 0;
+        } else if (discountType === 'percentage') {
+            discountAmount = (totalPrice * (parseFloat(discount) || 0) / 100);
+        }
+        const totalProfit = pureProfit - discountAmount;
+
+        return totalProfit;
+    };
+
     const handleDiscountType = (e) => {
         setDiscountType(e.target.value)
     }
@@ -625,6 +674,9 @@ function CreateQuatationBody() {
                     </div>
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {formatWithCustomCommas(calculateTotal())}
+                    </div>
+                    <div className="mt-4 text-right text-lg font-semibold">
+                        Profit: {currency} {formatWithCustomCommas(calculateProfit())}
                     </div>
                     <div className="container mx-auto text-left">
                         <div className='mt-10 flex justify-start'>

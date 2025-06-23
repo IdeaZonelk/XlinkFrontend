@@ -153,6 +153,17 @@ function CreateSaleFromQuatationBody() {
         return total - paidAmount; // Balance = Grand Total - Paid Amount
     };
 
+    const calculateTaxLessTotal = () => {
+        const subtotal = quatationProductData.reduce((acc, product, index) => {
+            const productQty = quatationProductData[index]?.quantity || 1;
+            const price = getApplicablePrice(product);
+            const discount = product.discount || 0;
+            const discountedPrice = price - discount;
+            const productSubtotal = discountedPrice * productQty;
+            return acc + productSubtotal;
+        }, 0);
+    };
+
     const calculateProfitOfSale = () => {
         const profitTotal = quatationProductData.reduce((totalProfit, product) => {
             const productPrice = Number(getApplicablePrice(product));
@@ -675,6 +686,9 @@ function CreateSaleFromQuatationBody() {
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {calculateTotal()}
                     </div>
+                    <div className="mt-4 text-right text-lg font-semibold">
+                        Profit: {currency} {calculateProfitOfSale().toFixed(2)}
+                    </div>
                     <button
                         onClick={() => handleCreateSale(
                             quatationData._id,
@@ -697,7 +711,8 @@ function CreateSaleFromQuatationBody() {
                             setError, // setError
                             setResponseMessage, // setResponseMessage
                             setProgress,// progress
-                            navigate
+                            navigate,
+                            calculateProfitOfSale().toFixed(2) // profit
                         )}
                         className="mt-5 submit w-[300px] text-white rounded py-2 px-4"
                     >

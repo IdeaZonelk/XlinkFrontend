@@ -510,9 +510,14 @@ function ViewSaleReturnBody() {
                                                                     .map((product) => (
                                                                         <tr key={product._id} className="text-gray-700">
                                                                             {/* <td className="py-2 px-4 border-b">{product.currentID}</td> */}
-                                                                            <td className="py-2 px-4 border-b text-left">{product.name}</td>
                                                                             <td className="py-2 px-4 border-b text-left">
-                                                                                {currency} {formatWithCustomCommas(product.price)}
+                                                                                {product.name}
+                                                                                {product.appliedWholesale && (
+                                                                                    <span className="inline-block font-semibold ml-1 text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">W</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="py-2 px-4 border-b text-left">
+                                                                                {currency} {formatWithCustomCommas(product.appliedWholesale ? product.applicablePrice : product.price)}
                                                                             </td>
                                                                             <td className="py-2 px-4 border-b text-left">{product.taxRate} %</td>
                                                                             <td className="py-2 px-4 border-b text-left">

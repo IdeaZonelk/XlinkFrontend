@@ -46,7 +46,7 @@ export const handlePreview = (selectedProduct, grandTotal, paymentStatus, paymen
 
 
 //HANDLE SAVE PRODUCT
-export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage,setError, setProgress, statusOfQuatation, navigate, getApplicablePrice) => {    
+export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage,setError, setProgress, statusOfQuatation, navigate, getApplicablePrice) => {   
     setProgress(true);
     setResponseMessage('');
     setError('');
@@ -136,6 +136,9 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
         const applicablePrice = getApplicablePrice(product);
         const price = getPriceRange(product, product.selectedVariation);
         const discount = getDiscount(product, product.selectedVariation) || 0; 
+        const productCost = variationObj.productCost || product.productCost || 0;
+
+
         
         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
         const subtotal = ((applicablePrice-discount) * quantity) + ((applicablePrice) * quantity * taxRate);
@@ -147,6 +150,7 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
             variationValue,
             name: product.name,
             price,
+            productCost,
             discount,
             quantity,
             taxRate,
@@ -311,7 +315,7 @@ export const handleUpdateQuatation = async (
 };
 
 //HANDLE SAVE PRODUCT
-export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount,tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate) => {
+export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount,tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit) => {
     setProgress(true);
     setError('');
     setResponseMessage('')
@@ -406,6 +410,7 @@ export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,pa
         orderStatus,
         paidAmount,
         grandTotal: totalAmount,
+        pureProfit: profit || 0,
         baseTotal,
         saleType:'Non-POS',
         invoiceNumber

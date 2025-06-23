@@ -119,7 +119,7 @@ export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, 
                 ...product,
                 selectedVariation: Object.keys(product.variationValues)[0],
                 barcodeFormat: product.barcode,
-                barcodeQty: 0,
+                barcodeQty: 1,
                 selectedWarehouseId: warehouse?._id || warehouse,
             };
             console.log('New product with variation:', newProduct);
@@ -139,7 +139,7 @@ export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, 
             const newProduct = {
                 ...product,
                 barcodeFormat: product.barcode,
-                barcodeQty: 0,
+                barcodeQty: 1,
                 selectedWarehouseId: warehouse?._id || warehouse,
             };
             console.log('New product without variation:', newProduct);
@@ -854,6 +854,8 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
         const discount = product.discount;
         const warehouse = product.warehouse || null;
         const restocking = product.restocking;
+        const applicablePrice = product.applicablePrice || product.price;
+        const appliedWholesale = product.appliedWholesale || false;
 
         return {
             currentID,
@@ -861,6 +863,8 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
             ptype,
             name: product.name,
             price,
+            applicablePrice,
+            appliedWholesale,
             quantity,
             returnQty,
             discount,
