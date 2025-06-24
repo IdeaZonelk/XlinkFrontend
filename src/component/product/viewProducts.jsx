@@ -524,7 +524,7 @@ function ViewProductsBody() {
             <div>
               <button
                 type="button"
-                className="submit mr-2 flex-none rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-40 text-center"                onClick={() => setShowModifyModal(true)}
+                className="submit mr-2 flex-none rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-40 text-center" onClick={() => setShowModifyModal(true)}
               >
                 Modify Products
               </button>
@@ -932,9 +932,9 @@ function ViewProductsBody() {
               {/* Labels */}
               <div className="text-left space-y-1 mb-10">
                 <p className="text-base">Product code : <span className="font-medium text-gray-900">Required</span></p>
-                <p className="text-base">Brand : <span className="font-medium text-gray-900">Required</span></p>
-                <p className="text-base">Product Cost : <span className="font-medium text-gray-900">Required</span></p>
-                <p className="text-base">Product Price : <span className="font-medium text-gray-900">Required</span></p>
+                <p className="text-base">Brand </p>
+                <p className="text-base">Product Cost</p>
+                <p className="text-base">Product Price</p>
               </div>
 
               {/* Error */}
