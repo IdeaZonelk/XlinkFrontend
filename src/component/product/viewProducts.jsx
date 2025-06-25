@@ -234,8 +234,8 @@ function ViewProductsBody() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet);
 
-      // 2. Validate columns
-      const requiredFields = ["Product code", "Brand", "Product Cost", "Product Price"]; // Removed "Images"
+      // 2. Validate columns (only Product code is required now)
+      const requiredFields = ["Product code"];
       const missingFields = requiredFields.filter(f => !Object.keys(rows[0] || {}).includes(f));
       if (missingFields.length > 0) {
         setExcelError(`Please check Excel sheet fields: Missing ${missingFields.join(", ")}`);
@@ -243,7 +243,7 @@ function ViewProductsBody() {
         return;
       }
 
-      // 3. Fetch all brands for validation
+      // 3. Fetch all brands for validation (if Brand is provided)
       const brandsRes = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findBrand`);
       const allBrands = (brandsRes.data?.brands || []).map(b => b.brandName);
 
@@ -266,23 +266,24 @@ function ViewProductsBody() {
           return;
         }
 
-        // b. Brand check
+        // b. Brand check (only if provided)
         const newBrand = row["Brand"];
-        if (!allBrands.includes(newBrand)) {
+        if (newBrand && !allBrands.includes(newBrand)) {
           setExcelError(`Brand "${newBrand}" does not exist. Please create the brand first.`);
           setExcelProgress(false);
           return;
         }
 
-        // c. Prepare FormData for update
+        // c. Prepare FormData for update (only append if value is present)
         const formData = new FormData();
-        formData.append("brand", newBrand);
-        formData.append("productCost", row["Product Cost"]);
-        formData.append("productPrice", row["Product Price"]);
+        if (newBrand) formData.append("brand", newBrand);
+        if (row["Product Cost"] !== undefined && row["Product Cost"] !== "") formData.append("productCost", row["Product Cost"]);
+        if (row["Product Price"] !== undefined && row["Product Price"] !== "") formData.append("productPrice", row["Product Price"]);
 
+        // If nothing to update, skip this row
+        if (![...formData.keys()].length) continue;
 
-
-        // e. Call backend update endpoint (you may need to create a dedicated endpoint for partial update)
+        // d. Call backend update endpoint
         await axios.put(
           `${process.env.REACT_APP_BASE_URL}/api/updateProductFields/${product._id}`,
           formData,
