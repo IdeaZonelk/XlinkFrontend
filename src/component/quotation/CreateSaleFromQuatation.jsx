@@ -136,14 +136,17 @@ function CreateSaleFromQuatationBody() {
             return acc + productSubtotal;
         }, 0);
 
-        const discountAmount = discountType === 'percentage'
-            ? subtotal * (quatationData.discount / 100)
-            : quatationData.discount || 0;
+        let discountValue = 0;
+        if (quatationData.discountType === 'fixed') {
+            discountValue = Number(quatationData.discount || 0);
+        } else if (quatationData.discountType === 'percentage') {
+            discountValue = (subtotal * Number(quatationData.discount || 0)) / 100;
+        }
 
         const shipping = parseFloat(quatationData.shipping) || 0;
         const overallTaxRate = quatationData.tax ? parseFloat(quatationData.tax) / 100 : 0;
         const taxAmount = subtotal * overallTaxRate;
-        const total = (subtotal - discountAmount) + taxAmount + shipping;
+        const total = (subtotal - discountValue) + taxAmount + shipping;
         return total.toFixed(2);
     };
 
@@ -344,7 +347,32 @@ function CreateSaleFromQuatationBody() {
 
         return updatedQuatationProductData;
     });
-};
+    };
+
+    const handleQtyInputChange = (index, value) => {
+        const newQty = parseInt(value, 10);
+        if (!newQty || newQty < 1) return; // prevent invalid or zero
+
+        setQuatationProductData(prev => {
+            const updated = [...prev];
+            const product = { ...updated[index] };
+
+            const cappedQty = Math.min(newQty, product.stockQty || newQty);
+            product.quantity = cappedQty;
+
+            const productPrice = getApplicablePrice(product);
+            const discount = product.discount || 0;
+            const taxRate = product.taxRate || 0;
+            const discountedPrice = productPrice - discount;
+
+            const newSubtotal = (discountedPrice * cappedQty) + (productPrice * cappedQty * taxRate);
+            product.subtotal = newSubtotal.toFixed(2);
+
+            updated[index] = product;
+            return updated;
+        });
+    };
+
 
 
     useEffect(() => {
@@ -386,6 +414,53 @@ function CreateSaleFromQuatationBody() {
 
         fetchSettings();
     }, [decryptedUser]);
+
+
+    useEffect(() => {
+        if (quatationData) {
+            // Set paymentStatus from fetched data
+            if (quatationData.paymentStatus) {
+                setPaymentStatus(quatationData.paymentStatus);
+            }
+
+            // Set paymentType from fetched data if it's an array or object
+            if (Array.isArray(quatationData.paymentType)) {
+                const updatedPaymentType = { cash: false, card: false, bank_transfer: false };
+                quatationData.paymentType.forEach(item => {
+                    if (item?.type && updatedPaymentType.hasOwnProperty(item.type)) {
+                        updatedPaymentType[item.type] = true;
+                    }
+                });
+                setPaymentType(updatedPaymentType);
+
+                // Set amounts for selected payment types
+                const updatedAmounts = {};
+                quatationData.paymentType.forEach(item => {
+                    if (item?.type) {
+                        updatedAmounts[item.type] = item.amount || '';
+                    }
+                });
+                setAmounts(prev => ({ ...prev, ...updatedAmounts }));
+            }
+        }
+    }, [quatationData]);
+
+    useEffect(() => {
+    if (quatationData?.paymentType) {
+        const type = quatationData.paymentType;
+
+        setPaymentType(prev => ({
+            ...prev,
+            [type]: true  // e.g., paymentType["cash"] = true
+        }));
+    }
+
+    if (quatationData?.paymentStatus) {
+        setPaymentStatus(quatationData.paymentStatus);
+    }
+}, [quatationData]);
+
+
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh] p-5'>
             {progress && (
@@ -535,9 +610,14 @@ function CreateSaleFromQuatationBody() {
                                                     >
                                                         <img className='w-[16px] h-[16px]' src={Decrease} alt='decrease' />
                                                     </button>
-                                                    <span className="mx-2">
-                                                        {quatationProductData[index]?.quantity || 1} {/* Display the current quantity */}
-                                                    </span>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max={product.stockQty}
+                                                        value={quatationProductData[index]?.quantity || 1}
+                                                        onChange={(e) => handleQtyInputChange(index, e.target.value)}
+                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                    />
                                                     <button
                                                         onClick={() => handleQtyChange(index, 1)} // Increment
                                                         disabled={!(quatationProductData[index]?.quantity < product.stockQty)}

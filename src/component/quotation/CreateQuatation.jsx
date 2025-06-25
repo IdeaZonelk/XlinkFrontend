@@ -318,6 +318,40 @@ function CreateQuatationBody() {
             setProgress(false);
         }
     };
+
+    const handleQtyInputChange = (index, value) => {
+    const newQty = parseInt(value, 10);
+    if (!newQty || newQty < 1) return;
+
+    setSelectedProduct(prevProducts => {
+        const updatedProducts = [...prevProducts];
+        const currentProduct = { ...updatedProducts[index] };
+
+        if (currentProduct.ptype === "Variation") {
+            const selectedVar = currentProduct.selectedVariation;
+            const variationData = {
+                ...currentProduct.variationValues[selectedVar],
+                barcodeQty: newQty > currentProduct.variationValues[selectedVar].productQty
+                    ? currentProduct.variationValues[selectedVar].productQty
+                    : newQty
+            };
+
+            currentProduct.variationValues = {
+                ...currentProduct.variationValues,
+                [selectedVar]: variationData
+            };
+        } else {
+            currentProduct.barcodeQty = newQty > currentProduct.productQty
+                ? currentProduct.productQty
+                : newQty;
+        }
+
+        updatedProducts[index] = currentProduct;
+        return updatedProducts;
+    });
+};
+
+
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh] p-5'>
             {progress && (
@@ -518,12 +552,18 @@ function CreateQuatationBody() {
                                                     >
                                                         <img className='w-[16px] h-[16px]' src={Decrease} alt='increase' />
                                                     </button>
-                                                    <span className="mx-2">
-                                                        {product.ptype === "Variation"
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={product.ptype === "Variation"
                                                             ? product.variationValues[product.selectedVariation]?.barcodeQty || 1
-                                                            : product.barcodeQty || 1
+                                                            : product.barcodeQty || 1}
+                                                        onChange={(e) =>
+                                                            handleQtyChange(index, product.ptype === "Variation" ? product.selectedVariation : null, setSelectedProduct, e.target.value)
                                                         }
-                                                    </span>
+                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                    />
+
                                                     <button
                                                         onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, 1)} // Increment            
                                                         className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"

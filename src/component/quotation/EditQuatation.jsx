@@ -260,6 +260,32 @@ function EditQuatationBody() {
         });
     };
 
+    const handleQtyInputChange = (index, value) => {
+        const newQty = parseInt(value, 10);
+        if (!newQty || newQty < 1) return; // Prevent zero/negative/invalid
+
+        setQuatationProductData(prev => {
+            const updated = [...prev];
+            const product = { ...updated[index] };
+
+            // Cap by stock quantity
+            const cappedQty = Math.min(newQty, product.stockQty || newQty);
+            product.quantity = cappedQty;
+
+            const price = getApplicablePrice(product);
+            const discount = product.discount || 0;
+            const taxRate = product.taxRate || 0;
+            const discountedPrice = price - discount;
+            const subtotal = (discountedPrice * cappedQty) + (price * cappedQty * taxRate);
+
+            product.subtotal = subtotal.toFixed(2);
+            updated[index] = product;
+
+            return updated;
+        });
+    };
+
+
 
     const handleDelete = async (quatationID, productID) => {
         if (!quatationID || !productID) {
@@ -436,9 +462,15 @@ function EditQuatationBody() {
                                                     >
                                                         <img className='w-[16px] h-[16px]' src={Decrease} alt='decrease' />
                                                     </button>
-                                                    <span className="mx-2">
-                                                        {quatationProductData[index]?.quantity || 1}  {/* Display the current quantity */}
-                                                    </span>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max={product.stockQty}
+                                                        value={product.quantity}
+                                                        onChange={(e) => handleQtyInputChange(index, e.target.value)}
+                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                    />
+
                                                     <button
                                                         onClick={() => handleQtyChange(index, 1)} // Increment
                                                         disabled={!(quatationProductData[index]?.quantity < product.stockQty)}

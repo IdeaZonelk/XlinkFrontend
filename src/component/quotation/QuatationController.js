@@ -432,13 +432,15 @@ export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,pa
         const quantity = product.quantity;
         const discount = product.discount;
         const taxRate = product.taxRate;
-        const subtotal = ((price-discount) * quantity) + ((price-discount) * quantity * taxRate);
         const warehouseId = product.warehouse || defaultWarehouse;
         const wholesaleEnabled = product.wholesaleEnabled || false;
         const wholesaleMinQty = product.wholesaleMinQty || 0;
         const wholesalePrice = product.wholesalePrice || 0;
+
         const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
-        const applicablePrice = appliedWholesale ? wholesalePrice : product.price ;
+        const applicablePrice = appliedWholesale ? wholesalePrice : price;
+
+        const subtotal = (applicablePrice - discount) * quantity + ((applicablePrice) * quantity * taxRate);
 
         return {
             currentID,
@@ -458,6 +460,7 @@ export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,pa
             wholesalePrice,
         };
     });
+
     // Combine common sale data with products data
     const finalSaleData = {
         ...commonSaleData,

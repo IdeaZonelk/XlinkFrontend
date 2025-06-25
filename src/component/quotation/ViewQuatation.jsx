@@ -111,6 +111,18 @@ function ViewQuatationBody() {
             : parseFloat(product.price || 0);
     };
 
+    const formatPaymentType = (type) => {
+        if (!type) return 'N/A';
+        const mapping = {
+            cash: 'Cash',
+            card: 'Card',
+            bank_transfer: 'Bank Transfer',
+            check: 'Check'
+        };
+        return mapping[type] || type;
+    };
+
+
     // Fetch all customers
     useEffect(() => {
         if (keyword.trim() === '') {
@@ -363,7 +375,7 @@ function ViewQuatationBody() {
                                             {sale.paymentStatus}
                                         </p>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>{sale.paymentType}</p></td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>{formatPaymentType(sale.paymentType)}</p></td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency} {formatWithCustomCommas(sale.grandTotal)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency} {formatWithCustomCommas(sale.paidAmount)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900">

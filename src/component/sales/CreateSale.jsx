@@ -212,6 +212,19 @@ function CreateSaleBody() {
         return pureProfit;
     };
 
+
+    const calculateDiscountValue = () =>{
+
+        const total = calculateBaseTotal();
+        if (discountType === 'fixed') {
+            return Number(discount);
+        } else if (discountType === 'percentage') {
+            return (total * Number(discount)) / 100;
+        }
+        return 0;
+
+    };
+
     const handleDiscountType = (e) => {
         setDiscountType(e.target.value)
     }
@@ -301,6 +314,30 @@ function CreateSaleBody() {
     const handleShipping = (e) => {
         setShipping(e.target.value)
     }
+
+    function restructureProductData(products) {
+        return products.map((product) => {
+            // If product is of type Variation
+            if (product.ptype === "Variation" && product.selectedVariation && product.variationValues) {
+                const variationData = product.variationValues[product.selectedVariation];
+
+                return {
+                    ...product,
+                    // Overwrite top-level fields with variation-level ones
+                    wholesaleEnabled: variationData?.wholesaleEnabled ?? false,
+                    wholesaleMinQty: variationData?.wholesaleMinQty ?? 0,
+                    wholesalePrice: variationData?.wholesalePrice ?? 0,
+                    productPrice: variationData?.productPrice ?? product.productPrice,
+                    productQty: variationData?.productQty ?? product.productQty,
+                    barcodeQty: variationData?.barcodeQty ?? product.barcodeQty,
+                };
+            }
+
+            // For Single products, return as-is
+            return product;
+        });
+    }
+
 
     useEffect(() => {
         const encryptedUser = sessionStorage.getItem('user');
@@ -788,7 +825,7 @@ function CreateSaleBody() {
                                 tax,
                                 warehouse,
                                 selectedCustomer?.name,
-                                selectedProduct,
+                                restructureProductData(selectedProduct),
                                 date,
                                 preFix,
                                 '0',
@@ -801,8 +838,7 @@ function CreateSaleBody() {
                                 balance,
                                 handlePrintAndClose,
                                 shouldPrint,
-
-                                
+                                calculateDiscountValue(),
                             )} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save sale
                             </button>

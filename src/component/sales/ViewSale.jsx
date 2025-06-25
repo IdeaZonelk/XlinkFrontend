@@ -105,7 +105,6 @@ function ViewSaleBody() {
             if (response.data && Array.isArray(response.data.sales) && response.data.sales.length > 0) {
                 setSaleData(response.data.sales); // Set sales data
                 setSearchedCustomerSale(response.data.sales);
-                console.log("Response: ", response.data.sales);
                 setTotalPages(response.data.totalPages || 0); // Set total pages
                 setKeyword('');
                 setLoading(false);
@@ -185,6 +184,17 @@ function ViewSaleBody() {
     const showConfirmationModal = (saleId) => {
         setSaleToDelete(saleId); // Set the sale ID to be deleted
         setIsModalOpen(true);  // Open the confirmation modal
+    };
+
+    const formatPaymentType = (type) => {
+        if (!type) return 'N/A';
+        const mapping = {
+            cash: 'Cash',
+            card: 'Card',
+            bank_transfer: 'Bank Transfer',
+            check: 'Check'
+        };
+        return mapping[type] || type;
     };
 
     const handleTogglePopup = (saleId) => {
@@ -546,7 +556,7 @@ function ViewSaleBody() {
                                         </td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
                                             <p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>
-                                                {sale.paymentType.map(pt => pt.type).join(' + ')}
+                                                {sale.paymentType.map(pt => formatPaymentType(pt.type)).join(' + ')}
                                             </p>
                                         </td>
 
@@ -783,7 +793,7 @@ function ViewSaleBody() {
                                                                     </tr>
                                                                     <tr>
                                                                         <td className="py-2 px-4 border-b text-left">Discount</td>
-                                                                        <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(sale.discount ? sale.discount : '0.00')}</td>
+                                                                        <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(sale.discount ? sale.discountValue : '0.00')}</td>
                                                                     </tr>
                                                                     <tr>
                                                                         <td className="py-2 px-4 border-b text-left">Total</td>

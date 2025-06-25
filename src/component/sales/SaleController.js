@@ -818,7 +818,8 @@ export const handleUpdateSale = async (
 };
 
 //HANDLE THE RETURN OF SALE
-export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount, warehouse, customer, selectedProduct, date, note, setError, setResponseMessage, setProgress, navigate) => {
+export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmountDetail, warehouse, customer, selectedProduct, date, discountValue, shipping, tax, note, setError, setResponseMessage, setProgress, navigate) => {
+
     setError('')
     setResponseMessage('')
     setProgress(true)
@@ -830,6 +831,7 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
         console.warn('setLoading is not a function. Skipping setLoading invocation.');
     }
 
+    const { returnAmount, adjustedTax, adjustedDiscount } = returnAmountDetail;
     const commonSaleData = {
         id,
         date,
@@ -837,7 +839,12 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
         warehouse: warehouse || null,
         grandTotal,
         paidAmount,
+        discountValue,
+        shipping,
+        tax,
         returnAmount,
+        adjustedTax,
+        adjustedDiscount,
         note
     };
 

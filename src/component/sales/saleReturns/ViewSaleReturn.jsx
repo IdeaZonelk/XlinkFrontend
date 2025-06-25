@@ -72,8 +72,6 @@ function ViewSaleReturnBody() {
 
     useEffect(() => {
         if (userData?.permissions) {
-            console.log("UserData received in useEffect:", userData);
-
             setPermissionData(extractPermissions(userData.permissions));
         }
     }, [userData]);
@@ -556,7 +554,7 @@ function ViewSaleReturnBody() {
                                                                 </tr>
                                                                 <tr>
                                                                     <td className="py-2 px-4 border-b text-left">Discount</td>
-                                                                    <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(sale.discount ? sale.discount : '0.00')}</td>
+                                                                    <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(sale.discountValue ? sale.discountValue : '0.00')}</td>
                                                                 </tr>
                                                                 <tr>
                                                                     <td className="py-2 px-4 border-b text-left">Total</td>

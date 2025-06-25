@@ -29,6 +29,7 @@ function CreateSaleReturnBody() {
     const [error, setError] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [saleProduct, setSaleProduct] = useState([]);
+    console.log("saleProduct 💀💀💀💀💀💀💀💀", saleProduct);
     const [restockingStatus, setRestocking] = useState(true);
     const [purchasedQty, setPurchasedQty] = useState([])
     const [progress, setProgress] = useState(false);
@@ -131,18 +132,70 @@ function CreateSaleReturnBody() {
     };
 
     const calculateReturnAmount = () => {
-        const productReturnTotal = selectedProduct.reduce((ReturnTotal, product) => {
-            const productPrice = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
-            const taxRate = product.taxRate;
-            const productQty = product.returnQty || 0;
-            const discount = product.discount;
-            const discountedPrice = productPrice - discount;
-            const ReturningSubTotal = (discountedPrice * productQty) + ( productPrice * productQty * taxRate);
-            return ReturnTotal + ReturningSubTotal;
+        if (!saleProduct) return {
+            returnAmount: 0,
+            adjustedTax: 0,
+            adjustedDiscount: 0,
+        };
+
+        const productSubtotal = selectedProduct.reduce((total, product) => {
+            const price = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
+            const discount = parseFloat(product.discount) || 0;
+            const taxRate = parseFloat(product.taxRate) || 0;
+            const returnQty = parseFloat(product.returnQty) || 0;
+
+            if (returnQty <= 0) return total;
+
+            const discountedPrice = price - discount;
+            const subtotalWithoutTax = discountedPrice * returnQty;
+            const taxAmount = (price * taxRate) * returnQty;
+
+            return total + subtotalWithoutTax + taxAmount;
         }, 0);
 
-        return productReturnTotal;
+        if (productSubtotal <= 0) return {
+            returnAmount: 0,
+            adjustedTax: 0,
+            adjustedDiscount: 0,
+        };
+
+        const originalSubtotal = saleProduct.productsData.reduce((total, product) => {
+            const price = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
+            const discount = parseFloat(product.discount) || 0;
+            const taxRate = parseFloat(product.taxRate) || 0;
+            const quantity = product.isWeight ? parseFloat(product.weight) || 0 : parseInt(product.quantity, 10) || 0;
+            return total + ((price - discount) * quantity) + ((price * taxRate) * quantity);
+        }, 0);
+
+        const ratio = originalSubtotal > 0 ? productSubtotal / originalSubtotal : 0;
+
+        const originalTaxRate = parseFloat(saleProduct.tax) || 0;
+        const adjustedTaxRate = originalTaxRate * ratio;
+
+        const originalDiscount = parseFloat(saleProduct.discount) || 0;
+        const discountType = saleProduct.discountType;
+        let adjustedDiscount = 0;
+
+        if (discountType === "percentage") {
+            adjustedDiscount = originalDiscount * ratio;
+        } else {
+            adjustedDiscount = originalDiscount * ratio;
+        }
+
+        let amountAfterDiscount = discountType === "percentage"
+            ? productSubtotal * (1 - adjustedDiscount / 100)
+            : productSubtotal - adjustedDiscount;
+
+        const taxAmount = (productSubtotal * (adjustedTaxRate / 100));
+        const finalReturnAmount = amountAfterDiscount + taxAmount;
+
+        return {
+            returnAmount: finalReturnAmount,
+            adjustedTax: adjustedTaxRate,
+            adjustedDiscount: adjustedDiscount,
+        };
     };
+
 
     const handleCheckboxChange = (index) => {
         const restocking = [...restockingStatus];
@@ -378,12 +431,12 @@ function CreateSaleReturnBody() {
                             Paid Amount  :  {currency} {formatWithCustomCommas(saleProduct.paidAmount)}
                         </div>
                         <div className="mt-4 text-right text-lg font-semibold">
-                            Return  Amount  :  {currency} {formatWithCustomCommas(calculateReturnAmount())}
+                            Return  Amount  :  {currency} {formatWithCustomCommas(calculateReturnAmount().returnAmount)}
                         </div>
                     </div>
 
                     <button onClick={() => handleReturnSale(id,
-                        saleProduct.grandTotal, saleProduct.paidAmount, calculateReturnAmount(),  saleProduct.warehouse, saleProduct.customer, selectedProduct, saleProduct.date, note, setError, setResponseMessage, setProgress, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
+                        saleProduct.grandTotal, saleProduct.paidAmount, calculateReturnAmount(),  saleProduct.warehouse, saleProduct.customer, selectedProduct, saleProduct.date, saleProduct.discountValue, saleProduct.shipping , saleProduct.tax , note, setError, setResponseMessage, setProgress, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                         Return The Sale
                     </button>
                 </div>
