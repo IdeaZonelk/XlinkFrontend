@@ -74,6 +74,14 @@ function CreateSaleBody() {
     const [preFix, setPreFix] = useState('');
     const [invoiceNumber, setInvoiceNumber] = useState(null);
 
+    const [useCreditPayment, setUseCreditPayment] = useState(false);
+    const [creditDetails, setCreditDetails] = useState({
+        interestRate: '',
+        months: '',
+        interestAmount: '',
+        monthlyInstallment : '',
+    });
+
     useEffect(() => {
         const fetchAllWarehouses = async () => {
             try {
@@ -135,7 +143,7 @@ function CreateSaleBody() {
         }, 0);
     };
 
-    const calculateTotal = () => {
+    const totalWithoutInterest = () => {
         const productTotal = selectedProduct.reduce((total, product) => {
             const productPrice = Number(getApplicablePrice(product));
             const productQty = product.barcodeQty || 1;
@@ -164,9 +172,19 @@ function CreateSaleBody() {
 
         // Grand total = productTotal - discount + shipping + globalTax
         const grandTotal = productTotal - discountValue + shippingValue + globalTax;
-
+        
         return grandTotal;
     };
+
+    const calculateTotal =() =>{
+        const total = totalWithoutInterest();
+        if (useCreditPayment) {
+            const interestRate = parseFloat(creditDetails.interestRate) || 0;
+            const interest = (total * interestRate) / 100;
+            return total + interest;
+        }
+        return total;
+    }
 
     const calculateTaxLessTotal = () => {
         let subtotal = selectedProduct.reduce((total, product) => {
@@ -374,6 +392,23 @@ function CreateSaleBody() {
 
         fetchSettings();
     }, [decryptedUser]);
+
+
+     useEffect(() => {
+        const total = totalWithoutInterest();
+        const rate = parseFloat(creditDetails.interestRate) || 0;
+        const months = parseInt(creditDetails.months) || 0;
+
+        const interestAmount = (total * rate) / 100;
+        const totalPayable = total + interestAmount;
+        const monthlyInstallment = months > 0 ? (totalPayable / months).toFixed(2) : '';
+
+        setCreditDetails((prev) => ({
+            ...prev,
+            interestAmount: interestAmount.toFixed(2),
+            monthlyInstallment: monthlyInstallment,
+        }));
+    }, [creditDetails.interestRate, creditDetails.months, selectedProduct, discount, tax, shipping]);
 
     const handlePrintAndClose = () => {
     // Reset all relevant state
@@ -761,6 +796,83 @@ function CreateSaleBody() {
                             </div>
                         </div>
 
+                        <div className="mt-10">
+    <div className="flex items-center space-x-2">
+        <input
+            type="checkbox"
+            id="creditPayment"
+            checked={useCreditPayment}
+            onChange={() => setUseCreditPayment((prev) => !prev)}
+            className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+        <label htmlFor="creditPayment" className="text-sm text-gray-700 font-medium">
+            Pay with Credit
+        </label>
+    </div>
+
+    {useCreditPayment && (
+        <div className="mt-4 p-4 border border-gray-300 rounded-md bg-gray-50">
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+                    <input
+                        type="number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        value={creditDetails.interestRate}
+                        onChange={(e) =>
+                            setCreditDetails((prev) => ({
+                                ...prev,
+                                interestRate: e.target.value
+                            }))
+                        }
+                        placeholder="e.g. 5 (or leave blank for 0%)"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Installment Months</label>
+                    <input
+                        type="number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        value={creditDetails.months}
+                        onChange={(e) =>
+                            setCreditDetails((prev) => ({
+                                ...prev,
+                                months: e.target.value
+                            }))
+                        }
+                        placeholder="e.g. 6"
+                    />
+                </div>
+            </div>
+
+            {/* Summary Display */}
+            {creditDetails.months && (
+    <div className="mt-6 text-right space-y-2 text-blue-700">
+        <p>
+            <strong>Interest:</strong> {currency}{' '}
+            {formatWithCustomCommas(
+                (
+                    (totalWithoutInterest() * (parseFloat(creditDetails.interestRate) || 0)) / 100
+                ).toFixed(2)
+            )}
+        </p>
+        <p>
+            <strong>Monthly Installment:</strong> {currency}{' '}
+            {formatWithCustomCommas(
+                (
+                    (calculateTotal()) /
+                    parseInt(creditDetails.months)
+                ).toFixed(2)
+            )}
+        </p>
+    </div>
+)}
+
+        </div>
+    )}
+</div>
+
+
                         {/* Payment Type Select */}
                         <div className="mt-10 mb-14 w-full">
                             <div>
@@ -839,6 +951,8 @@ function CreateSaleBody() {
                                 handlePrintAndClose,
                                 shouldPrint,
                                 calculateDiscountValue(),
+                                useCreditPayment,
+                                creditDetails
                             )} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save sale
                             </button>

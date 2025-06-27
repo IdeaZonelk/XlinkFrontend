@@ -42,12 +42,20 @@ function EditSaleBody() {
     const [total, setTotal] = useState(0);
     const navigate = useNavigate();
     const { id } = useParams();
+    const [useCreditPayment, setUseCreditPayment] = useState(false);
+    const [creditDetails, setCreditDetails] = useState({
+        interestRate: '',
+        months: '',
+        interestAmount: '',
+        monthlyInstallment: '',
+    });
 
     useEffect(() => {
         const findSaleById = async () => {
             try {
                 setProgress(true);
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findSaleById/${id}`);
+                console.log('Sale data fetched: 🤠👻🤠👻🤠👻🤠👻🤠', response.data);
                 const fetchedProductsQty = Array.isArray(response.data?.productsData) ? response.data.productsData : [];
                 const initializedProductsQty = fetchedProductsQty.map(pq => ({
                     ...pq,
@@ -57,6 +65,19 @@ function EditSaleBody() {
 
                 setSaleReturProductData(initializedProductsQty);
                 setSaleProduct(response.data);
+
+                if ('useCreditPayment' in response.data) {
+                    setUseCreditPayment(response.data.useCreditPayment);
+                }
+
+                if ('creditDetails' in response.data) {
+                    setCreditDetails({
+                        interestRate: parseFloat(response.data.creditDetails.interestRate) || 0,
+                        months: parseFloat(response.data.creditDetails.months) || 0,
+                        interestAmount: parseFloat(response.data.creditDetails.interestAmount) || '',
+                        monthlyInstallment: parseFloat(response.data.creditDetails.monthlyInstallment) || '',
+                    });
+                }
 
                 if (response.data.paymentType) {
                     const updatedPaymentType = { cash: false, card: false, bank_transfer: false };
@@ -183,7 +204,7 @@ function EditSaleBody() {
     }
 
     // Update the calculateTotal function
-    const calculateTotal = () => {
+    const calculateTotalWithoutInterest = () => {
         const newSubtotal =  calculateBaseTotal();
 
         const newDiscountAmount = discountType === 'percentage'
@@ -200,9 +221,21 @@ function EditSaleBody() {
 
         // Calculate final total
         const newTotal = (newSubtotal - newDiscountAmount - offerDiscountAmount) + newTaxAmount + newShipping;
-        setTotal(newTotal.toFixed(2));
         return newTotal;
     };
+
+    const calculateTotal = () => {
+        const baseTotal = calculateTotalWithoutInterest();
+
+        if (useCreditPayment) {
+            const interest = (baseTotal * (parseFloat(creditDetails.interestRate) || 0)) / 100;
+            setTotal((baseTotal + interest).toFixed(2));
+            return baseTotal + interest;
+        }
+        setTotal(baseTotal.toFixed(2));
+        return baseTotal;
+    };
+
 
     const calculateTaxLessTotal = () => {
         return saleReturProductData.reduce((acc, product) => {
@@ -300,7 +333,10 @@ function EditSaleBody() {
             setError, 
             setResponseMessage, 
             setProgress, 
-            navigate
+            navigate,
+            useCreditPayment,
+            creditDetails,
+
         );
     };
 
@@ -352,7 +388,17 @@ function EditSaleBody() {
 
     useEffect(() => {
         calculateTotal();
-    }, [saleReturProductData]);
+    }, [
+        saleReturProductData,
+        discountType,
+        saleProduct.discount,
+        saleProduct.tax,
+        saleProduct.shipping,
+        saleProduct.offerPercentage,
+        creditDetails.interestRate,
+        creditDetails.months
+
+    ]);
 
     const handleVariationChange = (index, variation) => {
         setSaleReturProductData((prevProducts) =>
@@ -638,6 +684,21 @@ function EditSaleBody() {
         }
     }, [saleReturProductData, discountType, saleProduct.discount, saleProduct.tax, saleProduct.shipping, saleProduct.offerPercentage]);
 
+    useEffect(() => {
+        const baseTotal = calculateTotalWithoutInterest();
+        const rate = parseFloat(creditDetails.interestRate) || 0;
+        const months = parseInt(creditDetails.months) || 0;
+
+        const interest = (baseTotal * rate) / 100;
+        const totalPayable = baseTotal + interest;
+        const monthly = months > 0 ? (totalPayable / months).toFixed(2) : '';
+
+        setCreditDetails((prev) => ({
+            ...prev,
+            interestAmount: interest.toFixed(2),
+            monthlyInstallment: monthly,
+        }));
+    }, [creditDetails.interestRate, creditDetails.months, saleReturProductData, saleProduct.discount, saleProduct.tax, saleProduct.shipping]);
 
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh] p-5 pb-10'>
@@ -974,6 +1035,65 @@ function EditSaleBody() {
                                     <option value="partial">Partial</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div className="mt-8">
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="creditPayment"
+                                    checked={useCreditPayment}
+                                    onChange={() => setUseCreditPayment((prev) => !prev)}
+                                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="creditPayment" className="text-sm text-gray-700 font-medium">
+                                    Pay with Credit
+                                </label>
+                            </div>
+
+                            {useCreditPayment && (
+                                <div className="mt-4 p-4 border border-gray-300 rounded-md bg-gray-50">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+                                            <input
+                                                type="number"
+                                                value={creditDetails.interestRate}
+                                                onChange={(e) =>
+                                                    setCreditDetails((prev) => ({
+                                                        ...prev,
+                                                        interestRate: e.target.value
+                                                    }))
+                                                }
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                placeholder="e.g. 5 (or leave blank for 0%)"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Installment Months</label>
+                                            <input
+                                                type="number"
+                                                value={creditDetails.months}
+                                                onChange={(e) =>
+                                                    setCreditDetails((prev) => ({
+                                                        ...prev,
+                                                        months: e.target.value
+                                                    }))
+                                                }
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                placeholder="e.g. 6"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {creditDetails.months && (
+                                        <div className="mt-6 text-right space-y-2 text-blue-700">
+                                            <p><strong>Interest:</strong> {currency} {formatWithCustomCommas(creditDetails.interestAmount)}</p>
+                                            <p><strong>Monthly Installment:</strong> {currency} {formatWithCustomCommas(creditDetails.monthlyInstallment)}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
 

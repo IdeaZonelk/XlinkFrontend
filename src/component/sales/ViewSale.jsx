@@ -259,10 +259,10 @@ function ViewSaleBody() {
     };
 
     const handleShowPaymentPopUp = (saleId) => {
-        setPaymentData([]);
-        setOpenPopupId(null);
-        setViewPayment(openViewPayment === saleId ? null : saleId);
-        return fetchPaymentData(saleId);
+    setPaymentData([]);
+    setOpenPopupId(null);
+    setViewPayment(openViewPayment === saleId ? null : saleId);
+    return fetchPaymentData(saleId);
     };
     const handleEditClick = (saleId) => {
         setViewPayment(false);
@@ -853,6 +853,18 @@ function ViewSaleBody() {
                                             <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
                                                 <div className="bg-white w-[800px] h-[620px] overflow-auto p-8  pt-4 rounded-md shadow-lg mt-28 mb-10" data-aos="fade-down">
                                                     <h2 className="text-xl text-black-500 font">Payment Details</h2>
+                                                    {sale.useCreditPayment && sale.creditDetails && (
+                                                        <div className=" mt-4 bg-blue-50 border border-blue-300 rounded-md p-4 text-m text-left text-blue-800">
+                                                            <p><strong>Credit Payment Enabled</strong></p>
+                                                            <p>Installment Months: <strong>{sale.creditDetails.months}</strong></p>
+                                                            <p>Monthly Installment:<strong> {currency}{' '}{formatWithCustomCommas(sale.creditDetails.monthlyInstallment)}</strong></p>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className=" mt-4 bg-gray-50-50 border border-gray-300 rounded-md p-4 text-m text-left text-blue-800">
+                                                            <p>Total Paid : <strong>{sale.paidAmount}</strong></p>
+                                                    </div>
+
                                                     <div className=''>
                                                         <table className="mt-8 min-w-full bg-white">
                                                             <thead>

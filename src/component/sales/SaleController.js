@@ -12,6 +12,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { generateBillNumber } from '../pos/utils/invoiceNumber';
+import { initial } from 'lodash';
 
 export const handleProductSearch = async (e, setSearchTerm, setFilteredProducts, warehouse, saleProductWarehouse) => {
     const keyword = e.target.value;
@@ -381,7 +382,7 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue ,  shouldPrintKOT = false  ) => {
+export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , useCreditPayment, creditDetails, shouldPrintKOT = false  ) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
@@ -540,7 +541,9 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
         offerPercentage,
         invoiceNumber,
         note,
-        cashBalance
+        cashBalance,
+        useCreditPayment,
+        creditDetails
     };
 
     const finalSaleData = {
@@ -634,7 +637,8 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
 export const handleUpdateSale = async (
     id, grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
     discountType, discount, tax, warehouse, selectedCustomer,
-    productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate
+    productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate, useCreditPayment, creditDetails,
+
 ) => {
     setError('')
     setResponseMessage('');
@@ -724,7 +728,10 @@ export const handleUpdateSale = async (
         baseTotal,
         grandTotal: totalAmount,
         cashierUsername: cashierUsername ? cashierUsername : 'unknown',
-        offerPercentage
+        offerPercentage,
+        useCreditPayment,
+        creditDetails,
+
     };
 
     // Create products data array
