@@ -20,7 +20,7 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
-const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer }) => {
+const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer , useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails }) => {
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -124,6 +124,13 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         setPaymentType('cash');
         setNote('');
         setPaymentStatus('paid');
+        setUseCreditPayment(false);
+        setCreditDetails({
+            interestRate: '',
+            months: '',
+            interestAmount: '',
+            monthlyInstallment: '',
+        });
         handleBillReset();
         handlePopupClose();
     };
@@ -213,7 +220,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 baseTotal,
                 profit,
                 "ordered",
-                'paid',
+                paymentStatus,
                 paymentTypesArray,
                 amounts,
                 shipping,
@@ -249,6 +256,18 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     const handleSubmitPayment = async (shouldPrint) => {
         if (!validatePaymentStatus()) return;
     
+        const hasValidPayment = Object.values(amounts).some(amount => parseFloat(amount) > 0);
+        if (!hasValidPayment) {
+            alert("Please enter at least one payment amount (Cash, Card or Bank Transfer).");
+            return;
+        }
+
+        // Additional check: if credit is on but paymentStatus !== partial
+        if (useCreditPayment && paymentStatus.toLowerCase() !== 'partial') {
+            alert("To use credit payment, you must set payment status to 'Partial'.");
+            return;
+        }
+
         try {
             await updateProductQuantities(productDetails, shouldPrint); 
             if (shouldPrint) {
@@ -354,17 +373,14 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                     onChange={(e) => setPaymentStatus(e.target.value)}
                                     className="block w-[300px] ml-10 rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 >
-                                    <option>Paid</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="partial">Partial</option>
                                     {/* <option>Unpaid</option> */}
                                 </select>
                             </div>
                         </div>
-                        <div className="w-full text-center mt-8">
-                            <label className="text-sm font-medium leading-6 text-gray-900 mb-2 text-left">
-                                Payment Type:
-                            </label>
-                        </div>
-                        <div className="w-full">
+                        
+                        <div className="w-full mt-8">
                             <div className="bg-gray-100 border border-gray-400 shadow-md rounded-lg p-4">
                                 <h2 className="text-lg text-gray-800 mb-3">Add Payment Details</h2>
                                 <table className="w-full border border-gray-300 rounded-lg bg-white shadow-sm">
@@ -389,29 +405,69 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                                     </div>
                                                 </td>
                                             </tr>
+
                                         ))}
 
-                                        {/* Balance Field Row */}
-                                        <tr className="border-t border-gray-300 hover:bg-gray-100">
-                                            <td colSpan="2" className="px-4 py-4 text-right font-semibold text-gray-700 border border-gray-300">
-                                                Balance: {currency} {formatWithCustomCommas(calculateBalance())}
-                                            </td>
-                                        </tr>
+                                        {/* CREDIT payment row */}
+<tr className="border-t border-gray-300 hover:bg-gray-100">
+    <td
+        className={`px-4 py-4 font-medium text-center text-white border border-gray-300 cursor-pointer transition-colors duration-200 ${
+            useCreditPayment ? 'bg-blue-600' : 'bg-gray-300'
+        } ${paymentStatus.toLowerCase() !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => {
+            if (paymentStatus.toLowerCase() !== 'partial') {
+            alert('Credit can only be enabled if payment status is set to Partial.');
+            return;
+            }
+            setUseCreditPayment(prev => !prev);
+        }}
+        >
+        {useCreditPayment ? 'Credit' : 'Credit'}
+    </td>
 
-                                        {/* Note Field Row */}
-                                        <tr className="border-t border-gray-300 hover:bg-gray-100">
-                                            <td className="px-4 py-4 font-medium text-gray-700 border border-gray-300 bg-gray-200">
-                                                Note
-                                            </td>
-                                            <td className="px-4 py-1 border border-gray-300">
-                                                <textarea
-                                                    value={note}
-                                                    onChange={(e) => setNote(e.target.value)}
-                                                    placeholder="Enter any additional notes..."
-                                                    className="block w-full h-[50px] rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
-                                                />
-                                            </td>
-                                        </tr>
+
+    <td className="px-2 py-1 border border-gray-300">
+        {/* Credit fields */}
+        {parseFloat( 4) > 0 && (
+            <div className=" flex flex-row gap-3 m-2  text-sm text-left text-blue-700">
+                <div>
+                    <input
+                        type="number"
+                        className="w-full rounded-md border-0 py-2.5 px-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-xs focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
+                        value={creditDetails.interestRate}
+                        onChange={(e) => setCreditDetails(prev => ({ ...prev, interestRate: e.target.value }))}
+                        placeholder="Interest Rate (%)"
+                    />
+                </div>
+                <div>
+                <input
+                    type="number"
+                    className="w-full rounded-md border-0 py-2.5 px-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-xs focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
+                    value={creditDetails.months}
+                    onChange={(e) => setCreditDetails(prev => ({ ...prev, months: e.target.value }))}
+                    placeholder="Installment Months"
+                />
+                </div>
+                
+                
+            </div>
+        )}
+    </td>
+</tr>
+
+<tr className="border-t border-gray-300 hover:bg-gray-100">
+<td colSpan="2" className="px-4 py-4 text-right font-semibold text-gray-700 border border-gray-300">
+    {useCreditPayment && creditDetails.interestAmount && creditDetails.monthlyInstallment ? (
+            <div className="space-y-1 text-sm">
+                <div>Interest: {currency} {formatWithCustomCommas(creditDetails.interestAmount)}</div>
+                <div>Monthly: {currency} {formatWithCustomCommas(creditDetails.monthlyInstallment)}</div>
+            </div>
+        ) : (
+            <span className="text-gray-400 text-sm">–</span>
+        )}
+</td>
+</tr>
+                                       
                                     </tbody>
                                 </table>
                             </div>
@@ -477,6 +533,28 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                 <tr className="border-t border-gray-300">
                                     <td className="px-2 py-2 text-m text-left text-gray-600 border border-gray-300">Grand Total</td>
                                     <td className="px-2 py-2 text-m text-left text-gray-600 border border-gray-300">{currency}{' '}{formatWithCustomCommas(calculateTotalPrice())}</td>
+                                </tr>
+                                 {/* Balance Field Row */}
+                                <tr className="border-t border-gray-300 hover:bg-gray-100">
+                                    <td colSpan="2" className="px-4 py-4 text-right font-semibold text-gray-700 border border-gray-300">
+                                        Balance: {currency} {formatWithCustomCommas(calculateBalance())}
+                                    </td>
+                                </tr>
+
+
+                                {/* Note Field Row */}
+                                <tr className="border-t border-gray-300 hover:bg-gray-100">
+                                    <td className="px-4 py-4 font-medium text-gray-700 border border-gray-300 bg-gray-200">
+                                        Note
+                                    </td>
+                                    <td className="px-4 py-1 border border-gray-300">
+                                        <textarea
+                                            value={note}
+                                            onChange={(e) => setNote(e.target.value)}
+                                            placeholder="Enter any additional notes..."
+                                            className="block w-full h-[50px] rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
+                                        />
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

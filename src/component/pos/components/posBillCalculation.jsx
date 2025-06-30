@@ -50,6 +50,17 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [progress, setProgress] = useState(false);
     const adminPasswordRef = useRef(null);
     const discountInputRef = useRef(null);
+    const [useCreditPayment, setUseCreditPayment] = useState(false);
+    const [creditDetails, setCreditDetails] = useState({
+    interestRate: '',
+    months: '',
+    interestAmount: '',
+    monthlyInstallment: '',
+    });
+
+    console.log('BillingSection Rendered 🥵🥵🥵🥵🥵' , useCreditPayment);
+    console.log('Product Billing Handling: 🥵🥵🥵🥵🥵', creditDetails);
+
 
 
            const getApplicablePrice = (product) => {
@@ -135,8 +146,33 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
     useEffect(() => {
-        calculateTotalPrice();
-    }, [productBillingHandling]);
+                calculateTotalPrice();
+            }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
+
+            useEffect(() => {
+        if (useCreditPayment) {
+            const total = parseFloat(calculateBaseTotal()) || 0;
+            const rate = parseFloat(creditDetails.interestRate || 0);
+            const months = parseFloat(creditDetails.months || 1);
+
+            const interestAmount = ((total * rate) / 100).toFixed(2);
+            const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
+
+            setCreditDetails(prev => ({
+            ...prev,
+            interestAmount,
+            monthlyInstallment
+            }));
+        } else {
+            // Reset interest when credit is off
+            setCreditDetails(prev => ({
+            ...prev,
+            interestAmount: '0',
+            monthlyInstallment: '0'
+            }));
+        }
+    }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
+
 
     const handleDiscountAccess = async (e) => {
         e.preventDefault();
@@ -378,7 +414,10 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         const taxAmount = (total * (parseFloat(tax) || 0) / 100);
         const shippingCost = parseFloat(shipping) || 0;
         const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
-        total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost;
+
+        let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
+
+        total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
     
         return isNaN(total) ? "0.00" : total.toFixed(2);
     };
@@ -1042,9 +1081,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         calculateTotalPrice={calculateTotalPrice}
                         setError={setError}
                         setProgress={setProgress}
-                        setSelectedOffer={setSelectedOffer}
+                        setSelectedOffer = {setSelectedOffer}
+                        useCreditPayment ={ useCreditPayment}
+                        setUseCreditPayment = {setUseCreditPayment}
+                        creditDetails = {creditDetails}
+                        setCreditDetails = {setCreditDetails}
                     />
-                )}
+                )} 
             </div>
 
             {/*PRODUCT HOLDING POP UP*/}
