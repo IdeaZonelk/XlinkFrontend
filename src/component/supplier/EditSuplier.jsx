@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -63,10 +74,10 @@ function EditSuplierBody() {
         // Mobile number validation
         if (name === 'mobile') {
             // Validate mobile input with isValidMobileInput function
-            if (!isValidMobileInput(value) || value.length !== 12) {
+            if (!isValidMobileInput(value) || value.length !== 10) {
                 setErrors(prevErrors => ({
                     ...prevErrors,
-                    mobile: 'Invalid mobile number. Must be 12 characters long.'
+                    mobile: 'Invalid mobile number. Must be 10 characters long.'
                 }));
             } else {
                 setErrors(prevErrors => ({
@@ -100,13 +111,20 @@ function EditSuplierBody() {
         setResponseMessage('');
         setProgress(true);
 
-        // Validate required fields
-        let tempErrors = {};
+         let tempErrors = {};
+
         if (!formData.mobile) {
             tempErrors.mobile = 'Mobile number is required.';
         }
-        if (!formData.username) {
-            tempErrors.username = 'Username is required.';
+        if (!formData.name) {
+            tempErrors.name = 'Name is required.';
+        }
+        if (!formData.companyName) {
+            tempErrors.companyName = 'Company name is required.';
+        }
+
+        if (formData.username && !formData.username.includes('@')) {
+            tempErrors.username = 'Username must be a valid email address containing "@"';
         }
 
         // If there are required field errors, don't submit
@@ -127,7 +145,7 @@ function EditSuplierBody() {
         // NIC validation
         const newNICRegex = /^\d{12}$/;
         const oldNICRegex = /^\d{9}[VXvx]$/;
-        if (!newNICRegex.test(formData.nic) && !oldNICRegex.test(formData.nic)) {
+        if (formData.nic && !newNICRegex.test(formData.nic) && !oldNICRegex.test(formData.nic)) {
             setErrors(prev => ({
                 ...prev,
                 nic: 'NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).'
@@ -146,7 +164,7 @@ function EditSuplierBody() {
             mobile: formData.mobile,
             country: formData.country,
             city: formData.city,
-            address: formData.address
+            address: formData.address || ""
         };
 
         // API request to update supplier profile
@@ -211,72 +229,7 @@ function EditSuplierBody() {
                     <form onSubmit={handleSubmit}>
                         <div className="flex space-x-16">
                             <div className="flex-1">
-                                {/* Username field */}
-                                <div className="mt-2">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Enter the Email <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="username"
-                                        name="username"
-                                        type="email"
-                                        required
-                                        placeholder='sample@gmail.com'
-                                        value={formData.username}
-                                        onChange={handleChange}
-                                        autoComplete="email"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
 
-                                {/* Country field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Country <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="country"
-                                        name="country"
-                                        type="text"
-                                        required
-                                        placeholder='Sri Lanka'
-                                        value={formData.country}
-                                        onChange={handleChange}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-
-                                {/* City field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">City <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="city"
-                                        name="city"
-                                        type="text"
-                                        required
-                                        placeholder='Kandy'
-                                        value={formData.city}
-                                        onChange={handleChange}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-
-                                {/* Address field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Address <span className='text-red-500'>*</span></label>
-                                    <textarea
-                                        id="address"
-                                        name="address"
-                                        required
-                                        placeholder='No 46, Rock view Garden Thennekumbura'
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-3 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
-
-                            </div>
-
-                            <div className="flex-1">
                                 {/* Name field */}
                                 <div className="mt-2">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Name <span className='text-red-500'>*</span></label>
@@ -292,6 +245,55 @@ function EditSuplierBody() {
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
                                 </div>
+
+                                {/* Username field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Enter the Email</label>
+                                    <input
+                                        id="username"
+                                        name="username"
+                                        type="email"
+                                        placeholder='sample@gmail.com'
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                        autoComplete="email"
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+                                {/* Country field
+                                <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Country <span className='text-red-500'>*</span></label>
+                                    <input
+                                        id="country"
+                                        name="country"
+                                        type="text"
+                                        required
+                                        placeholder='Sri Lanka'
+                                        value={formData.country}
+                                        onChange={handleChange}
+                                        autoComplete="given-name"
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+                                {/* City field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">City <span className='text-red-500'>*</span></label>
+                                    <input
+                                        id="city"
+                                        name="city"
+                                        type="text"
+                                        required
+                                        placeholder='Kandy'
+                                        value={formData.city}
+                                        onChange={handleChange}
+                                        autoComplete="given-name"
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+
+
                                 {/* Name field */}
                                 <div className="mt-5">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Company Name <span className='text-red-500'>*</span></label>
@@ -308,24 +310,14 @@ function EditSuplierBody() {
                                     />
                                 </div>
 
-                                {/* Date of Birth field */}
-                                <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC<span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="nic"
-                                        name="nic"
-                                        type="text"
-                                        required
-                                        placeholder='200123456789'
-                                        value={formData.nic}
-                                        onChange={handleChange}
-                                        maxLength={12}
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div>
+                                
+
+                            </div>
+
+                            <div className="flex-1">
 
                                 {/* Mobile number field */}
-                                <div className="mt-5">
+                                <div className="mt-2">
                                     <label htmlFor="mobile" className="block text-sm font-medium leading-6 text-gray-900 text-left">
                                         Mobile number <span className='text-red-500'>*</span>
                                     </label>
@@ -334,15 +326,47 @@ function EditSuplierBody() {
                                         name="mobile"
                                         type="text"
                                         required
-                                        placeholder='+94 xx xxxx xxx'
+                                        placeholder='xxx xxxx xxx'
                                         value={formData.mobile}
                                         onChange={handleChange}
                                         onKeyDown={handleKeyDown}
-                                        maxLength={12}
+                                        maxLength={10}
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
                                     {errors.mobile && <p className="text-red-600 text-sm mt-1">{errors.mobile}</p>}
                                 </div>
+
+
+                                {/* NIC */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC</label>
+                                    <input
+                                        id="nic"
+                                        name="nic"
+                                        type="text"
+                                        placeholder='200123456789'
+                                        value={formData.nic}
+                                        onChange={handleChange}
+                                        maxLength={12}
+                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+                                
+                                {/* Address field */}
+                                {/* <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Address <span className='text-red-500'>*</span></label>
+                                    <textarea
+                                        id="address"
+                                        name="address"
+                                        required
+                                        placeholder='No 46, Rock view Garden Thennekumbura'
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        autoComplete="given-name"
+                                        className="block w-full rounded-md border-0 py-3 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                    />
+                                </div> */}
+                                
                             </div>
                         </div>
                         <div className="container mx-auto text-left">

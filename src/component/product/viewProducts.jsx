@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -10,6 +21,7 @@ import ProductIcon from "../../img/product icon.jpg";
 import formatWithCustomCommas from '../utill/NumberFormate';
 import { useCurrency } from '../../context/CurrencyContext';
 import { UserContext } from "../../context/UserContext";
+import * as XLSX from "xlsx";
 
 function ViewProductsBody() {
   // State variables
@@ -31,6 +43,11 @@ function ViewProductsBody() {
   const { currency } = useCurrency()
   const [permissionData, setPermissionData] = useState({});
   const { userData } = useContext(UserContext);
+  // State for Modify Products Modal
+  const [showModifyModal, setShowModifyModal] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelError, setExcelError] = useState('');
+  const [excelProgress, setExcelProgress] = useState(false);
 
   useEffect(() => {
     if (userData?.permissions) {
@@ -178,6 +195,110 @@ function ViewProductsBody() {
     // If backspace is pressed and the input becomes empty, reset the searchedBaseUnits
     if (e.key === 'Backspace' && value === '') {
       setSearchedProduct([]);
+    }
+  };
+
+  // Handle Excel file upload for bulk modification
+  const handleExcelFileChange = (e) => {
+    setExcelError('');
+    const file = e.target.files[0];
+    if (!file) return;
+    const allowedTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel"
+    ];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedTypes.includes(file.type) && !["xlsx", "xls"].includes(ext)) {
+      setExcelError("Only .xlsx and .xls files are allowed.");
+      setExcelFile(null);
+      return;
+    }
+    setExcelFile(file);
+  };
+
+  // Handle Excel file upload for bulk modification
+  const handleExcelImport = async () => {
+    setExcelError('');
+    setExcelProgress(true);
+
+    if (!excelFile) {
+      setExcelError("Please select an Excel file.");
+      setExcelProgress(false);
+      return;
+    }
+
+    try {
+      // 1. Read Excel
+      const data = await excelFile.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      // 2. Validate columns (only Product code is required now)
+      const requiredFields = ["Product code"];
+      const missingFields = requiredFields.filter(f => !Object.keys(rows[0] || {}).includes(f));
+      if (missingFields.length > 0) {
+        setExcelError(`Please check Excel sheet fields: Missing ${missingFields.join(", ")}`);
+        setExcelProgress(false);
+        return;
+      }
+
+      // 3. Fetch all brands for validation (if Brand is provided)
+      const brandsRes = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findBrand`);
+      const allBrands = (brandsRes.data?.brands || []).map(b => b.brandName);
+
+      // 4. For each row, update product
+      for (const row of rows) {
+        // a. Get product by code
+        const code = row["Product code"];
+        let productRes;
+        try {
+          productRes = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findProductByCode/${code}`);
+        } catch {
+          setExcelError(`Product with code "${code}" not found.`);
+          setExcelProgress(false);
+          return;
+        }
+        const product = productRes.data?.product;
+        if (!product) {
+          setExcelError(`Product with code "${code}" not found.`);
+          setExcelProgress(false);
+          return;
+        }
+
+        // b. Brand check (only if provided)
+        const newBrand = row["Brand"];
+        if (newBrand && !allBrands.includes(newBrand)) {
+          setExcelError(`Brand "${newBrand}" does not exist. Please create the brand first.`);
+          setExcelProgress(false);
+          return;
+        }
+
+        // c. Prepare FormData for update (only append if value is present)
+        const formData = new FormData();
+        if (newBrand) formData.append("brand", newBrand);
+        if (row["Product Cost"] !== undefined && row["Product Cost"] !== "") formData.append("productCost", row["Product Cost"]);
+        if (row["Product Price"] !== undefined && row["Product Price"] !== "") formData.append("productPrice", row["Product Price"]);
+
+        // If nothing to update, skip this row
+        if (![...formData.keys()].length) continue;
+
+        // d. Call backend update endpoint
+        await axios.put(
+          `${process.env.REACT_APP_BASE_URL}/api/updateProductFields/${product._id}`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      }
+
+      toast.success("Products successfully modified!", { autoClose: 2000 });
+      setShowModifyModal(false);
+      setRefreshKey(prev => prev + 1);
+    } catch (err) {
+      setExcelError("Failed to process the file. Please ensure the format is correct.");
+      console.error(err);
+    } finally {
+      setExcelProgress(false);
     }
   };
 
@@ -402,6 +523,12 @@ function ViewProductsBody() {
         <div className="flex items-center">
           {permissionData.create_product && (
             <div>
+              <button
+                type="button"
+                className="submit mr-2 flex-none rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-40 text-center" onClick={() => setShowModifyModal(true)}
+              >
+                Modify Products
+              </button>
               <Link
                 to={"/createProduct"}
                 className="submit flex-none rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-60 text-center"
@@ -775,6 +902,71 @@ function ViewProductsBody() {
           </div>
         </div>
       )}
+      {/* Modify Products Modal */}
+      {showModifyModal && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-gray-900 bg-opacity-50 z-40"
+            onClick={() => {
+              setShowModifyModal(false);
+              setExcelError('');
+              setExcelFile(null);
+            }}
+          ></div>
+
+          {/* Centered Modal */}
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-white px-8 py-6 rounded-lg shadow-lg w-[600px] min-h-[400px] overflow-y-auto relative text-center">
+              <h2 className="text-xl font-semibold mb-6">Modify Products (Bulk Update)</h2>
+
+              {/* File Input */}
+              <div className="mb-8">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleExcelFileChange}
+                  className="block mx-auto"
+                />
+              </div>
+
+              {/* Labels */}
+              <div className="text-left space-y-1 mb-10">
+                <p className="text-base">Product code : <span className="font-medium text-gray-900">Required</span></p>
+                <p className="text-base">Brand </p>
+                <p className="text-base">Product Cost</p>
+                <p className="text-base">Product Price</p>
+              </div>
+
+              {/* Error */}
+              {excelError && <p className="text-red-600 mt-4">{excelError}</p>}
+
+              {/* Buttons */}
+              <div className="mt-6 flex justify-center gap-4">
+                <button
+                  className="submit w-40 rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus:outline-none"
+                  onClick={handleExcelImport}
+                  disabled={excelProgress || !excelFile}
+                >
+                  {excelProgress ? "Processing..." : "Import & Update"}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowModifyModal(false);
+                    setExcelError('');
+                    setExcelFile(null);
+                  }}
+                  className="w-[100px] inline-flex justify-center rounded-md bg-gray-600 py-2.5 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-500 focus:outline-none"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+
     </div>
   );
 }

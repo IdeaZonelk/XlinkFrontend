@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import '../../styles/role.css';
@@ -304,69 +315,79 @@ function EditProductBody() {
     };
 
     const handleImageChange = async (e) => {
-        const file = e.target.files[0];
+    const file = e.target.files[0];
 
-        if (!file) {
-            setError("No file selected.");
-            return;
-        }
-        if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
-            setError("Only JPG files are allowed. Please upload a valid JPG file.");
-            alert("Only JPG files are allowed. Please upload a valid JPG file.");
-            inputRef.current.value = "";
-            return;
-        }
-        const maxFileSizeMB = 4;
-        if (file.size / 1024 / 1024 > maxFileSizeMB) {
-            alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-            inputRef.current.value = "";
-            return;
-        }
-        const options = {
-            maxSizeMB: 0.02,
-            maxWidthOrHeight: 800,
-            useWebWorker: true,
-        };
+    if (!file) {
+        setError("No file selected.");
+        return;
+    }
 
-        try {
-            const image = await imageCompression.getDataUrlFromFile(file);
-            const img = new Image();
-            img.src = image;
+    // Allow JPG and PNG formats
+    const validTypes = ["image/jpeg", "image/png"];
+    const validExtensions = [".jpg", ".jpeg", ".png"];
+    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
 
-            await new Promise((resolve, reject) => {
-                img.onload = () => {
-                    const width = img.width;
-                    const height = img.height;
-                    const tolerance = 100;
+    if (!validTypes.includes(file.type) || !validExtensions.includes(fileExtension)) {
+        setError("Only JPG and PNG files are allowed. Please upload a valid image.");
+        alert("Only JPG and PNG files are allowed. Please upload a valid image.");
+        inputRef.current.value = "";
+        return;
+    }
 
-                    if (Math.abs(width - height) > tolerance) {
-                        alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        inputRef.current.value = "";
-                        reject();
-                        return;
-                    } else {
-                        resolve();
-                    }
-                };
-                img.onerror = () => {
-                    setError("Error loading image. Please try again.");
+    const maxFileSizeMB = 4;
+    if (file.size / 1024 / 1024 > maxFileSizeMB) {
+        alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+        inputRef.current.value = "";
+        return;
+    }
+
+    const options = {
+        maxSizeMB: 0.02,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+    };
+
+    try {
+        const image = await imageCompression.getDataUrlFromFile(file);
+        const img = new Image();
+        img.src = image;
+
+        await new Promise((resolve, reject) => {
+            img.onload = () => {
+                const width = img.width;
+                const height = img.height;
+                const tolerance = 100;
+
+                if (Math.abs(width - height) > tolerance) {
+                    alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
                     inputRef.current.value = "";
                     reject();
                     return;
-                };
-            });
+                } else {
+                    resolve();
+                }
+            };
+            img.onerror = () => {
+                setError("Error loading image. Please try again.");
+                inputRef.current.value = "";
+                reject();
+                return;
+            };
+        });
 
-            const compressedBlob = await imageCompression(file, options);
-            const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-                type: "image/jpeg",
-            });
+        const compressedBlob = await imageCompression(file, options);
+        const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+            type: "image/jpeg",
+        });
 
-            setImage(compressedFile);
-            setError("");
-        } catch (error) {
-            console.error("Compression Error:", error);
-        }
-    };
+        setImage(compressedFile);
+        setError("");
+    } catch (error) {
+        console.error("Compression Error:", error);
+        setError("Compression failed. Try again.");
+    }
+};
+
 
     const handleBaseUnitChange = (e) => {
         const selectedBaseUnit = e.target.value;
@@ -394,14 +415,11 @@ function EditProductBody() {
     const isFormValid =
         productData.name
         && productData.code
-        && productData.brand
         && productData.category
-        && productData.supplier
         && productData.ptype
         && productData.unit
         && productData.saleUnit
         && productData.purchase
-        && productData.status
         && productData.barcode
         && selectedWarehouse.length > 0
         && (productData.ptype !== "Variation" || Object.keys(selectedVariationTypes).length > 0);
@@ -531,7 +549,7 @@ function EditProductBody() {
                                 {/* name*/}
                                 <div className="mt-2">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                        Product name <span className="mt-1 text-xs text-gray-500 text-left">(Max 20 characters)</span> <span className='text-red-500'>*</span>
+                                        Product name <span className="mt-1 text-xs text-gray-500 text-left"></span> <span className='text-red-500'>*</span>
                                     </label>
                                     <div className="mt-2">
                                         <input
@@ -658,7 +676,6 @@ function EditProductBody() {
                                             name="quantityLimit"
                                             type="text"
                                             value={productData.quantityLimit}
-                                            required
                                             onChange={(e) => setProductData({ ...productData, quantityLimit: e.target.value })}
                                             placeholder="Quantity Limitation:"
                                             className="block w-[90%]  rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -694,7 +711,7 @@ function EditProductBody() {
                                     <div className="flex-1 mb-4 lg:mb-0">
                                         <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                                Brand <span className='text-red-500'>*</span>
+                                                Brand
                                             </label>
 
                                             <div className="relative w-full max-w-md mt-2">
@@ -849,7 +866,7 @@ function EditProductBody() {
                                     <div className="flex-1 mb-4 lg:mb-0">
                                         <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                                Supplier <span className='text-red-500'>*</span>
+                                                Supplier
                                             </label>
 
                                             <div className="relative w-full max-w-md mt-2">
@@ -907,12 +924,11 @@ function EditProductBody() {
 
                                 {/*status*/}
                                 <div className="mt-7">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Status <span className='text-red-500'>*</span></label>
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Status </label>
                                     <div className="mt-2">
                                         <select
                                             id="status"
                                             name="status"
-                                            required
                                             value={productData.status}
                                             onChange={(e) => setProductData({ ...productData, status: e.target.value })}
                                             className="block w-[90%]  rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1071,7 +1087,7 @@ function EditProductBody() {
                                                 <div className="flex flex-col space-y-5">
                                                     <div>
                                                         <label className="block text-sm text-left font-medium leading-6 text-gray-900">
-                                                            Stock Alert <span className='text-red-500'>*</span>
+                                                            Stock Alert
                                                         </label>
                                                         <input
                                                             value={warehouse.stockAlert || ''}
@@ -1328,7 +1344,7 @@ function EditProductBody() {
 
                                                                         <div className="relative w-full">
                                                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                                                                Stock Alert <span className="text-red-500">*</span>
+                                                                                Stock Alert
                                                                             </label>
                                                                             <input
                                                                                 type="number"

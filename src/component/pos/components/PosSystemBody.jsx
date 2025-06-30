@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import { useState, useEffect, useRef, useContext } from 'react';
 import ProductFilters from './ProductFilters';
 import CryptoJS from 'crypto-js';
@@ -1687,10 +1698,10 @@ function PosSystemBody({ defaultWarehouse }) {
                                                     alt={p.name}
                                                     className="w-[62px] h-[62px] object-cover rounded-md mt-1"
                                                 />
-                                                <h3 className="mt-1 text-center text-m font-medium text-gray-900 text-[13px]">
+                                                <h3 className="mt-1 text-center text-m font-medium text-gray-900 text-[13px] truncate w-full" title={p.name}>
                                                     {p.name}
                                                 </h3>
-                                                <p className="text-center text-xs text-gray-600">{p.code}</p>
+                                                <p className="text-center text-xs text-gray-600 truncate w-full" title={p.code}>{p.code}</p>
                                                 <div className="flex space-between items-center text-left mt-[2px]">
                                                     <p className="bg-blue-600 mr-1 text-left px-1 py-[1.5px] rounded-[5px] text-center text-[11px] text-white">
                                                         {productQtyForSelectedWarehouse}{' ' + p.saleUnit}

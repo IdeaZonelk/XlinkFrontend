@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import '../../styles/dashboardBody.css';
@@ -76,86 +87,85 @@ function ProfileBody() {
     };
 
     // Handle image changes with validation and compression
-    const handleImageChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) {
-            setErrors("No file selected.");
-            return;
-        }
+   const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+        setErrors("No file selected.");
+        return;
+    }
 
-        // Check file type (strictly allow only JPG files)
-        if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
-            setErrors("Only JPG files are allowed. Please upload a valid JPG file.");
-            alert("Only JPG files are allowed. Please upload a valid JPG file.");
-            inputRef.current.value = ""; // Clear the input field
-            return;
-        }
+    // Allow JPG and PNG formats
+    const validTypes = ["image/jpeg", "image/png"];
+    const validExtensions = [".jpg", ".jpeg", ".png"];
+    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
 
-        // Check file size (max 4MB)
-        const maxFileSizeMB = 2;
-        if (file.size / 1024 / 1024 > maxFileSizeMB) {
-            setErrors(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-            alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-            inputRef.current.value = ""; // Clear the input field
-            return;
-        }
+    if (!validTypes.includes(file.type) || !validExtensions.includes(fileExtension)) {
+        setErrors("Only JPG and PNG files are allowed. Please upload a valid image.");
+        alert("Only JPG and PNG files are allowed. Please upload a valid image.");
+        inputRef.current.value = "";
+        return;
+    }
 
-        // Compression options
-        const options = {
-            maxSizeMB: 0.02, // Target size (20KB in MB)
-            maxWidthOrHeight: 800, // Reduce dimensions to help with compression
-            useWebWorker: true, // Enable Web Worker for efficiency
-        };
+    // Check file size (max 2MB)
+    const maxFileSizeMB = 2;
+    if (file.size / 1024 / 1024 > maxFileSizeMB) {
+        setErrors(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+        alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+        inputRef.current.value = "";
+        return;
+    }
 
-        try {
-            // Convert file to data URL to validate dimensions
-            const image = await imageCompression.getDataUrlFromFile(file);
-            const img = new Image();
-            img.src = image;
-
-            // Check image aspect ratio (1:1 within 100px tolerance)
-            await new Promise((resolve, reject) => {
-                img.onload = () => {
-                    const width = img.width;
-                    const height = img.height;
-                    const tolerance = 100; // Allow 100px variance
-
-                    if (Math.abs(width - height) > tolerance) {
-                        setErrors("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        inputRef.current.value = ""; // Clear the input field
-                        reject();
-                    } else {
-                        resolve();
-                    }
-                };
-                img.onerror = () => {
-                    setErrors("Error loading image. Please try again.");
-                    inputRef.current.value = ""; // Clear the input field
-                    reject();
-                };
-            });
-
-            // Display the preview of the original image immediately
-            const originalPreviewUrl = URL.createObjectURL(file);
-            setImagePreview(originalPreviewUrl);
-
-            // Compress the image asynchronously
-            const compressedBlob = await imageCompression(file, options);
-
-            // Convert compressed Blob to File with .jpg extension
-            const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-                type: "image/jpeg",
-            });
-
-            // Update state with the compressed image and its preview
-            setSelectedImage(compressedFile);
-            setErrors("");
-        } catch (error) {
-            console.error("Compression Error:", error);
-            setErrors("Error during image processing. Please try again.");
-        }
+    const options = {
+        maxSizeMB: 0.02,
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
     };
+
+    try {
+        const image = await imageCompression.getDataUrlFromFile(file);
+        const img = new Image();
+        img.src = image;
+
+        await new Promise((resolve, reject) => {
+            img.onload = () => {
+                const width = img.width;
+                const height = img.height;
+                const tolerance = 100;
+
+                if (Math.abs(width - height) > tolerance) {
+                    setErrors("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+                    alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+                    inputRef.current.value = "";
+                    reject();
+                } else {
+                    resolve();
+                }
+            };
+            img.onerror = () => {
+                setErrors("Error loading image. Please try again.");
+                inputRef.current.value = "";
+                reject();
+            };
+        });
+
+        const originalPreviewUrl = URL.createObjectURL(file);
+        setImagePreview(originalPreviewUrl);
+
+        const compressedBlob = await imageCompression(file, options);
+        const compressedFile = new File(
+            [compressedBlob],
+            file.name.replace(/\.[^/.]+$/, ".jpg"),
+            { type: "image/jpeg" }
+        );
+
+        setSelectedImage(compressedFile);
+        setErrors("");
+    } catch (error) {
+        console.error("Compression Error:", error);
+        setErrors("Error during image processing. Please try again.");
+    }
+};
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();

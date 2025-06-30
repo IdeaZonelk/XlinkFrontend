@@ -1,3 +1,14 @@
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "../../styles/role.css";
@@ -85,6 +96,10 @@ const [categoryLogoPreview, setCategoryLogoPreview] = useState(null);
 const [brandLogo, setBrandLogo] = useState(null);
 const [brandLogoPreview, setBrandLogoPreview] = useState(null);
 
+const categoryRef = useRef(null);
+const brandRef = useRef(null);
+const supplierRef = useRef(null);
+
 
   useEffect(() => {
     console.log(warehouseVariationValues)
@@ -118,6 +133,25 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
       `${process.env.REACT_APP_BASE_URL}/api/findAllVariations`, setVariationData, (data) => data.variations || []
     );
   }, []);
+
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+      setCategoryData([]);
+    }
+    if (brandRef.current && !brandRef.current.contains(e.target)) {
+      setBrandData([]);
+    }
+    if (supplierRef.current && !supplierRef.current.contains(e.target)) {
+      setSuplierData([]);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   const fetchCategories = () => {
     fetchData(
@@ -222,69 +256,74 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
   };
 
   const handleImageChange = async (e) => {
-    const file = e.target.files[0];
+  const file = e.target.files[0];
 
-    if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
-      setError("Only JPG files are allowed. Please upload a valid JPG file.");
-      alert("Only JPG files are allowed. Please upload a valid JPG file.");
-      inputRef.current.value = "";
-      return;
-    }
+  // Accept only JPG or PNG
+  const validTypes = ["image/jpeg", "image/png"];
+  const validExtensions = [".jpg", ".jpeg", ".png"];
+  const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
 
-    const maxFileSizeMB = 4;
-    if (file.size / 1024 / 1024 > maxFileSizeMB) {
-      alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-      inputRef.current.value = "";
-      return;
-    }
+  if (!validTypes.includes(file.type) || !validExtensions.includes(fileExtension)) {
+    setError("Only JPG and PNG files are allowed. Please upload a valid image.");
+    alert("Only JPG and PNG files are allowed. Please upload a valid image.");
+    inputRef.current.value = "";
+    return;
+  }
 
-    // Compression options
-    const options = {
-      maxSizeMB: 0.02,
-      maxWidthOrHeight: 800,
-      useWebWorker: true,
-    };
+  const maxFileSizeMB = 4;
+  if (file.size / 1024 / 1024 > maxFileSizeMB) {
+    alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+    inputRef.current.value = "";
+    return;
+  }
 
-    try {
-      // Ensure image is approximately square (1:1 ratio within a 100px tolerance)
-      const image = await imageCompression.getDataUrlFromFile(file);
-      const img = new Image();
-      img.src = image;
+  const options = {
+    maxSizeMB: 0.02,
+    maxWidthOrHeight: 800,
+    useWebWorker: true,
+  };
 
-      await new Promise((resolve, reject) => {
-        img.onload = () => {
-          const width = img.width;
-          const height = img.height;
-          const tolerance = 100;
+  try {
+    // Check if the image is approximately square
+    const image = await imageCompression.getDataUrlFromFile(file);
+    const img = new Image();
+    img.src = image;
 
-          if (Math.abs(width - height) > tolerance) {
-            alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-            inputRef.current.value = "";
-            reject();
-            return;
-          } else {
-            resolve();
-          }
-        };
-        img.onerror = () => {
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const tolerance = 100;
+
+        if (Math.abs(width - height) > tolerance) {
+          alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
           inputRef.current.value = "";
           reject();
           return;
-        };
-      });
+        } else {
+          resolve();
+        }
+      };
+      img.onerror = () => {
+        inputRef.current.value = "";
+        reject();
+        return;
+      };
+    });
 
-      const compressedBlob = await imageCompression(file, options);
-      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-        type: "image/jpeg",
-      });
+    // Compress and convert to JPG
+    const compressedBlob = await imageCompression(file, options);
+    const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+      type: "image/jpeg",
+    });
 
-      // Update state with the compressed image only if all validations pass
-      setImage(compressedFile);
-      setError("");
-    } catch (error) {
-      console.error("Compression Error:", error);
-    }
-  };
+    setImage(compressedFile);
+    setError("");
+  } catch (error) {
+    console.error("Compression Error:", error);
+  }
+};
+
 
   // Handle sale unit from base units
   const handleBaseUnitChange = (e) => {
@@ -418,16 +457,12 @@ const [brandLogoPreview, setBrandLogoPreview] = useState(null);
     name &&
     code &&
     warehouse &&
-    brand &&
     category &&
-    supplier &&
     ptype &&
     unit &&
     saleUnit &&
     purchase &&
-    status &&
-    barcode &&
-    quantityLimit;
+    barcode;
 
   //Handle submit for save product
   const handleSubmit = async (event) => {
@@ -589,11 +624,16 @@ const handleCategoryLogoChange = async (e) => {
       setError("No file selected.");
       return;
     }
+
+    // Allow only JPG or PNG
+    const allowedTypes = ["image/jpeg", "image/png"];
+    const allowedExtensions = [".jpg", ".jpeg", ".png"];
+    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
   
     // Check file type (strictly allow only JPG files)
-    if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
-      setError("Only JPG files are allowed. Please upload a valid JPG file.");
-      alert("Only JPG files are allowed. Please upload a valid JPG file.");
+    if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+      setError("Only JPG/PNG files are allowed. Please upload a valid JPG file.");
+      alert("Only JPG/PNG files are allowed. Please upload a valid JPG file.");
       inputRef.current.value = ""; // Clear the input field
       return;
     }
@@ -779,7 +819,7 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full">
                   <div className="mt-2">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Product name <span className="mt-1 text-xs text-gray-500 text-left">(Max 20 characters)</span> <span className='text-red-500'>*</span>
+                      Product name <span className="mt-1 text-xs text-gray-500 text-left"></span> <span className='text-red-500'>*</span>
                     </label>
                     <div className="mt-2">
                       <input
@@ -788,7 +828,6 @@ const handleCategoryLogoChange = async (e) => {
                         type="text"
                         required
                         placeholder="Enter name"
-                        maxLength={20}
                         value={name}
                         onChange={(e) => setProductName(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -869,8 +908,9 @@ const handleCategoryLogoChange = async (e) => {
                       </button>
                     </div>
 
-                    <div className="relative w-full mt-1">
+                    <div className="relative w-full mt-1 " ref={categoryRef}>
                       <form
+                        autoComplete="off"
                         className="flex items-center"
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -878,6 +918,7 @@ const handleCategoryLogoChange = async (e) => {
                         }}
                       >
                         <input
+                          autoComplete="off"
                           onChange={handleCategoryInput}
                           onKeyDown={handleKeyDownCat}
                           id="category"
@@ -934,7 +975,7 @@ const handleCategoryLogoChange = async (e) => {
                   <div className="mt-4">
                     <div className="flex mb-0 items-end justify-between">
                       <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                        Brand <span className='text-red-500'>*</span>
+                        Brand
                       </label>
                       <button
                         type="button"
@@ -955,8 +996,9 @@ const handleCategoryLogoChange = async (e) => {
                       </button>
                     </div>
 
-                    <div className="relative w-full mt-1">
+                    <div className="relative w-full mt-1" ref={brandRef}>
                       <form
+                        autoComplete="off"
                         className="flex items-center"
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -964,6 +1006,7 @@ const handleCategoryLogoChange = async (e) => {
                         }}
                       >
                         <input
+                          autoComplete="off"
                           onChange={handleBrandInput}
                           onKeyDown={handleKeyDownBrand}
                           id="brand"
@@ -1021,7 +1064,7 @@ const handleCategoryLogoChange = async (e) => {
                   <div className="mt-4">
                     <div className="flex mb-0 items-end justify-between">
                       <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                        Supplier <span className='text-red-500'>*</span>
+                        Supplier
                       </label>
                       <button
                         type="button"
@@ -1042,8 +1085,9 @@ const handleCategoryLogoChange = async (e) => {
                       </button>
                     </div>
 
-                    <div className="relative w-full mt-1">
+                    <div className="relative w-full mt-1 " ref={supplierRef}>
                       <form
+                        autoComplete="off"
                         className="flex items-center"
                         onSubmit={(e) => {
                           e.preventDefault();
@@ -1051,6 +1095,7 @@ const handleCategoryLogoChange = async (e) => {
                         }}
                       >
                         <input
+                          autoComplete="off"
                           onChange={handleSupplierInput}
                           onKeyDown={handleKeyDownSup}
                           id="supplier"
@@ -1161,13 +1206,12 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Status <span className='text-red-500'>*</span>
+                      Status
                     </label>
                     <div className="mt-2">
                       <select
                         id="status"
                         name="status"
-                        required
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1244,14 +1288,13 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Quantity Limitation <span className='text-red-500'>*</span>
+                      Quantity Limitation
                     </label>
                     <div className="mt-2">
                       <input
                         id="QuantityLimitation"
                         name="QuantityLimitation"
                         type="text"
-                        required
                         onChange={(e) => setQL(e.target.value)}
                         placeholder="Quantity Limitation"
                         value={quantityLimit}
@@ -1467,7 +1510,7 @@ const handleCategoryLogoChange = async (e) => {
                             />
                           </div>
                           <label className="block mt-5 text-sm font-medium leading-6 text-gray-900 text-left">
-                            Stock Alert <span className="text-red-500">*</span>
+                            Stock Alert 
                           </label>
                           <input
                             type="number"
@@ -1687,7 +1730,7 @@ const handleCategoryLogoChange = async (e) => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Stock Alert <span className="text-red-500">*</span>
+                              Stock Alert 
                             </label>
                             <input
                               type="number"
