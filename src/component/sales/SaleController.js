@@ -119,7 +119,7 @@ export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, 
                 ...product,
                 selectedVariation: Object.keys(product.variationValues)[0],
                 barcodeFormat: product.barcode,
-                barcodeQty: 0,
+                barcodeQty: 1,
                 selectedWarehouseId: warehouse?._id || warehouse,
             };
             console.log('New product with variation:', newProduct);
@@ -139,7 +139,7 @@ export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, 
             const newProduct = {
                 ...product,
                 barcodeFormat: product.barcode,
-                barcodeQty: 0,
+                barcodeQty: 1,
                 selectedWarehouseId: warehouse?._id || warehouse,
             };
             console.log('New product without variation:', newProduct);
@@ -381,7 +381,7 @@ export const getDiscount = (product, selectedVariation) => {
 };
 
 
-export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false, shouldPrintKOT = false ) => {
+export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue ,  shouldPrintKOT = false  ) => {
 
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
@@ -477,15 +477,24 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         const currentID = product._id;
         const ptype = product.ptype;
         const variationValue = product.selectedVariation;
+
+        const quantity = product.barcodeQty || 1;
+        const wholesaleEnabled = product.wholesaleEnabled || false;
+        const wholesaleMinQty = product.wholesaleMinQty || 0;
+        const wholesalePrice = product.wholesalePrice || 0;
+
+        const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
+        const applicablePrice = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
+
         const price = product.price || getPriceRange(product, product.selectedVariation);
+
         const productCost = product.producrCost || getProductCost(product, product.selectedVariation);
         const discount = product.discount || getDiscount(product, product.selectedVariation);
         const specialDiscount = product.specialDiscount || 0;
-        const quantity = product.barcodeQty || 1;
         const stockQty = product.productQty - quantity;
         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-        const subtotal = ((price - discount - specialDiscount) * quantity) + ((price) * quantity * taxRate);
-        const productProfit = (((price - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
+        const subtotal = ((applicablePrice - discount - specialDiscount) * quantity) + ((applicablePrice) * quantity * taxRate);
+        const productProfit = (((applicablePrice - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
         const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
 
         return {
@@ -493,6 +502,8 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
             ptype,
             variationValue: variationValue || 'No variations',
             name: product.name,
+            appliedWholesale,
+            applicablePrice,
             price,
             discount,
             specialDiscount,
@@ -502,6 +513,10 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
             subtotal,
             productProfit,
             warehouse: warehouseId,
+            wholesaleEnabled,
+            wholesaleMinQty,
+            wholesalePrice,
+            wholesaleApplied: appliedWholesale
         };
     });
 
@@ -512,11 +527,13 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
         tax,
         discountType: discountType || 'fixed',
         discount,
+        discountValue,
         shipping,
         paymentStatus,
         paymentType: paymentTypesArray,
         orderStatus: orderStatus || 'ordered',
         paidAmount,
+        baseTotal,
         grandTotal: totalAmount,
         pureProfit: profitAmount,
         cashierUsername: cashierUsername || 'Unknown',
@@ -615,7 +632,7 @@ export const handleSave = async (grandTotal, profit, orderStatus, paymentStatus,
 
 //HANDLE UPDATE SALE
 export const handleUpdateSale = async (
-    id, grandTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
+    id, grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
     discountType, discount, tax, warehouse, selectedCustomer,
     productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate
 ) => {
@@ -704,6 +721,7 @@ export const handleUpdateSale = async (
         orderStatus,
         paidAmount,
         pureProfit: profitAmount,
+        baseTotal,
         grandTotal: totalAmount,
         cashierUsername: cashierUsername ? cashierUsername : 'unknown',
         offerPercentage
@@ -714,14 +732,24 @@ export const handleUpdateSale = async (
         const currentID = product.currentID ? product.currentID : product._id;
         const ptype = product.ptype;
         const variationValue = product.variationValue ? product.variationValue : product.selectedVariation;
-        const price = product.productPrice ? product.productPrice : product.price || getPriceRange(product, product.selectedVariation);
-        const productCost = product.producrCost ? product.producrCost : getProductCost(product, product.selectedVariation);
         const quantity = product.quantity || 1;
+
+        const price = product.productPrice ? product.productPrice : product.price || getPriceRange(product, product.selectedVariation);
+
+        const wholesaleEnabled = product.wholesaleEnabled || false;
+        const wholesaleMinQty = product.wholesaleMinQty || 0;
+        const wholesalePrice = product.wholesalePrice || 0;
+
+        const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
+        const applicablePrice = appliedWholesale ? wholesalePrice : price;
+
+        const productCost = product.producrCost ? product.producrCost : getProductCost(product, product.selectedVariation);
+        
         const discount = getDiscount(product, product.selectedVariation) || 0;
         const specialDiscount = product.specialDiscount || 0;
         const taxRate = product.taxRate ? product.taxRate : product.taxRate ? product.taxRate : getTax(product, product.selectedVariation) / 100;
-        const subtotal = ((price - discount - specialDiscount) * quantity) + ((price) * quantity * taxRate);
-        const productProfit = (((price - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
+        const subtotal = ((applicablePrice - discount - specialDiscount) * quantity) + ((applicablePrice) * quantity * taxRate);
+        const productProfit = (((applicablePrice - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
         const warehouse = product.warehouse || null;
 
         return {
@@ -729,6 +757,8 @@ export const handleUpdateSale = async (
             ptype,
             variationValue: variationValue ? variationValue : 'No variations',
             name: product.name,
+            appliedWholesale,
+            applicablePrice,
             price,
             productProfit,
             quantity,
@@ -737,6 +767,9 @@ export const handleUpdateSale = async (
             taxRate,
             subtotal,
             warehouse,
+            wholesaleEnabled,
+            wholesaleMinQty,
+            wholesalePrice,
         };
     });
 
@@ -785,7 +818,8 @@ export const handleUpdateSale = async (
 };
 
 //HANDLE THE RETURN OF SALE
-export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount, warehouse, customer, selectedProduct, date, note, setError, setResponseMessage, setProgress, navigate) => {
+export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmountDetail, warehouse, customer, selectedProduct, date, discountValue, shipping, tax, note, setError, setResponseMessage, setProgress, navigate) => {
+
     setError('')
     setResponseMessage('')
     setProgress(true)
@@ -797,6 +831,7 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
         console.warn('setLoading is not a function. Skipping setLoading invocation.');
     }
 
+    const { returnAmount, adjustedTax, adjustedDiscount } = returnAmountDetail;
     const commonSaleData = {
         id,
         date,
@@ -804,7 +839,12 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
         warehouse: warehouse || null,
         grandTotal,
         paidAmount,
+        discountValue,
+        shipping,
+        tax,
         returnAmount,
+        adjustedTax,
+        adjustedDiscount,
         note
     };
 
@@ -821,6 +861,8 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
         const discount = product.discount;
         const warehouse = product.warehouse || null;
         const restocking = product.restocking;
+        const applicablePrice = product.applicablePrice || product.price;
+        const appliedWholesale = product.appliedWholesale || false;
 
         return {
             currentID,
@@ -828,6 +870,8 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmount,
             ptype,
             name: product.name,
             price,
+            applicablePrice,
+            appliedWholesale,
             quantity,
             returnQty,
             discount,

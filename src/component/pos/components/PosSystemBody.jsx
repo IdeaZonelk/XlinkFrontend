@@ -272,6 +272,9 @@ function PosSystemBody({ defaultWarehouse }) {
                     variation: product.variation,
                     variationType: product.variationType,
                     variationValues: product.variationValues,
+                    wholesaleEnabled: product.warehouse?.[warehouse]?.wholesaleEnabled || false,
+                    wholesaleMinQty: product.warehouse?.[warehouse]?.wholesaleMinQty || 0,
+                    wholesalePrice: product.warehouse?.[warehouse]?.wholesalePrice || 0,
                 });
             });
         }
@@ -540,6 +543,9 @@ function PosSystemBody({ defaultWarehouse }) {
                     variationValues: {
                         ...baseDetails.variationValues
                     },
+                    wholesaleEnabled: product.wholesaleEnabled || false,
+                    wholesaleMinQty: product.wholesaleMinQty || 0,
+                    wholesalePrice: product.wholesalePrice || 0,
                 };
 
             });
@@ -1690,6 +1696,9 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         variation: p.variation,
                                                         variationType: p.variationType || "Unknown",
                                                         variationValues: warehouseData ? warehouseData.variationValues || {} : {},
+                                                        wholesaleEnabled: warehouseData?.wholesaleEnabled || false,
+                                                        wholesaleMinQty: warehouseData?.wholesaleMinQty || 0,
+                                                        wholesalePrice: warehouseData?.wholesalePrice || 0,
                                                     });
                                                 } : undefined}
                                             >

@@ -431,6 +431,55 @@ function EditProductBody() {
         setResponseMessage('')
         setProgress(true);
 
+        // Wholesale Validation for Single and Variation
+        if (productData.ptype === "Single") {
+        for (const warehouseName of selectedWarehouse) {
+            const data = warehouseValues[warehouseName];
+            if (data?.wholesaleEnabled) {
+            const qty = parseFloat(data.wholesaleMinQty);
+            const price = parseFloat(data.wholesalePrice);
+
+            if (isNaN(qty) || qty < 1) {
+                toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${warehouseName}"`);
+                setProgress(false);
+                return;
+            }
+
+            if (isNaN(price) || price <= 0) {
+                toast.error(`Please enter a valid Wholesale Price (> 0) for "${warehouseName}"`);
+                setProgress(false);
+                return;
+            }
+            }
+        }
+        } else if (productData.ptype === "Variation") {
+        for (const warehouseName of selectedWarehouse) {
+            const warehouse = warehouseValues[warehouseName];
+            if (!warehouse?.variationValues) continue;
+
+            for (const variationType of selectedVariationTypes) {
+            const variation = warehouse.variationValues[variationType];
+            if (variation?.wholesaleEnabled) {
+                const qty = parseFloat(variation.wholesaleMinQty);
+                const price = parseFloat(variation.wholesalePrice);
+
+                if (isNaN(qty) || qty < 1) {
+                toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${variationType}" in "${warehouseName}"`);
+                setProgress(false);
+                return;
+                }
+
+                if (isNaN(price) || price <= 0) {
+                toast.error(`Please enter a valid Wholesale Price (> 0) for "${variationType}" in "${warehouseName}"`);
+                setProgress(false);
+                return;
+                }
+            }
+            }
+        }
+        }
+
+
         // Create a FormData object
         const formattedWarehouses = Object.entries(warehouseValues).reduce(
             (acc, [warehouseName, warehouseData]) => {
@@ -1207,6 +1256,77 @@ function EditProductBody() {
                                                     </div>
                                                 </div>
                                             </div>
+                                            {/* === Retail All Sale Price Section === */}
+                                            <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-4">
+                                                Has Wholesale Price?
+                                                </label>
+                                                <div className="flex items-center space-x-6">
+                                                <label className="flex items-center">
+                                                    <input
+                                                    type="radio"
+                                                    name={`wholesaleOption_${warehouseName}`}
+                                                    checked={warehouse.wholesaleEnabled === true}
+                                                    onChange={() => handleSingleProductInputChange(warehouseName, 'wholesaleEnabled', true)}
+                                                    className="mr-2"
+                                                    />
+                                                    <span>Yes</span>
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input
+                                                    type="radio"
+                                                    name={`wholesaleOption_${warehouseName}`}
+                                                    value="no"
+                                                    checked={warehouse.wholesaleEnabled !== true}
+                                                    onChange={() => handleSingleProductInputChange(warehouseName, 'wholesaleEnabled', false)}
+                                                    className="mr-2"
+                                                    />
+                                                    <span>No</span>
+                                                </label>
+                                                </div>
+                                            </div>
+                                            
+
+                                            {warehouse.wholesaleEnabled &&   (
+                                                <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Min Wholesale Quantity
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                                    placeholder="Min Qty"
+                                                    value={warehouse.wholesaleMinQty || 0}
+                                                    onChange={(e) =>
+                                                    handleSingleProductInputChange(warehouseName, 'wholesaleMinQty', e.target.value)
+                                                    }
+                                                />
+                                                </div>
+                                            )}
+
+                                            {warehouse.wholesaleEnabled &&  (
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Product Wholesale Price
+                                                    </label>
+                                                    <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                                        placeholder="Discounted Price"
+                                                        value={warehouse.wholesalePrice || 0}
+                                                        onChange={(e) =>
+                                                        handleSingleProductInputChange(warehouseName, 'wholesalePrice', e.target.value)
+                                                        }
+                                                    />
+                                                    <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
+                                                    {currency}
+                                                    </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            </div>
                                         </div>
                                     </li>
                                 ))
@@ -1389,6 +1509,74 @@ function EditProductBody() {
                                                                             </div>
                                                                         </div>
                                                                     </div>
+                                                                </div>
+                                                                {/* === Retail All Sale Price Section === */}
+                                                                <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-4">
+                                                                    Has Wholesale Price?
+                                                                    </label>
+                                                                    <div className="flex items-center space-x-6">
+                                                                    <label className="flex items-center">
+                                                                        <input
+                                                                        type="radio"
+                                                                        checked={variationDetails.wholesaleEnabled === true}
+                                                                        onChange={() => handleVariationProductInputChange(warehouseName, variationType, 'wholesaleEnabled', true)}
+                                                                        className="mr-2"
+                                                                        />
+                                                                        <span>Yes</span>
+                                                                    </label>
+                                                                    <label className="flex items-center">
+                                                                        <input
+                                                                        type="radio"
+                                                                        checked={variationDetails.wholesaleEnabled !== true}
+                                                                        onChange={() => handleVariationProductInputChange(warehouseName, variationType, 'wholesaleEnabled', false)}
+                                                                        className="mr-2"
+                                                                        />
+                                                                        <span>No</span>
+                                                                    </label>
+                                                                    </div>
+                                                                </div>
+                                                                
+
+                                                                {variationDetails.wholesaleEnabled &&   (
+                                                                    <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Min Wholesale Quantity
+                                                                    </label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                                                        placeholder="Min Qty"
+                                                                        value={variationDetails.wholesaleMinQty || 0}
+                                                                        onChange={(e) =>
+                                                                        handleVariationProductInputChange(warehouseName, variationType, 'wholesaleMinQty', e.target.value)
+                                                                        }
+                                                                    />
+                                                                    </div>
+                                                                )}
+
+                                                                {variationDetails.wholesaleEnabled &&  (
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Product Wholesale Price
+                                                                        </label>
+                                                                        <div className="relative">
+                                                                        <input
+                                                                            type="number"
+                                                                            className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                                                            placeholder="Discounted Price"
+                                                                            value={variationDetails.wholesalePrice || 0}
+                                                                            onChange={(e) =>
+                                                                            handleVariationProductInputChange(warehouseName, variationType, 'wholesalePrice', e.target.value)
+                                                                            }
+                                                                        />
+                                                                        <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
+                                                                        {currency}
+                                                                        </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                                 </div>
                                                             </li>
                                                         );
