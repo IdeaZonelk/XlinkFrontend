@@ -100,6 +100,9 @@ const categoryRef = useRef(null);
 const brandRef = useRef(null);
 const supplierRef = useRef(null);
 
+// AllSaleDetails and variationAllSaleDetails state
+const [allSaleDetails, setAllSaleDetails] = useState({});
+const [variationAllSaleDetails, setVariationAllSaleDetails] = useState({});
 
   useEffect(() => {
     console.log(warehouseVariationValues)
@@ -151,6 +154,32 @@ useEffect(() => {
     document.removeEventListener("mousedown", handleClickOutside);
   };
 }, []);
+
+
+
+    const handleAllSaleChange = (warehouse, field, value) => {
+      setAllSaleDetails(prev => ({
+        ...prev,
+        [warehouse]: {
+          ...prev[warehouse],
+          [field]: value
+        }
+      }));
+    };
+
+
+    const handleVariationAllSaleChange = (warehouse, type, field, value) => {
+      setVariationAllSaleDetails(prev => ({
+        ...prev,
+        [warehouse]: {
+          ...prev[warehouse],
+          [type]: {
+            ...(prev[warehouse]?.[type] || {}),
+            [field]: value
+          }
+        }
+      }));
+    };
 
 
   const fetchCategories = () => {
@@ -442,15 +471,31 @@ useEffect(() => {
   };
 
   // //Handle variaion input changing
+  // const handleWarehouseValueChange = (warehouseName, field, value) => {
+  //   setWarehouseValues(prev => ({
+  //     ...prev,
+  //     [warehouseName]: {
+  //       ...prev[warehouseName],
+  //       [field]: Number(value)
+  //     }
+  //   }));
+  // };
+
+
   const handleWarehouseValueChange = (warehouseName, field, value) => {
-    setWarehouseValues(prev => ({
-      ...prev,
-      [warehouseName]: {
-        ...prev[warehouseName],
-        [field]: Number(value)
-      }
-    }));
-  };
+  setWarehouseValues(prev => ({
+    ...prev,
+    [warehouseName]: {
+      ...prev[warehouseName],
+      [field]: field === 'wholesaleEnabled'
+        ? Boolean(value)
+        : field === 'wholesaleMinQty' || field === 'wholesalePrice' || field === 'productCost' || field === 'productQty' || field === 'productPrice' || field === 'orderTax' || field === 'stockAlert' || field === 'discount'
+        ? Number(value) || 0 
+        : value 
+    }
+  }));
+};
+
 
   //Save button enabile and disable checking
   const isFormValid =
@@ -470,6 +515,57 @@ useEffect(() => {
     setError("");
     setResponseMessage("");
     setProgress(true);
+
+
+    if (ptype === "Single") {
+    for (const warehouseName of selectedWarehouse) {
+      const data = warehouseValues[warehouseName];
+      if (data?.wholesaleEnabled) {
+        const qty = parseFloat(data.wholesaleMinQty);
+        const price = parseFloat(data.wholesalePrice);
+
+        if (isNaN(qty) || qty < 1) {
+          toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${warehouseName}"`);
+          setProgress(false);
+          return;
+        }
+
+        if (isNaN(price) || price <= 0) {
+          toast.error(`Please enter a valid Wholesale Price (> 0) for "${warehouseName}"`);
+          setProgress(false);
+          return;
+        }
+      }
+    }
+  }
+
+  if (ptype === "Variation") {
+  for (const warehouseName of selectedWarehouse) {
+    const warehouseData = warehouseVariationValues[warehouseName];
+    if (!warehouseData) continue;
+
+    for (const variationType of selectedVariationTypes) {
+      const variationData = warehouseData[variationType];
+      if (variationData?.wholesaleEnabled) {
+        const qty = parseFloat(variationData.wholesaleMinQty);
+        const price = parseFloat(variationData.wholesalePrice);
+
+        if (isNaN(qty) || qty < 1) {
+          toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${variationType}" in "${warehouseName}"`);
+          setProgress(false);
+          return;
+        }
+
+        if (isNaN(price) || price <= 0) {
+          toast.error(`Please enter a valid Wholesale Price (> 0) for "${variationType}" in "${warehouseName}"`);
+          setProgress(false);
+          return;
+        }
+      }
+    }
+  }
+}
+
 
     const formattedWarehouses =
   ptype === "Single"
@@ -505,6 +601,7 @@ useEffect(() => {
       formData.append("warehouse", JSON.stringify(formattedWarehouses));
       formData.append("variationValues", JSON.stringify(variationValues));
       formData.append("variationType", JSON.stringify(variationType));
+
 
       // if (ptype === "Single") {
       //   formData.append("warehouse", JSON.stringify(warehouseValues));
@@ -1683,6 +1780,79 @@ const handleCategoryLogoChange = async (e) => {
                       <p className="mt-1 text-xs text-gray-400 text-left">
                         Ensure numeric input fields contain valid numbers
                       </p>
+
+                      {/* === Retail All Sale Price Section === */}
+                        <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-4">
+                            Has Wholesale Price?
+                            </label>
+                            <div className="flex items-center space-x-6">
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`wholesaleOption_${warehouseName}`}
+                                  value="yes"
+                                  checked={warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true}
+                                  onChange={() => handleVariationValueChange(warehouseName, type, 'wholesaleEnabled', true)}
+                                  className="mr-2"
+                                />
+                                <span>Yes</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`wholesaleOption_${warehouseName}`}
+                                  value="no"
+                                  checked={warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled !== true}
+                                  onChange={() => handleVariationValueChange(warehouseName, type, 'wholesaleEnabled', false)}
+                                  className="mr-2"
+                                />
+                                <span>No</span>
+                              </label>
+                            </div>
+                          </div>
+                          
+
+                          {warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true &&  (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                               Min Wholesale Quantity
+                              </label>
+                              <input
+                                type="number"
+                                className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                placeholder="Min Qty"
+                                value={warehouseVariationValues[warehouseName]?.[type]?.wholesaleMinQty || 0}
+                                onChange={(e) =>
+                                  handleVariationValueChange(warehouseName, type, 'wholesaleMinQty', e.target.value)
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true &&  (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                 Product Wholesale Price
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                    placeholder="Discounted Price"
+                                    value={warehouseVariationValues[warehouseName]?.[type]?.wholesalePrice || 0}
+                                    onChange={(e) =>
+                                      handleVariationValueChange(warehouseName, type, 'wholesalePrice', e.target.value)
+                                    }
+                                  />
+                                  <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
+                                  {currency}
+                                  </span>
+                                </div>
+                              </div>
+                          )}
+                        </div>
                     </div>
                   </div>
                 ))}
@@ -1829,7 +1999,80 @@ const handleCategoryLogoChange = async (e) => {
                           </div>
                         </div>
                       </div>
-                    </div>
+
+                      {/* === Retail All Sale Price Section === */}
+                        <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-4">
+                            Has Wholesale Price?
+                            </label>
+                            <div className="flex items-center space-x-6">
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`wholesaleOption_${warehouseName}`}
+                                  value="yes"
+                                  checked={warehouseValues[warehouseName]?.wholesaleEnabled === true}
+                                  onChange={() => handleWarehouseValueChange(warehouseName, 'wholesaleEnabled', true)}
+                                  className="mr-2"
+                                />
+                                <span>Yes</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name={`wholesaleOption_${warehouseName}`}
+                                  value="no"
+                                  checked={warehouseValues[warehouseName]?.wholesaleEnabled !== true}
+                                  onChange={() => handleWarehouseValueChange(warehouseName, 'wholesaleEnabled', false)}
+                                  className="mr-2"
+                                />
+                                <span>No</span>
+                              </label>
+                            </div>
+                          </div>
+                          
+
+                          {warehouseValues[warehouseName]?.wholesaleEnabled === true &&  (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                               Min Wholesale Quantity
+                              </label>
+                              <input
+                                type="number"
+                                className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                placeholder="Min Qty"
+                                value={warehouseValues[warehouseName]?.wholesaleMinQty || 0}
+                                onChange={(e) =>
+                                  handleWarehouseValueChange(warehouseName, 'wholesaleMinQty', e.target.value)
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {warehouseValues[warehouseName]?.wholesaleEnabled === true &&  (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                 Product Wholesale Price
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                                    placeholder="Discounted Price"
+                                    value={warehouseValues[warehouseName]?.wholesalePrice || 0}
+                                    onChange={(e) =>
+                                      handleWarehouseValueChange(warehouseName, 'wholesalePrice', e.target.value)
+                                    }
+                                  />
+                                  <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
+                                  {currency}
+                                  </span>
+                                </div>
+                              </div>
+                          )}
+                        </div>
+                      </div>
                   ))
                 ) : (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg">

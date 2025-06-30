@@ -84,9 +84,35 @@ function CreateQuatationBody() {
         setDate(formattedDate);
     }, []);
 
+    const getApplicablePrice = (product) => {
+        const qty = product.ptype === 'Variation'
+            ? product.variationValues?.[product.selectedVariation]?.barcodeQty || 0
+            : product.barcodeQty || 0;
+
+        if (product.ptype === 'Variation') {
+            const variation = product.variationValues?.[product.selectedVariation];
+            if (!variation) return parseFloat(product.productPrice || 0);
+
+            const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+
+            return variation.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(variation.productPrice || 0);
+        } else {
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(product.price || product.productPrice || 0);
+        }
+    };
+
+
     const calculateTotal = () => {
         const productTotal = selectedProduct.reduce((total, product) => {
-            const productPrice = Number(getPriceRange(product, product.selectedVariation));
+            const productPrice = Number(getApplicablePrice(product));
             const productQty = product.barcodeQty || 1;
             const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
             const discount = Number(getDiscount(product, product.selectedVariation));
@@ -109,6 +135,55 @@ function CreateQuatationBody() {
         return grandTotal;
     };
 
+    const calculateTaxLessTotal = () => {
+        let subtotal = selectedProduct.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.barcodeQty || 1;
+            const discount = Number(getDiscount(product, product.selectedVariation));
+            const discountedPrice = productPrice - discount
+
+            const subTotal = (discountedPrice * productQty);
+            return total + subTotal;
+        }, 0);
+
+        const total = subtotal;
+        return isNaN(total) ? 0 : total;
+    };
+
+    // Function to calculate the profit for a product
+     const calculateProfit = () => {
+        let pureProfit = selectedProduct
+            .reduce((acc, product) => {
+                const variation = product.selectedVariation
+                ? product.variationValues?.[product.selectedVariation]
+                : null;
+
+                const price = getApplicablePrice(product);
+                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
+                const productCost = variation?.productCost !== undefined ? parseFloat(variation.productCost) : parseFloat(product.productCost) || 0;
+                const qty = product.barcodeQty || 0;
+                const specialDiscount = parseFloat(product.specialDiscount) || 0;
+                const newPrice = price - discount - specialDiscount;
+
+                const totalProductCost = (productCost * qty);
+                const subTotal = (newPrice * qty);
+                const profitOfProduct = subTotal - totalProductCost;
+
+                return acc + profitOfProduct;
+            }, 0);
+        
+        const totalPrice = calculateTaxLessTotal();
+        let discountAmount = 0;
+        if (discountType === 'fixed') {
+            discountAmount = parseFloat(discount) || 0;
+        } else if (discountType === 'percentage') {
+            discountAmount = (totalPrice * (parseFloat(discount) || 0) / 100);
+        }
+        const totalProfit = pureProfit - discountAmount;
+
+        return totalProfit;
+    };
+
     const handleDiscountType = (e) => {
         setDiscountType(e.target.value)
     }
@@ -127,6 +202,30 @@ function CreateQuatationBody() {
         }
         setDiscount(value);
     };
+
+    const calculateDiscountValue = () => {
+        const productTotal = selectedProduct.reduce((total, product) => {
+                const productPrice = Number(getApplicablePrice(product));
+                const productQty = product.barcodeQty || 1;
+                const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+                const discount = Number(getDiscount(product, product.selectedVariation));
+                const discountedPrice = productPrice - discount
+
+                const subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
+                return total + subTotal;
+            }, 0);
+
+        if (discountType === 'fixed') {
+            return Number(discount);
+        }
+
+        if (discountType === 'percentage') {
+            return (productTotal * Number(discount)) / 100;
+        }
+
+        return 0;
+    };
+
     useEffect(() => {
         if (discountType === 'fixed') {
             return setDiscountSymbole(currency);
@@ -219,6 +318,40 @@ function CreateQuatationBody() {
             setProgress(false);
         }
     };
+
+    const handleQtyInputChange = (index, value) => {
+    const newQty = parseInt(value, 10);
+    if (!newQty || newQty < 1) return;
+
+    setSelectedProduct(prevProducts => {
+        const updatedProducts = [...prevProducts];
+        const currentProduct = { ...updatedProducts[index] };
+
+        if (currentProduct.ptype === "Variation") {
+            const selectedVar = currentProduct.selectedVariation;
+            const variationData = {
+                ...currentProduct.variationValues[selectedVar],
+                barcodeQty: newQty > currentProduct.variationValues[selectedVar].productQty
+                    ? currentProduct.variationValues[selectedVar].productQty
+                    : newQty
+            };
+
+            currentProduct.variationValues = {
+                ...currentProduct.variationValues,
+                [selectedVar]: variationData
+            };
+        } else {
+            currentProduct.barcodeQty = newQty > currentProduct.productQty
+                ? currentProduct.productQty
+                : newQty;
+        }
+
+        updatedProducts[index] = currentProduct;
+        return updatedProducts;
+    });
+};
+
+
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh] p-5'>
             {progress && (
@@ -392,7 +525,21 @@ function CreateQuatationBody() {
                                     {selectedProduct.map((product, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const price = getApplicablePrice(product);
+                                                        const basePrice = getPriceRange(product, product.selectedVariation);
+                                                        if (price < basePrice) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm "><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.productQty || getQty(product, product.selectedVariation)}</p></td>
@@ -405,12 +552,18 @@ function CreateQuatationBody() {
                                                     >
                                                         <img className='w-[16px] h-[16px]' src={Decrease} alt='increase' />
                                                     </button>
-                                                    <span className="mx-2">
-                                                        {product.ptype === "Variation"
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={product.ptype === "Variation"
                                                             ? product.variationValues[product.selectedVariation]?.barcodeQty || 1
-                                                            : product.barcodeQty || 1
+                                                            : product.barcodeQty || 1}
+                                                        onChange={(e) =>
+                                                            handleQtyChange(index, product.ptype === "Variation" ? product.selectedVariation : null, setSelectedProduct, e.target.value)
                                                         }
-                                                    </span>
+                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                    />
+
                                                     <button
                                                         onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, 1)} // Increment            
                                                         className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
@@ -423,7 +576,7 @@ function CreateQuatationBody() {
 
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {formatWithCustomCommas(getPriceRange(product, product.selectedVariation))}
+                                                {currency} {getApplicablePrice(product).toFixed(2)}
                                             </td>
 
                                             {/* Display Product Tax */}
@@ -436,7 +589,7 @@ function CreateQuatationBody() {
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {currency}  {
                                                     (() => {
-                                                        const price = getPriceRange(product, product.selectedVariation);
+                                                        const price = getApplicablePrice(product);
                                                         const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
                                                         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
                                                         const discount = getDiscount(product, product.selectedVariation);
@@ -586,10 +739,13 @@ function CreateQuatationBody() {
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {formatWithCustomCommas(calculateTotal())}
                     </div>
+                    <div className="mt-4 text-right text-lg font-semibold">
+                        Profit: {currency} {formatWithCustomCommas(calculateProfit())}
+                    </div>
                     <div className="container mx-auto text-left">
                         <div className='mt-10 flex justify-start'>
                             <button onClick={() => handleSaveQuatation(
-                                calculateTotal().toFixed(2), orderStatus, paymentStatus, paymentType, shipping, discountType, discount, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
+                                calculateTotal().toFixed(2), orderStatus, paymentStatus, paymentType, shipping, discountType, discount, calculateDiscountValue(), tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate, getApplicablePrice)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save Quotation
                             </button>
                         </div>

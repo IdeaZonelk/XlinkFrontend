@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2025 Ideazone (Pvt) Ltd
  * Proprietary and Confidential
@@ -9,7 +10,7 @@
  * Contact info@ideazone.lk for more information.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { handleProductSelect, handleProductSearch, handleCustomerSearch, handleCustomerSelect, handleWarehouseChange, handleVariationChange, getProductCost, getDiscount, getQty, getPriceRange, handleDelete, handleQtyChange, getTax, handleSave } from './SaleController'
 import '../../styles/role.css';
@@ -74,6 +75,26 @@ function CreateSaleBody() {
     const [preFix, setPreFix] = useState('');
     const [invoiceNumber, setInvoiceNumber] = useState(null);
 
+    const dropdownRef = useRef(null); // Ref for the dropdown container
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target) &&
+                e.target.id !== 'text' // Ensure the input field doesn't close the dropdown
+            ) {
+                setFilteredProducts([]); // Close dropdown
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     useEffect(() => {
         const fetchAllWarehouses = async () => {
             try {
@@ -98,10 +119,46 @@ function CreateSaleBody() {
         return total - paidAmount; // Balance = Grand Total - Paid Amount
     };
 
+     const getApplicablePrice = (product) => {
+        const qty = product.ptype === 'Variation'
+            ? product.variationValues?.[product.selectedVariation]?.barcodeQty || 0
+            : product.barcodeQty || 0;
+
+        if (product.ptype === 'Variation') {
+            const variation = product.variationValues?.[product.selectedVariation];
+            if (!variation) return parseFloat(product.productPrice || 0);
+
+            const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+
+            return variation.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(variation.productPrice || 0);
+        } else {
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+                ? wholesalePrice
+                : parseFloat(product.price || product.productPrice || 0);
+        }
+    };
+
+    const calculateBaseTotal = () => {
+        return selectedProduct.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.barcodeQty || 1;
+            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+            const discount = Number(getDiscount(product, product.selectedVariation));
+            const discountedPrice = productPrice - discount;
+            const subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
+            return total + subTotal;
+        }, 0);
+    };
 
     const calculateTotal = () => {
         const productTotal = selectedProduct.reduce((total, product) => {
-            const productPrice = Number(getPriceRange(product, product.selectedVariation));
+            const productPrice = Number(getApplicablePrice(product));
             const productQty = product.barcodeQty || 1;
             const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
             const discount = Number(getDiscount(product, product.selectedVariation));
@@ -132,9 +189,25 @@ function CreateSaleBody() {
         return grandTotal;
     };
 
+    const calculateTaxLessTotal = () => {
+        let subtotal = selectedProduct.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            const productQty = product.barcodeQty || 1;
+            const discount = Number(getDiscount(product, product.selectedVariation));
+
+            const discountedPrice = productPrice - discount
+
+            const subTotal = (discountedPrice * productQty);
+            return total + subTotal;
+
+        }, 0);
+        const total = subtotal;
+        return isNaN(total) ? 0 : total;
+    };
+
     const calculateProfitOfSale = () => {
         const profitTotal = selectedProduct.reduce((totalProfit, product) => {
-            const productPrice = Number(getPriceRange(product, product.selectedVariation));
+            const productPrice = Number(getApplicablePrice(product));
             const productCost = Number(getProductCost(product, product.selectedVariation));
             const productQty = product.barcodeQty || 1;
             const discount = Number(getDiscount(product, product.selectedVariation));
@@ -147,16 +220,30 @@ function CreateSaleBody() {
 
         }, 0);
 
+        const totalPrice = calculateTaxLessTotal();
         let discountValue = 0;
         if (discountType === 'fixed') {
             discountValue = Number(discount);
         } else if (discountType === 'percentage') {
-            discountValue = (profitTotal * Number(discount)) / 100;
+            discountValue = (totalPrice * Number(discount)) / 100;
         }
 
         // Grand total = productTotal - discount + shipping + globalTax
         const pureProfit = profitTotal - discountValue;
         return pureProfit;
+    };
+
+
+    const calculateDiscountValue = () =>{
+
+        const total = calculateBaseTotal();
+        if (discountType === 'fixed') {
+            return Number(discount);
+        } else if (discountType === 'percentage') {
+            return (total * Number(discount)) / 100;
+        }
+        return 0;
+
     };
 
     const handleDiscountType = (e) => {
@@ -183,22 +270,46 @@ function CreateSaleBody() {
         }
     };
 
-    const handleAmountChange = (type, value) => {
-        const numericValue = Number(value);
-        const totalAmount = Object.keys(amounts).reduce((acc, key) => acc + (Number(amounts[key]) || 0), 0);
-        const newTotalAmount = totalAmount - (Number(amounts[type]) || 0) + numericValue;
-        const saleTotal = Number(calculateTotal());
-    
-        if (newTotalAmount > saleTotal) {
-            toast.error('Total amount cannot exceed the total value of the sale.', { autoClose: 2000 }, { className: "custom-toast" });
-            return;
-        }
-    
-        setAmounts((prev) => ({
-            ...prev,
-            [type]: value,
-        }));
-    };
+   const handleAmountChange = (type, value) => {
+    const numericValue = parseFloat(value);
+
+    if (isNaN(numericValue)) {
+        toast.error('Invalid amount entered.', { autoClose: 2000 });
+        return;
+    }
+
+    const currentAmount = parseFloat(amounts[type]) || 0;
+
+    // Safely calculate total amount from current state
+    const totalAmount = Object.keys(amounts).reduce((acc, key) => {
+        const val = parseFloat(amounts[key]);
+        return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+
+    // Adjust total amount for the new value
+    const newTotalAmount = totalAmount - currentAmount + numericValue;
+
+    const saleTotal = parseFloat(calculateTotal());
+
+    // Round both to two decimal places to avoid floating point issues
+    const roundToTwo = (num) => Math.round(num * 100) / 100;
+    const roundedNewTotal = roundToTwo(newTotalAmount);
+    const roundedSaleTotal = roundToTwo(saleTotal);
+
+    if (roundedNewTotal > roundedSaleTotal) {
+        toast.error('Total amount cannot exceed the total value of the sale.', {
+            autoClose: 2000,
+            className: "custom-toast"
+        });
+        return;
+    }
+
+    // Update the amount state
+    setAmounts((prev) => ({
+        ...prev,
+        [type]: value,
+    }));
+};
 
     const handleCheckboxChange = (type) => {
         setPaymentType(prev => ({
@@ -224,6 +335,30 @@ function CreateSaleBody() {
     const handleShipping = (e) => {
         setShipping(e.target.value)
     }
+
+    function restructureProductData(products) {
+        return products.map((product) => {
+            // If product is of type Variation
+            if (product.ptype === "Variation" && product.selectedVariation && product.variationValues) {
+                const variationData = product.variationValues[product.selectedVariation];
+
+                return {
+                    ...product,
+                    // Overwrite top-level fields with variation-level ones
+                    wholesaleEnabled: variationData?.wholesaleEnabled ?? false,
+                    wholesaleMinQty: variationData?.wholesaleMinQty ?? 0,
+                    wholesalePrice: variationData?.wholesalePrice ?? 0,
+                    productPrice: variationData?.productPrice ?? product.productPrice,
+                    productQty: variationData?.productQty ?? product.productQty,
+                    barcodeQty: variationData?.barcodeQty ?? product.barcodeQty,
+                };
+            }
+
+            // For Single products, return as-is
+            return product;
+        });
+    }
+
 
     useEffect(() => {
         const encryptedUser = sessionStorage.getItem('user');
@@ -371,8 +506,8 @@ function CreateSaleBody() {
                         </div>
                     </form>
 
-                    <div className="flex-1 mt-5 relative">
-                        {/* Input Field */}
+                    {/*Product search*/}
+                    <div className="flex-1 mt-5 relative" ref={dropdownRef}> 
                         <input
                             id="text"
                             name="text"
@@ -387,7 +522,7 @@ function CreateSaleBody() {
                         />
 
                         {filteredProducts.length > 0 && (
-                            <ul className="absolute left-0 z-10 w-full  text-left bg-white border border-gray-300 rounded-md shadow-lg mt-1">
+                            <ul className="absolute left-0 z-10 w-full text-left bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
                                 {filteredProducts.map((product) => (
                                     <li
                                         key={product._id}
@@ -420,7 +555,21 @@ function CreateSaleBody() {
                                     {selectedProduct.map((product, index) => (
                                         <tr key={index}>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const price = getApplicablePrice(product);
+                                                        const basePrice = getPriceRange(product, product.selectedVariation);
+                                                        if (price < basePrice) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
                                             </td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm "><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.productQty || getQty(product, product.selectedVariation)}</p></td>
@@ -459,7 +608,7 @@ function CreateSaleBody() {
 
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency}  {getPriceRange(product, product.selectedVariation)}
+                                                {currency}  {getApplicablePrice(product).toFixed(2)}
                                             </td>
 
                                             {/* Display Product Tax */}
@@ -472,7 +621,7 @@ function CreateSaleBody() {
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {currency}  {
                                                     (() => {
-                                                        const price = getPriceRange(product, product.selectedVariation);
+                                                        const price = getApplicablePrice(product);
                                                         const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
                                                         const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
                                                         const discount = getDiscount(product, product.selectedVariation);
@@ -685,6 +834,7 @@ function CreateSaleBody() {
                         <div className='mt-10 flex justify-start'>
                             <button onClick={() => handleSave(
                                 calculateTotal().toFixed(2),
+                                calculateBaseTotal().toFixed(2),
                                 calculateProfitOfSale().toFixed(2),
                                 orderStatus,
                                 paymentStatus,
@@ -696,7 +846,7 @@ function CreateSaleBody() {
                                 tax,
                                 warehouse,
                                 selectedCustomer?.name,
-                                selectedProduct,
+                                restructureProductData(selectedProduct),
                                 date,
                                 preFix,
                                 '0',
@@ -708,7 +858,8 @@ function CreateSaleBody() {
                                 note,
                                 balance,
                                 handlePrintAndClose,
-                                shouldPrint
+                                shouldPrint,
+                                calculateDiscountValue(),
                             )} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save sale
                             </button>

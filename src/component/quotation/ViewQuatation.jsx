@@ -101,6 +101,27 @@ function ViewQuatationBody() {
         }
     };
 
+    const getApplicablePrice = (product) => {
+        const qty = product.quantity || 0;
+        const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+        const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+        return product.wholesaleEnabled && meetsMinQty && wholesalePrice > 0
+            ? wholesalePrice
+            : parseFloat(product.price || 0);
+    };
+
+    const formatPaymentType = (type) => {
+        if (!type) return 'N/A';
+        const mapping = {
+            cash: 'Cash',
+            card: 'Card',
+            bank_transfer: 'Bank Transfer',
+            check: 'Check'
+        };
+        return mapping[type] || type;
+    };
+
 
     // Fetch all customers
     useEffect(() => {
@@ -354,7 +375,7 @@ function ViewQuatationBody() {
                                             {sale.paymentStatus}
                                         </p>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>{sale.paymentType}</p></td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>{formatPaymentType(sale.paymentType)}</p></td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency} {formatWithCustomCommas(sale.grandTotal)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-left text-m text-gray-900">{currency} {formatWithCustomCommas(sale.paidAmount)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-m text-gray-900">
@@ -504,9 +525,25 @@ function ViewQuatationBody() {
                                                                 {sale.productsData.map((product) => (
                                                                     <tr key={product._id} className="text-gray-700">
                                                                         {/* <td className="text-left py-2 px-4 border-b">{product.currentID}</td> */}
-                                                                        <td className="text-left py-2 px-4 border-b">{product.name}</td>
+                                                                        <td className="text-left py-2 px-4 border-b">
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span>{product.name}</span>
+                                                                                {(() => {
+                                                                                const price = getApplicablePrice(product);
+                                                                                const basePrice = parseFloat(product.price || 0);
+                                                                                if (price < basePrice) {
+                                                                                    return (
+                                                                                    <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                                        W
+                                                                                    </span>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                                })()}
+                                                                            </div>
+                                                                        </td>
                                                                         <td className="py-2 text-left px-4 border-b">{product.variationValue ? product.variationValue : 'No Variations'}</td>
-                                                                        <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.price)}</td>
+                                                                        <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(getApplicablePrice(product))}</td>
                                                                         <td className="text-left py-2 px-4 border-b">{product.quantity}</td>
                                                                         <td className="py-2 px-4 border-b text-left">{product.taxRate * 100} %</td>
                                                                         <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.subtotal)}</td>
@@ -530,7 +567,7 @@ function ViewQuatationBody() {
                                                                 </tr>
                                                                 <tr>
                                                                     <td className="text-left py-2 px-4 border-b">Discount</td>
-                                                                    <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(sale.discount ? sale.discount : '0.00')}</td>
+                                                                    <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(sale.discountValue ? sale.discountValue :sale.discount )}</td>
                                                                 </tr>
                                                                 <tr>
                                                                     <td className="text-left py-2 px-4 border-b">Total</td>
