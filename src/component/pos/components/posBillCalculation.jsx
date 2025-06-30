@@ -95,7 +95,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         calculateTotalPrice();
     }, [productBillingHandling]);
 
-    const handleDiscountAccess = async (e) => {
+/*     const handleDiscountAccess = async (e) => {
         e.preventDefault();
         if (!username || !password) {
             alert('Please enter both username and password.');
@@ -130,7 +130,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             console.error('There was a problem with your fetch operation:', error);
             toast.error('An error occurred while processing your request.');
         }
-    };
+    }; */
 
     const fetchOfferData = async () => {
         try {
@@ -534,18 +534,28 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                     )}
                                                     {/* Edit Button */}
                                                     <button
+                                                        //comment because skip login process before add discount
                                                         onClick={() => {
-                                                            const status = sessionStorage.getItem('status');
-                                                            if (status === 'success') {
-                                                                setSelectedProductIndex(originalIndex);
-                                                                setSpecialDiscountPopUp(true);
-                                                            } else {
-                                                                setSelectedProductIndex(originalIndex);
-                                                                setOpenAuthModel(true);
-                                                                setUsername('');
-                                                                setPassword('');
-                                                            }
-                                                        }}
+                                                            setSelectedProductIndex(originalIndex);
+                                                            setSpecialDiscountPopUp(true);
+                                                        }
+                                                        }
+
+                                                    //include login before add discount
+                                                    /*onClick={() => {
+                                                        //comment because skip login process before add discount
+                                                        const status = sessionStorage.getItem('status');
+                                                        if (status === 'success') { 
+                                                        setSelectedProductIndex(originalIndex);
+                                                        setSpecialDiscountPopUp(true);
+                                                        }  else {
+                                                            setSelectedProductIndex(originalIndex);
+                                                            setOpenAuthModel(true);
+                                                            setUsername('');
+                                                            setPassword('');
+                                                        } 
+                                                    }
+                                                }*/
                                                     >
                                                         <img
                                                             className="mt-[2px] ml-2 w-[15px] h-[15px]"
@@ -727,7 +737,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </div>
                 )}
 
-                {openAuthModel && (
+{/*                 {openAuthModel && (
                     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-xs z-[1000]">
                         <div className="bg-white w-[350px] sm:w-[460px] p-6 rounded-2xl shadow-2xl">
                             <h2 className="text-lg font-semibold text-gray-700 text-center mb-6">
@@ -775,7 +785,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {openOffersModel && (
                     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-xs z-[1000]">
@@ -916,7 +926,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                 <td className="px-4 py-2 border text-left">{currency} {formatWithCustomCommas((price * qty))}</td>
                                             </tr>
                                         );
-                                    })}
+                                    })}  
                                 </tbody>
                             </table>
 
