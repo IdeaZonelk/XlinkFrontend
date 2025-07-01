@@ -58,10 +58,6 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     monthlyInstallment: '',
     });
 
-    console.log('BillingSection Rendered 🥵🥵🥵🥵🥵' , useCreditPayment);
-    console.log('Product Billing Handling: 🥵🥵🥵🥵🥵', creditDetails);
-
-
 
            const getApplicablePrice = (product) => {
                 const qty = product.qty || 0;
@@ -1071,7 +1067,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         setSelectedBrandProducts={setSelectedBrandProducts}
                         setSearchedProductData={setSearchedProductData}
                         setProductData={setProductData}
-                        selectedCustomer={selectedCustomer}
+                        selectedCustomer={selectedCustomer || 'Unknown'}
                         discountType={discountType}
                         warehouse={warehouse}
                         responseMessage={responseMessage}

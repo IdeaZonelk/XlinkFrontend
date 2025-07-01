@@ -9,7 +9,7 @@
  * Contact info@ideazone.lk for more information.
  */
 
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { Link, } from 'react-router-dom';
 import axios from 'axios';
 import Box from '@mui/material/Box';
@@ -91,7 +91,39 @@ function ViewSaleBody() {
         return extractedPermissions;
     };
 
-    const fetchSaleData = async () => {
+    const checkCreditDueStatus = (sale) => {
+    if (!sale.useCreditPayment || !sale.creditDetails) return { hasCreditDue: false, dueAmount: 0 };
+
+    const { months } = sale.creditDetails;
+    const grandTotal = sale.grandTotal || 0;
+    const paidAmount = sale.paidAmount || 0;
+
+    const totalMonths = parseInt(months);
+    if (!totalMonths || totalMonths <= 0) return { hasCreditDue: false, dueAmount: 0 };
+
+    const totalWithInterest = grandTotal; // already includes interest
+    const monthlyInstallment = totalWithInterest / totalMonths;
+
+    // Calculate how many months have passed since sale date
+    const saleDate = new Date(sale.date);
+    const today = new Date();
+    const diffInMonths =
+        (today.getFullYear() - saleDate.getFullYear()) * 12 +
+        (today.getMonth() - saleDate.getMonth()) +
+        (today.getDate() >= saleDate.getDate() ? 1 : 0); // count current month if day passed
+
+    const expectedPaid = Math.min(diffInMonths, totalMonths) * monthlyInstallment;
+    const dueAmount = Math.max(expectedPaid - paidAmount, 0);
+
+    return {
+        hasCreditDue: paidAmount < expectedPaid,
+        dueAmount: parseFloat(dueAmount.toFixed(2)),
+    };
+};
+
+
+
+    const fetchSaleData = useCallback(async () => {
         setLoading(true);
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchSales`, {
@@ -103,8 +135,21 @@ function ViewSaleBody() {
             });
             // Check if the response contains sales data
             if (response.data && Array.isArray(response.data.sales) && response.data.sales.length > 0) {
-                setSaleData(response.data.sales); // Set sales data
-                setSearchedCustomerSale(response.data.sales);
+                
+                const sales = response.data.sales;
+
+            const updatedSales = sales.map(sale => {
+                const creditStatus = checkCreditDueStatus(sale);
+                return {
+                    ...sale,
+                    hasCreditDue: creditStatus.hasCreditDue,
+                    dueAmount: creditStatus.dueAmount,
+                };
+            });
+
+
+                setSaleData(updatedSales); // Set sales data
+                setSearchedCustomerSale(updatedSales);
                 setTotalPages(response.data.totalPages || 0); // Set total pages
                 setKeyword('');
                 setLoading(false);
@@ -124,7 +169,7 @@ function ViewSaleBody() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, size]);
 
     // Fetch all customers
     useEffect(() => {
@@ -304,6 +349,8 @@ function ViewSaleBody() {
                 toast.success('Sale created successfully!', { autoClose: 2000 }, { className: "custom-toast" });
             }
             await fetchPaymentData(saleId);
+            await fetchSaleData();
+            setEditPopup(false);
         } catch (error) {
             console.error('Error paying for the sale:', error);
             if (error.response) {
@@ -541,7 +588,7 @@ function ViewSaleBody() {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {combinedProductData.map((sale) => (
-                                    <tr key={sale._id}>
+                                    <tr key={sale._id} className={`hover:bg-gray-100 ${sale.hasCreditDue ? 'bg-red-100 text-red-700' : 'bg-white'}`}>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.refferenceId}</p></td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.invoiceNumber}</p></td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.customer}</p></td>
@@ -862,8 +909,15 @@ function ViewSaleBody() {
                                                     )}
                                                     
                                                     <div className=" mt-4 bg-gray-50-50 border border-gray-300 rounded-md p-4 text-m text-left text-blue-800">
-                                                            <p>Total Paid : <strong>{sale.paidAmount}</strong></p>
+                                                            <p>Total Paid : <strong>{Number(sale.paidAmount || 0).toFixed(2)}</strong></p>
                                                     </div>
+
+                                                    {sale.hasCreditDue && sale.dueAmount > 0 && (
+                                                        <div className="mt-2 bg-red-50 border border-red-300 rounded-md p-4 text-m text-left text-red-700">
+                                                            <p><strong>Due Amount:</strong> {currency} {formatWithCustomCommas(sale.dueAmount)}</p>
+                                                        </div>
+                                                    )}
+
 
                                                     <div className=''>
                                                         <table className="mt-8 min-w-full bg-white">

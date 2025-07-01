@@ -243,6 +243,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 handlePrintAndClose,
                 shouldPrint,
                 discountValue,
+                useCreditPayment,
+                creditDetails
                 
             );
             console.log("type of setProgress", setProgress);
@@ -265,6 +267,22 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         // Additional check: if credit is on but paymentStatus !== partial
         if (useCreditPayment && paymentStatus.toLowerCase() !== 'partial') {
             alert("To use credit payment, you must set payment status to 'Partial'.");
+            return;
+        }
+
+
+        if (paymentStatus.toLowerCase() === 'partial' &&  selectedCustomer === 'Unknown') {
+            alert("Customer selection is required for partial payments.");
+            return;
+        }
+
+
+        // For 'partial' status, total paid cannot exceed grand total
+        const totalPaid = Object.values(amounts).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+        const grandTotal = parseFloat(calculateTotalPrice());
+
+        if (paymentStatus.toLowerCase() === 'partial' && totalPaid > grandTotal) {
+            alert(`For Partial payment, total paid amount (${currency} ${totalPaid.toFixed(2)}) cannot exceed the grand total (${currency} ${grandTotal.toFixed(2)}).`);
             return;
         }
 
@@ -409,64 +427,64 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                         ))}
 
                                         {/* CREDIT payment row */}
-<tr className="border-t border-gray-300 hover:bg-gray-100">
-    <td
-        className={`px-4 py-4 font-medium text-center text-white border border-gray-300 cursor-pointer transition-colors duration-200 ${
-            useCreditPayment ? 'bg-blue-600' : 'bg-gray-300'
-        } ${paymentStatus.toLowerCase() !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={() => {
-            if (paymentStatus.toLowerCase() !== 'partial') {
-            alert('Credit can only be enabled if payment status is set to Partial.');
-            return;
-            }
-            setUseCreditPayment(prev => !prev);
-        }}
-        >
-        {useCreditPayment ? 'Credit' : 'Credit'}
-    </td>
+                                        <tr className="border-t border-gray-300 hover:bg-gray-100">
+                                            <td
+                                                className={`px-4 py-4 font-medium text-center text-white border border-gray-300 cursor-pointer transition-colors duration-200 ${
+                                                    useCreditPayment ? 'bg-blue-600' : 'bg-gray-300'
+                                                } ${paymentStatus.toLowerCase() !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                onClick={() => {
+                                                    if (paymentStatus.toLowerCase() !== 'partial') {
+                                                    alert('Credit can only be enabled if payment status is set to Partial.');
+                                                    return;
+                                                    }
+                                                    setUseCreditPayment(prev => !prev);
+                                                }}
+                                                >
+                                                {useCreditPayment ? 'Credit' : 'Credit'}
+                                            </td>
 
 
-    <td className="px-2 py-1 border border-gray-300">
-        {/* Credit fields */}
-        {parseFloat( 4) > 0 && (
-            <div className=" flex flex-row gap-3 m-2  text-sm text-left text-blue-700">
-                <div>
-                    <input
-                        type="number"
-                        className="w-full rounded-md border-0 py-2.5 px-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-xs focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
-                        value={creditDetails.interestRate}
-                        onChange={(e) => setCreditDetails(prev => ({ ...prev, interestRate: e.target.value }))}
-                        placeholder="Interest Rate (%)"
-                    />
-                </div>
-                <div>
-                <input
-                    type="number"
-                    className="w-full rounded-md border-0 py-2.5 px-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-xs focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
-                    value={creditDetails.months}
-                    onChange={(e) => setCreditDetails(prev => ({ ...prev, months: e.target.value }))}
-                    placeholder="Installment Months"
-                />
-                </div>
-                
-                
-            </div>
-        )}
-    </td>
-</tr>
+                                            <td className="px-2 py-1 border border-gray-300">
+                                                {/* Credit fields */}
+                                                {parseFloat( 4) > 0 && (
+                                                    <div className=" flex flex-row gap-3 m-2  text-sm text-left text-blue-700">
+                                                        <div>
+                                                            <input
+                                                                type="number"
+                                                                className="w-full rounded-md border-0 py-2.5 px-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-xs focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
+                                                                value={creditDetails.interestRate}
+                                                                onChange={(e) => setCreditDetails(prev => ({ ...prev, interestRate: e.target.value }))}
+                                                                placeholder="Interest Rate (%)"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                        <input
+                                                            type="number"
+                                                            className="w-full rounded-md border-0 py-2.5 px-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-xs focus:ring-2 focus:ring-inset focus:ring-gray-500 focus:outline-none sm:text-sm"
+                                                            value={creditDetails.months}
+                                                            onChange={(e) => setCreditDetails(prev => ({ ...prev, months: e.target.value }))}
+                                                            placeholder="Installment Months"
+                                                        />
+                                                        </div>
+                                                        
+                                                        
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
 
-<tr className="border-t border-gray-300 hover:bg-gray-100">
-<td colSpan="2" className="px-4 py-4 text-right font-semibold text-gray-700 border border-gray-300">
-    {useCreditPayment && creditDetails.interestAmount && creditDetails.monthlyInstallment ? (
-            <div className="space-y-1 text-sm">
-                <div>Interest: {currency} {formatWithCustomCommas(creditDetails.interestAmount)}</div>
-                <div>Monthly: {currency} {formatWithCustomCommas(creditDetails.monthlyInstallment)}</div>
-            </div>
-        ) : (
-            <span className="text-gray-400 text-sm">–</span>
-        )}
-</td>
-</tr>
+                                        <tr className="border-t border-gray-300 hover:bg-gray-100">
+                                        <td colSpan="2" className="px-4 py-4 text-right font-semibold text-gray-700 border border-gray-300">
+                                            {useCreditPayment && creditDetails.interestAmount && creditDetails.monthlyInstallment ? (
+                                                    <div className="space-y-1 text-sm">
+                                                        <div>Interest: {currency} {formatWithCustomCommas(creditDetails.interestAmount)}</div>
+                                                        <div>Monthly: {currency} {formatWithCustomCommas(creditDetails.monthlyInstallment)}</div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">–</span>
+                                                )}
+                                        </td>
+                                        </tr>
                                        
                                     </tbody>
                                 </table>

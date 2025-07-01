@@ -22,6 +22,7 @@ import { decryptData } from '../utill/encryptionUtils';
 import Box from '@mui/material/Box';
 import { useCurrency } from '../../context/CurrencyContext';
 import formatWithCustomCommas from '../utill/NumberFormate';
+import { toast } from 'react-toastify';
 
 function CreateSaleFromQuatationBody() {
     // State management
@@ -44,6 +45,14 @@ function CreateSaleFromQuatationBody() {
     const [preFix, setPreFix] = useState('')
     const [progress, setProgress] = useState(false);
     const [invoiceNumber, setInvoiceNumber] = useState(null);
+    const [useCreditPayment, setUseCreditPayment] = useState(false);
+    const [creditDetails, setCreditDetails] = useState({
+        interestRate: '',
+        months: '',
+        interestAmount: '',
+        monthlyInstallment: '',
+    });
+
     const [paymentType, setPaymentType] = useState({
             cash: false,
             card: false,
@@ -124,7 +133,7 @@ function CreateSaleFromQuatationBody() {
         };
 
 
-    const calculateTotal = () => {
+    const totalWithoutInterest = () => {
         const subtotal = quatationProductData.reduce((acc, product, index) => {
             const productQty = quatationProductData[index]?.quantity || 1;
             const productTaxRate = quatationProductData[index]?.taxRate  || 0;
@@ -147,7 +156,17 @@ function CreateSaleFromQuatationBody() {
         const overallTaxRate = quatationData.tax ? parseFloat(quatationData.tax) / 100 : 0;
         const taxAmount = subtotal * overallTaxRate;
         const total = (subtotal - discountValue) + taxAmount + shipping;
-        return total.toFixed(2);
+        return total;
+    };
+
+    const calculateTotal = () => {
+        const baseTotal = totalWithoutInterest();
+        if (useCreditPayment) {
+            const interestRate = parseFloat(creditDetails.interestRate) || 0;
+            const interest = (baseTotal * interestRate) / 100;
+            return (baseTotal + interest)
+        }
+        return baseTotal.toFixed(2);
     };
 
     const calculateBalance = () => {
@@ -740,8 +759,67 @@ function CreateSaleFromQuatationBody() {
                                 </select>
                             </div>
                             </div>
+                            <div className="mt-10">
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="creditPayment"
+                                        checked={useCreditPayment}
+                                        onChange={() => setUseCreditPayment(prev => !prev)}
+                                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="creditPayment" className="text-sm text-gray-700 font-medium">
+                                        Pay with Credit
+                                    </label>
+                                </div>
 
-                            
+                                {useCreditPayment && paymentStatus === 'partial' && (
+                                    <div className="mt-4 p-4 border border-gray-300 rounded-md bg-gray-50">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    value={creditDetails.interestRate}
+                                                    onChange={(e) => setCreditDetails(prev => ({ ...prev, interestRate: e.target.value }))}
+                                                    placeholder="e.g. 5 (or leave blank for 0%)"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Installment Months</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    value={creditDetails.months}
+                                                    onChange={(e) => setCreditDetails(prev => ({ ...prev, months: e.target.value }))}
+                                                    placeholder="e.g. 6"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {creditDetails.months && (
+                                            <div className="mt-6 text-right space-y-2 text-blue-700">
+                                                <p><strong>Interest:</strong> {currency} 
+                                                    {formatWithCustomCommas(
+                                                        (
+                                                            (totalWithoutInterest() * (parseFloat(creditDetails.interestRate) || 0)) / 100
+                                                        ).toFixed(2)
+                                                    )}
+                                                </p>
+                                                <p><strong>Monthly Installment:</strong> {currency}
+                                                    {formatWithCustomCommas(
+                                                        (
+                                                            (calculateTotal()) /
+                                                            parseInt(creditDetails.months)
+                                                        ).toFixed(2)
+                                                    )}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                                  {/* Payment Type Select */}
                                  <div className='mt-10 mb-14'>
                             <div>
@@ -791,7 +869,21 @@ function CreateSaleFromQuatationBody() {
                         Profit: {currency} {calculateProfitOfSale().toFixed(2)}
                     </div>
                     <button
-                        onClick={() => handleCreateSale(
+                        onClick={() =>  {
+                            const total = parseFloat(calculateTotal());
+                            const totalPayment = Object.values(amounts).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+                            
+                            if (paymentStatus === 'partial' && totalPayment <= 0) {
+                                toast.error("Partial payment requires at least one payment amount.");
+                                return;
+                            }
+
+                            if (totalPayment > total) {
+                                toast.error("Total payment exceeds the sale total.");
+                                return;
+                            }
+                            
+                            handleCreateSale(
                             quatationData._id,
                             calculateTotal(),
                             calculateBaseTotal().toFixed(2), // grandTotal (instead of id)
@@ -814,8 +906,10 @@ function CreateSaleFromQuatationBody() {
                             setResponseMessage, // setResponseMessage
                             setProgress,// progress
                             navigate,
-                            calculateProfitOfSale().toFixed(2) // profit
-                        )}
+                            calculateProfitOfSale().toFixed(2), // profit
+                            useCreditPayment,
+                            creditDetails
+                        )}}
                         className="mt-5 submit w-[300px] text-white rounded py-2 px-4"
                     >
                         Create sale from Quotation
