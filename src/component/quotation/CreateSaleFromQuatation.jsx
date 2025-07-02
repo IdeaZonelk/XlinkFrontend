@@ -765,7 +765,16 @@ function CreateSaleFromQuatationBody() {
                                         type="checkbox"
                                         id="creditPayment"
                                         checked={useCreditPayment}
-                                        onChange={() => setUseCreditPayment(prev => !prev)}
+                                        onChange={() => {
+                                            const newValue = !useCreditPayment;
+    
+                                            if (newValue && paymentStatus !== 'partial') {
+                                                toast.error("To use credit payment, please select 'Partial' as payment status.");
+                                                return;
+                                            }
+    
+                                            setUseCreditPayment(newValue);
+                                        }}
                                         className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                     />
                                     <label htmlFor="creditPayment" className="text-sm text-gray-700 font-medium">

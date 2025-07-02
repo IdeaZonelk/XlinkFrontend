@@ -42,13 +42,19 @@ function ViewSaleBody() {
     const debounceTimeout = useRef(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const { toPDF, targetRef } = usePDF({ filename: `${saleData.customer || 'invoice'}.pdf` });
+    const [filterDueOnly, setFilterDueOnly] = useState(false);
 
     //COMBINE ALL DATA FETCHING TYPE INTO ONE STATE
-    const combinedProductData = Array.isArray(searchedCustomerSale) && searchedCustomerSale.length > 0
-        ? searchedCustomerSale
-        : Array.isArray(saleData) && saleData.length > 0
-            ? saleData
-            : [];
+   const combinedProductData = (Array.isArray(searchedCustomerSale) && searchedCustomerSale.length > 0
+    ? searchedCustomerSale
+    : Array.isArray(saleData) && saleData.length > 0
+    ? saleData
+    : []
+).filter((sale) => {
+    const matchesDue = !filterDueOnly || sale.hasCreditDue;
+    return matchesDue;
+});
+
 
     const [paymentType, setPaymentType] = useState('cash');
     const [amountToPay, setAmountToPay] = useState(0);
@@ -70,6 +76,7 @@ function ViewSaleBody() {
     const [companyMobile, setCompanyMobile] = useState('');
     const [address, setAddress] = useState('');
     const { userData } = useContext(UserContext);
+
 
     useEffect(() => {
         if (userData?.permissions) {
@@ -387,8 +394,18 @@ function ViewSaleBody() {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/searchSale`, {
                 params: { keyword: query }, // Send the keyword parameter
             });
+
             if (response.data.sales && response.data.sales.length > 0) {
-                setSearchedCustomerSale(response.data.sales);
+                const updatedSales = response.data.sales.map((sale) => {
+                    const creditStatus = checkCreditDueStatus(sale);
+                    return {
+                        ...sale,
+                        hasCreditDue: creditStatus.hasCreditDue,
+                        dueAmount: creditStatus.dueAmount,
+                    };
+                });
+                const sortedSales = updatedSales.sort((a, b) => new Date(b.date) - new Date(a.date));
+                setSearchedCustomerSale(sortedSales);
                 setSuccessStatus("");
             } else {
                 setSearchedCustomerSale([]); // Clear the table
@@ -549,6 +566,19 @@ function ViewSaleBody() {
                         </button>
                     </form>
                 </div>
+
+                <div className="flex items-center mt-2">
+                <label className="mr-2 text-sm text-gray-700">
+                    <input
+                    type="checkbox"
+                    className="mr-1"
+                    checked={filterDueOnly}
+                    onChange={(e) => setFilterDueOnly(e.target.checked)}
+                    />
+                    Show only due credit sales
+                </label>
+                </div>
+
                 {permissionData.create_sale && (
                     <div>
                         <Link
