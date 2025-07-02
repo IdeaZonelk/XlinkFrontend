@@ -145,30 +145,6 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                 calculateTotalPrice();
             }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
 
-            useEffect(() => {
-        if (useCreditPayment) {
-            const total = parseFloat(calculateBaseTotal()) || 0;
-            const rate = parseFloat(creditDetails.interestRate || 0);
-            const months = parseFloat(creditDetails.months || 1);
-
-            const interestAmount = ((total * rate) / 100).toFixed(2);
-            const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
-
-            setCreditDetails(prev => ({
-            ...prev,
-            interestAmount,
-            monthlyInstallment
-            }));
-        } else {
-            // Reset interest when credit is off
-            setCreditDetails(prev => ({
-            ...prev,
-            interestAmount: '0',
-            monthlyInstallment: '0'
-            }));
-        }
-    }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
-
 
     const handleDiscountAccess = async (e) => {
         e.preventDefault();
@@ -582,6 +558,30 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const handleShippng = (e) => {
         setShipping(e.target.value)
     }
+
+    useEffect(() => {
+        if (useCreditPayment) {
+            const total = parseFloat(calculateTotalPrice()) || 0;
+            const rate = parseFloat(creditDetails.interestRate || 0);
+            const months = parseFloat(creditDetails.months || 1);
+
+            const interestAmount = ((total * rate) / 100).toFixed(2);
+            const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
+
+            setCreditDetails(prev => ({
+            ...prev,
+            interestAmount,
+            monthlyInstallment
+            }));
+        } else {
+            // Reset interest when credit is off
+            setCreditDetails(prev => ({
+            ...prev,
+            interestAmount: '0',
+            monthlyInstallment: '0'
+            }));
+        }
+    }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
 
     const gatherProductDetails = () => {
         return productBillingHandling
