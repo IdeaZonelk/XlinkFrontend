@@ -246,18 +246,18 @@ export const handleSubmitBrand = async (
     const normalizedUsername = username.toLowerCase();
   
     // Empty field validation
-    if (!normalizedUsername || !name || !companyName || !nic || !country || !city || !mobile || !address) {
+    if ( !name || !companyName ||  !mobile ) {
       setError("All fields are required.");
       setProgress(false);  // 👈 stop loading immediately
       return;
     }
   
     // Email validation
-    if (!normalizedUsername.includes('@')) {
-      setError('Email must be a valid address containing "@"');
-      setProgress(false);  // 👈 stop loading immediately
-      return;
-    }
+    // if (!normalizedUsername.includes('@')) {
+    //   setError('Email must be a valid address containing "@"');
+    //   setProgress(false);  // 👈 stop loading immediately
+    //   return;
+    // }
   
     // Mobile number validation
     const mobileRegex = /^\+94\d{9}$/;
@@ -268,13 +268,13 @@ export const handleSubmitBrand = async (
     }
   
     // NIC validation
-    const newNICRegex = /^\d{12}$/;         // 12 digits only
-    const oldNICRegex = /^\d{9}[VXvx]$/;    // 9 digits + 'V' or 'X'
-    if (!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
-      setError('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
-      setProgress(false);  // 👈 stop loading immediately
-      return;
-    }
+    // const newNICRegex = /^\d{12}$/;         // 12 digits only
+    // const oldNICRegex = /^\d{9}[VXvx]$/;    // 9 digits + 'V' or 'X'
+    // if (!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
+    //   setError('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
+    //   setProgress(false);  // 👈 stop loading immediately
+    //   return;
+    // }
   
     // Prepare data for the request
     const supplierData = {

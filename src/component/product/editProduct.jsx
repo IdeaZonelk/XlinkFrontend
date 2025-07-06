@@ -817,7 +817,7 @@ function EditProductBody() {
                                 </div>
 
                                 {/* Base Unit */}
-                                <div className="mt-7">
+                                {/* <div className="mt-7">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Base unit <span className='text-red-500'>*</span></label>
                                     <div className="mt-2">
                                         <select
@@ -837,7 +837,7 @@ function EditProductBody() {
                                             ))}
                                         </select>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/*perchese unit*/}
                                 <div className="mt-7">
@@ -877,6 +877,30 @@ function EditProductBody() {
                                         </select>
                                     </div>
                                 </div>
+
+
+                                 <div className="mt-7">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
+                                        Variation <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="mt-2">
+                                        <select
+                                            id="variation"
+                                            name="variation"
+                                            value={productData.variation}
+                                            onChange={handleVariationChange}
+                                            className={`block w-[90%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6`}
+                                           disabled
+                                        >
+                                            <option value="">Select a variation</option>
+                                            {variationData.map((varn) => (
+                                                <option key={varn.variationName} value={varn.variationName}>
+                                                    {varn.variationName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div> 
+                                 </div>
 
                             </div>
 
@@ -1008,7 +1032,7 @@ function EditProductBody() {
                                     </div>
                                 </div>
 
-                                <div className="mt-7">
+                                {/* <div className="mt-7">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
                                         Variation <span className="text-red-500">*</span>
                                     </label>
@@ -1028,8 +1052,8 @@ function EditProductBody() {
                                                 </option>
                                             ))}
                                         </select>
-                                    </div>
-                                </div>
+                                    </div> */}
+                                {/* </div> */}
                             </div>
                         </div>
 
