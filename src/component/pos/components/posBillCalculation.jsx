@@ -50,6 +50,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [progress, setProgress] = useState(false);
     const adminPasswordRef = useRef(null);
     const discountInputRef = useRef(null);
+    const [useCreditPayment, setUseCreditPayment] = useState(false);
+    const [creditDetails, setCreditDetails] = useState({
+    interestRate: '',
+    months: '',
+    interestAmount: '',
+    monthlyInstallment: '',
+    });
 
 
            const getApplicablePrice = (product) => {
@@ -135,8 +142,9 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
     useEffect(() => {
-        calculateTotalPrice();
-    }, [productBillingHandling]);
+                calculateTotalPrice();
+            }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
+
 
 /*     const handleDiscountAccess = async (e) => {
         e.preventDefault();
@@ -378,7 +386,10 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         const taxAmount = (total * (parseFloat(tax) || 0) / 100);
         const shippingCost = parseFloat(shipping) || 0;
         const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
-        total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost;
+
+        let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
+
+        total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
     
         return isNaN(total) ? "0.00" : total.toFixed(2);
     };
@@ -547,6 +558,30 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const handleShippng = (e) => {
         setShipping(e.target.value)
     }
+
+    useEffect(() => {
+        if (useCreditPayment) {
+            const total = parseFloat(calculateTotalPrice()) || 0;
+            const rate = parseFloat(creditDetails.interestRate || 0);
+            const months = parseFloat(creditDetails.months || 1);
+
+            const interestAmount = ((total * rate) / 100).toFixed(2);
+            const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
+
+            setCreditDetails(prev => ({
+            ...prev,
+            interestAmount,
+            monthlyInstallment
+            }));
+        } else {
+            // Reset interest when credit is off
+            setCreditDetails(prev => ({
+            ...prev,
+            interestAmount: '0',
+            monthlyInstallment: '0'
+            }));
+        }
+    }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
 
     const gatherProductDetails = () => {
         return productBillingHandling
@@ -1042,7 +1077,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         setSelectedBrandProducts={setSelectedBrandProducts}
                         setSearchedProductData={setSearchedProductData}
                         setProductData={setProductData}
-                        selectedCustomer={selectedCustomer}
+                        selectedCustomer={selectedCustomer || 'Unknown'}
                         discountType={discountType}
                         warehouse={warehouse}
                         responseMessage={responseMessage}
@@ -1052,9 +1087,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         calculateTotalPrice={calculateTotalPrice}
                         setError={setError}
                         setProgress={setProgress}
-                        setSelectedOffer={setSelectedOffer}
+                        setSelectedOffer = {setSelectedOffer}
+                        useCreditPayment ={ useCreditPayment}
+                        setUseCreditPayment = {setUseCreditPayment}
+                        creditDetails = {creditDetails}
+                        setCreditDetails = {setCreditDetails}
                     />
-                )}
+                )} 
             </div>
 
             {/*PRODUCT HOLDING POP UP*/}
