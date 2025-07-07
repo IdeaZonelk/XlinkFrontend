@@ -161,7 +161,7 @@ function EditUnitBody() {
                         <div className="flex space-x-16">
                             <div className="flex-1">
                                 {/* Base unit selection */}
-                                <div className="mt-5">
+                                {/* <div className="mt-5">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Base Unit</label>
                                     <div className="mt-2">
                                         <select
@@ -183,7 +183,7 @@ function EditUnitBody() {
                                             ))}
                                         </select>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/* Unit name field */}
                                 <div className="mt-5">
