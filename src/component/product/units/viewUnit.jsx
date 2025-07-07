@@ -263,7 +263,7 @@ function ViewUnitBody() {
                     <table className="min-w-full bg-white border border-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base units</th>
+                                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base units</th> */}
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Short name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Action</th>
@@ -272,7 +272,7 @@ function ViewUnitBody() {
                         <tbody className="bg-white divide-y divide-gray-200">
                         {searchedUnits.map((Unit) => (
                                 <tr key={Unit._id}>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{Unit.baseUnit}</td>
+                                    {/* <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{Unit.baseUnit}</td> */}
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{Unit.unitName}</td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{Unit.shortName}</td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900 text-right">

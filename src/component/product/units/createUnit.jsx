@@ -109,7 +109,7 @@ function CreateUnitBody() {
                         <div className="flex space-x-16">
                             <div className="flex-1">
                                 {/* Baseunit name field */}
-                                <div className="mt-5">
+                                {/* <div className="mt-5">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Base unit <span className='text-red-500'>*</span></label>
                                     <div className="mt-2">
                                         <select
@@ -125,7 +125,7 @@ function CreateUnitBody() {
                                             ))}
                                         </select>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/* Unit name field */}
                                 <div className="mt-5">
