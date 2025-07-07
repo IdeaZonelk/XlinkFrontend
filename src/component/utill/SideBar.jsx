@@ -370,7 +370,7 @@ const Sidebar = ({ items }) => {
               </li>
             )}
 
-            {permissionData.manageBaseUnits === true && (
+            {permissionData.manageBaseUnits === false && (
               <li id="products" className="rounded-sm w-full flex items-center space-x-2">
                 <Link to="/viewBaseUnit" className={`w-full text-black hover:text-[#2a9d34] flex items-center cursor-pointer space-x-2 p-2 ${activeIndex === 3 ? 'bg-gray-100' : 'hover:bg-gray-100'}`} onClick={() => handleClick(3)}>
                   <CubeIcon className="h-6 w-6 text-gray-500 mr-4" aria-hidden="true" />

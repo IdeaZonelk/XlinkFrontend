@@ -243,12 +243,12 @@ export const SupplierModel = ({
         const normalizedEmail = email.toLowerCase();
       
         // Email Validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
-        if (!emailRegex.test(normalizedEmail)) {
-            setError('Username must be a valid email address (example: user@gmail.com)');
-            setProgress(false);
-            isValid = false;
-        }
+        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; 
+        // if (!emailRegex.test(normalizedEmail)) {
+        //     setError('Username must be a valid email address (example: user@gmail.com)');
+        //     setProgress(false);
+        //     isValid = false;
+        // }
       
         // Mobile Validation
         const mobileRegex = /^\+94\d{9}$/;
@@ -259,13 +259,13 @@ export const SupplierModel = ({
         }
       
         // NIC Validation
-        const newNICRegex = /^\d{12}$/;
-        const oldNICRegex = /^\d{9}[VXvx]$/;
-        if (!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
-          setError('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
-          setProgress(false);
-          isValid = false;
-        }
+        // const newNICRegex = /^\d{12}$/;
+        // const oldNICRegex = /^\d{9}[VXvx]$/;
+        // if (!newNICRegex.test(nic) && !oldNICRegex.test(nic)) {
+        //   setError('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
+        //   setProgress(false);
+        //   isValid = false;
+        // }
       
         // If validation passes, call the original submit
         if (isValid) {
@@ -301,9 +301,9 @@ export const SupplierModel = ({
 
                 <form onSubmit={handleSupplierSubmit}>
                     <div className="flex space-x-16">
-                        <div className="flex-1">
+                        {/* <div className="flex-1"> */}
                             {/* Email field */}
-                            <div className="mt-2">
+                            {/* <div className="mt-2">
                                 <label className="block text-sm font-medium text-gray-900 text-left">
                                     Enter the Email <span className="text-red-500">*</span>
                                 </label>
@@ -315,10 +315,10 @@ export const SupplierModel = ({
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 />
-                            </div>
+                            </div> */}
 
                             {/* Country field */}
-                            <div className="mt-5">
+                            {/* <div className="mt-5">
                                 <label className="block text-sm font-medium text-gray-900 text-left">
                                     Country <span className="text-red-500">*</span>
                                 </label>
@@ -330,10 +330,10 @@ export const SupplierModel = ({
                                     onChange={(e) => setCountry(e.target.value)}
                                     className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 />
-                            </div>
+                            </div> */}
 
                             {/* City field */}
-                            <div className="mt-5">
+                            {/* <div className="mt-5">
                                 <label className="block text-sm font-medium text-gray-900 text-left">
                                     City <span className="text-red-500">*</span>
                                 </label>
@@ -345,10 +345,10 @@ export const SupplierModel = ({
                                     onChange={(e) => setCity(e.target.value)}
                                     className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 />
-                            </div>
+                            </div> */}
 
                             {/* Address field */}
-                            <div className="mt-5">
+                            {/* <div className="mt-5">
                                 <label className="block text-sm font-medium text-gray-900 text-left">
                                     Address <span className="text-red-500">*</span>
                                 </label>
@@ -359,8 +359,8 @@ export const SupplierModel = ({
                                     onChange={(e) => setAddress(e.target.value)}
                                     className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 />
-                            </div>
-                        </div>
+                            </div> */}
+                        {/* </div> */}
 
                         <div className="flex-1">
                             {/* Name field */}
@@ -394,7 +394,7 @@ export const SupplierModel = ({
                             </div>
 
                             {/* NIC field */}
-                            <div className="mt-5">
+                            {/* <div className="mt-5">
                                 <label className="block text-sm font-medium text-gray-900 text-left">
                                     NIC <span className="text-red-500">*</span>
                                 </label>
@@ -407,7 +407,7 @@ export const SupplierModel = ({
                                     onChange={(e) => setNIC(e.target.value)}
                                     className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 />
-                            </div>
+                            </div> */}
 
                             {/* Mobile number field */}
                             <div className="mt-5">

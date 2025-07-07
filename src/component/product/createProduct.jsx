@@ -1328,7 +1328,7 @@ const handleCategoryLogoChange = async (e) => {
               {/* Fourth Sub-Div ============================================================================== */}
               <div className="flex flex-col lg:flex-row lg:space-x-8 w-full">
                 {/* Base Unit */}
-                <div className="flex-1 w-full mb-4 lg:mb-0">
+                {/* <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
                       Base unit <span className='text-red-500'>*</span>
@@ -1352,7 +1352,7 @@ const handleCategoryLogoChange = async (e) => {
                       </select>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Sale Unit */}
                 <div className="flex-1 w-full mb-4 lg:mb-0">

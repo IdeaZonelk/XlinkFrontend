@@ -29,7 +29,6 @@ function CreateSaleReturnBody() {
     const [error, setError] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [saleProduct, setSaleProduct] = useState([]);
-    console.log("saleProduct 💀💀💀💀💀💀💀💀", saleProduct);
     const [restockingStatus, setRestocking] = useState(true);
     const [purchasedQty, setPurchasedQty] = useState([])
     const [progress, setProgress] = useState(false);
