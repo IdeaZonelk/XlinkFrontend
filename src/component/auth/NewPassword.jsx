@@ -100,7 +100,7 @@ function NewPassword() {
                             src={logo}
                             className="mx-auto h-24 w-auto m-0 p-0"
                         />
-                        <h2 className="text-center text-2xl font-bold leading-4 tracking-tight text-gray-800">
+                        <h2 className="text-center mt-4 text-2xl font-bold leading-4 tracking-tight text-gray-800">
                             Reset Password
                         </h2>
                     </div>

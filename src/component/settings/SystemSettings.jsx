@@ -101,7 +101,7 @@ function SystemSettingsBody() {
 
             if (data.logo) {
                 console.log("[DEBUG] Logo received:", data.logo);
-                setLogoPreview(data.logo); 
+                setLogoPreview(data.logo);
             } else {
                 console.warn("[DEBUG] No logo received in API response!");
             }
@@ -136,14 +136,14 @@ function SystemSettingsBody() {
         if (file.size / 1024 / 1024 > maxFileSizeMB) {
             setError(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
             alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-            inputRef.current.value = ""; 
+            inputRef.current.value = "";
             return;
         }
 
         // Compression options
         const options = {
-            maxSizeMB: 0.02, 
-            maxWidthOrHeight: 800, 
+            maxSizeMB: 0.02,
+            maxWidthOrHeight: 800,
             useWebWorker: true,
         };
 
@@ -153,25 +153,12 @@ function SystemSettingsBody() {
             const img = new Image();
             img.src = image;
 
-            // Check image aspect ratio (1:1 within 100px tolerance)
+            // Wait for image to load
             await new Promise((resolve, reject) => {
-                img.onload = () => {
-                    const width = img.width;
-                    const height = img.height;
-                    const tolerance = 100; 
-
-                    if (Math.abs(width - height) > tolerance) {
-                        setError("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-                        inputRef.current.value = ""; 
-                        reject();
-                    } else {
-                        resolve();
-                    }
-                };
+                img.onload = resolve;
                 img.onerror = () => {
                     setError("Error loading image. Please try again.");
-                    inputRef.current.value = ""; 
+                    inputRef.current.value = "";
                     reject();
                 };
             });
@@ -232,7 +219,7 @@ function SystemSettingsBody() {
                 `${process.env.REACT_APP_BASE_URL}/api/createOrUpdateSettings`,
                 formData,
                 {
-                    headers: { "Content-Type": "multipart/form-data" }, 
+                    headers: { "Content-Type": "multipart/form-data" },
                 }
             );
             console.log("[DEBUG] API Response:", response.data);
@@ -328,8 +315,8 @@ function SystemSettingsBody() {
                                             document.getElementById("file").click()
                                         }
                                         className={`block w-[100px] h-[100px] rounded-full border-0 shadow-sm ring-1 ring-inset ring-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6 ${logoPreview
-                                                ? "bg-cover bg-center"
-                                                : "bg-gray-200 opacity-70 hover:bg-gray-300"
+                                            ? "bg-cover bg-center"
+                                            : "bg-gray-200 opacity-70 hover:bg-gray-300"
                                             }`}
                                         style={{
                                             backgroundImage: logoPreview

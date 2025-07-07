@@ -425,7 +425,7 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
                 <div className="relative h-20 flex items-center justify-between">
                   <div className="flex flex-shrink-0 items-center sm:left-0 absolute sm:relative  left-[0px]  sm:left-auto">
                     <img
-                      className="h-20 w-20 mt-2"
+                      className="max-h-[70px] max-w-[105px] object-contain" 
                       src={logo}
                       alt="Your Company"
                     />
