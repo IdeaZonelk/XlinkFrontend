@@ -89,7 +89,7 @@ function ForgetPassword() {
                             src={logo}
                             className="mx-auto h-24 w-auto m-0 p-0"
                         />
-                        <h2 className="text-center text-2xl font-bold leading-4 tracking-tight text-gray-800">
+                        <h2 className="text-center text-2xl mt-4 font-bold leading-4 tracking-tight text-gray-800">
                             Send the username
                         </h2>
                     </div>

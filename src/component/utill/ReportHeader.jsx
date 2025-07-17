@@ -270,10 +270,10 @@ export default function ReportHeader({ userData }) {
                     <>
                         <div className="flex h-full items-center justify-between px-4 md:px-8">
                             <div className="flex items-center">
-                                <img
-                                    className="h-20 w-20 mt-2"
+                                 <img
+                                    className="max-h-[70px] max-w-[105px] object-contain"
                                     src={logo}
-                                    alt="Your Company Logo"
+                                    alt="Your Company"
                                 />
                             </div>
                             <div className="hidden md:flex space-x-4">

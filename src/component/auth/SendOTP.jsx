@@ -68,7 +68,7 @@ function SendOTP() {
                             src={logo}
                             className="mx-auto h-24 w-auto m-0 p-0"
                         />
-                        <h2 className="mt-0 text-center text-2xl font-bold leading-4 tracking-tight text-gray-800">
+                        <h2 className="mt-0 text-center mt-4 text-2xl font-bold leading-4 tracking-tight text-gray-800">
                             Resetting Password
                         </h2>
                     </div>
