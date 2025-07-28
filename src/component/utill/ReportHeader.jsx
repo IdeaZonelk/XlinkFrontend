@@ -127,7 +127,7 @@ export default function ReportHeader({ userData }) {
     };
 
 
-   const handlePOSClick = async () => {
+    const handlePOSClick = async () => {
         const cashRegisterID = sessionStorage.getItem('cashRegisterID');
         if (cashRegisterID) {
             navigate('/posSystem');
@@ -136,10 +136,8 @@ export default function ReportHeader({ userData }) {
 
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/getActiveCashRegister`);
-            console.log('Cash register response:', response.data);
             if (response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
                 const activeCashRegister = response.data.data[0];
-
                 sessionStorage.setItem('cashRegisterID', activeCashRegister._id);
                 sessionStorage.setItem('cashierUsername', activeCashRegister.username);
                 sessionStorage.setItem('name', activeCashRegister.name);
@@ -191,7 +189,8 @@ export default function ReportHeader({ userData }) {
         else {
             const username = decryptedUser.username;
             const name = decryptedUser.firstName;
-            const openTime = new Date().toLocaleString();
+            const now = new Date();
+            const openTime = now.toISOString();
             const newCash = {
                 username,
                 name,
@@ -270,7 +269,7 @@ export default function ReportHeader({ userData }) {
                     <>
                         <div className="flex h-full items-center justify-between px-4 md:px-8">
                             <div className="flex items-center">
-                                 <img
+                                <img
                                     className="max-h-[70px] max-w-[105px] object-contain"
                                     src={logo}
                                     alt="Your Company"

@@ -34,7 +34,7 @@ import axios from 'axios';
 import LinearProgress from '@mui/material/LinearProgress';
 import Calculator from './posCalCulator';
 import ProductVariationModal from './productVariationEdit';
-import { handleFindProductBySearch, handleProductSubmit } from '../utils/searchProduct';
+import { handleProductSubmit } from '../utils/searchProduct';
 import { getHeldProducts, handleDeleteHoldProduct } from '../utils/holdProductControll';
 import { fetchCategoryData } from '../utils/fetchByCategory';
 import { fetchBrandData } from '../utils/fetchByBrand';
@@ -73,13 +73,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [heldProducts, setHeldProducts] = useState([])
     const [isExitingPopupOpen, setIsExitingPopupOpen] = useState(false);
     const [isPopUpRegisterReport, setIsPopUpRegisterReport] = useState(false);
-    const [registerData, setRegisterData] = useState({
-        openTime: '',
-        username: '',
-        name: '',
-        cashHandIn: 0,
-        totalBalance: 0
-    });
+    const [registerData, setRegisterData] = useState({ openTime: '', username: '', name: '', cashHandIn: 0, totalBalance: 0 });
     const [errorMessage, setErrorMessage] = useState('');
     const [error, setError] = useState('')
     const [reloadStatus, setReloadStatus] = useState(false);
@@ -93,18 +87,23 @@ function PosSystemBody({ defaultWarehouse }) {
     const [selectedBrand, setSelectedBrand] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [permissionData, setPermissionData] = useState([]);
-
-    const [reportWarehouse, setReportWarehouse] = useState('all');
     const [cardPaymentAmount, setCardPaymentAmount] = useState(0);
     const [cashPaymentAmount, setCashPaymentAmount] = useState(0);
     const [bankTransferPaymentAmount, setBankTransferPaymentAmount] = useState(0);
     const [tax, setTax] = useState(0)
     const [totalDiscountAmount, setTotalDiscountAmount] = useState(0);
-    const [inputs, setInputs] = useState({
-        amount20: 0, amount50: 0, amount100: 0, amount500: 0, amount1000: 0, amount5000: 0, amount1: 0, amount2: 0, amount5: 0, amount10: 0,
-    });
+    const [inputs, setInputs] = useState({ amount20: 0, amount50: 0, amount100: 0, amount500: 0, amount1000: 0, amount5000: 0, amount1: 0, amount2: 0, amount5: 0, amount10: 0, });
     const [ProductNameOrCode, setProductNameOrCode] = useState('')
     const [searchedProductDataByName, setSearchedProductDataByName] = useState([]);
+    const [regDataFetching, setFetchRegData] = useState(false);
+    const [totalSaleAmount, setTotalSale] = useState(0);
+    const [cashierTotalSale, setCashierTotalSale] = useState(0);
+    const [openTime, setOpenTime] = useState('');
+    const cashierUsername = sessionStorage.getItem('cashierUsername');
+    const [cashierName, setCashierName] = useState('Unknown Cashier');
+    const [totalBalance, setTotalAmount] = useState(0);
+    const cashRegisterID = sessionStorage.getItem('cashRegisterID')
+    const [cashHandIn, setCashHandIn] = useState(0);
     const selectedWarehouseAccess = permissionData?.warehousePermissions?.[warehouse]?.access ?? false;
     const { currency } = useCurrency();
 
@@ -147,7 +146,6 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [userData]);
 
-
     useEffect(() => {
         if (reloadStatus && !warehouse) {
             fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProgress, setError);
@@ -161,7 +159,6 @@ function PosSystemBody({ defaultWarehouse }) {
             fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProgress, setError);
         }
     }, [warehouse]);
-
 
     // FETCHING ALL DATA BY WAREHOUSE
     const handleWarehouseChange = (e) => {
@@ -189,7 +186,6 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [productData]);
 
-
     // Check permissions for the selected warehouse
     const canSelectProduct = (productWarehouseName) => {
 
@@ -212,7 +208,6 @@ function PosSystemBody({ defaultWarehouse }) {
 
         return isSelectable;
     };
-
 
     const playSound = () => {
         const audio = new Audio(popSound);
@@ -279,7 +274,6 @@ function PosSystemBody({ defaultWarehouse }) {
             });
         }
     }, [searchedProductData]);
-
 
     const handleAddingProduct = (product) => {
         setProductBillingHandling((prevBilling) => {
@@ -422,17 +416,14 @@ function PosSystemBody({ defaultWarehouse }) {
         return 0;
     };
 
-
     const handleHoldOpen = () => {
         setIsHoldList(!isHoldList);
     };
 
-    // Handle search input change
     const handleFindUser = (e) => {
         setKeyword(e.target.value);
     };
 
-    // Determine search type based on the keyword
     const determineSearchType = (keyword) => {
         if (/^\d+$/.test(keyword)) { // If the keyword is numeric
             return 'mobile';
@@ -443,7 +434,6 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     };
 
-    // Handle search form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -581,6 +571,10 @@ function PosSystemBody({ defaultWarehouse }) {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findRegisterData`);
                 if (response.data) {
                     setRegisterData(response.data.data);
+                    setCashHandIn(response.data.data[0]?.cashHandIn || 0);
+                    setCashierName(response.data.data[0]?.name || 'Unknown Cashier');
+                    setTotalAmount(response.data.data[0]?.totalBalance || 0);
+                    setOpenTime(response.data.data[0]?.openTime || '');
                     console.log(response.data)
                 } else {
                     console.error('Unexpected response format:', response.data);
@@ -592,7 +586,6 @@ function PosSystemBody({ defaultWarehouse }) {
             }
         };
         fetchReportData();
-
         setIsPopupOpen(false)
     }
 
@@ -605,37 +598,40 @@ function PosSystemBody({ defaultWarehouse }) {
         if (!cashRegisterID) return;
 
         try {
-            // Transform inputs object to array format
             const transformedInputs = Object.entries(inputs)
                 .map(([key, value]) => ({
-                    denomination: parseInt(key.replace('amount', ''), 10), // Base 10 parsing
+                    denomination: parseInt(key.replace('amount', ''), 10),
                     quantity: value,
                     amount: parseInt(key.replace('amount', ''), 10) * value
                 }))
                 .filter(item => item.quantity > 0);
 
+            const now = new Date();
+            const closedTime = now.toISOString();
 
-            // Prepare transaction data
             const transactionData = {
-                cardPaymentAmount,
-                cashPaymentAmount,
-                bankTransferPaymentAmount,
-                totalDiscountAmount,
+                cashierUsername,
+                cashRegisterID,
+                cashierName: cashierName || 'Unknown Cashier',
+                openedTime: openTime,
+                cardPaymentAmount: cardPaymentAmount || 0,
+                cashPaymentAmount: cashPaymentAmount || 0,
+                bankTransferPaymentAmount: bankTransferPaymentAmount || 0,
+                totalDiscountAmount: totalDiscountAmount || 0,
+                totalAmount: totalBalance - cashHandIn,
+                grandTotal: totalSaleAmount,
+                cashHandIn: cashHandIn || 0,
                 inputs: transformedInputs,
-                registerData,
-                cashVariance: Math.max(0, cashPaymentAmount - calculateTotal())
+                cashVariance: parseFloat((Math.max(0, (cashPaymentAmount + cashHandIn) - calculateTotal()))),
+                closedTime
             };
-            console.log(transactionData)
 
-            //1. First save transaction data
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/saveZreadingBill`, transactionData, {
                 headers: { 'Content-Type': 'application/json' }
             });
 
-            // 2. Close the register after successful save
             await axios.delete(`${process.env.REACT_APP_BASE_URL}/api/closeRegister/${cashRegisterID}`);
 
-            //Cleanup
             toast.success('POS close successfully!', { autoClose: 2000 }, { className: "custom-toast" });
             sessionStorage.removeItem('cashRegisterID');
             sessionStorage.removeItem('cashierUsername');
@@ -695,53 +691,28 @@ function PosSystemBody({ defaultWarehouse }) {
         const fetchReportData = async () => {
             setLoading(true);
             try {
-                const warehouse = reportWarehouse;
-                let url = `${process.env.REACT_APP_BASE_URL}/api/getTodayReportData/${warehouse}`;
+                let url = `${process.env.REACT_APP_BASE_URL}/api/getZReportData/${cashRegisterID}`;
                 const response = await axios.get(url);
                 const sales = response.data.data.sales;
-                const formatAmount = (amount) => {
-                    const value = amount / 1000;
-                    if (value >= 1000) {
-                        return `${(value / 1000).toFixed(2)}M`;
-                    }
-                    return `${value.toFixed(2)}K`;
-                };
 
-                const { total, totalTaxAmount } = sales.reduce((totals, sale) => {
-                    if (sale && sale.productsData) {
-                        let saleTax = 0;
-
-                        if (sale.tax && sale.grandTotal) {
-                            saleTax = (parseFloat(sale.tax) / 100) * parseFloat(sale.grandTotal);
-                        }
-                        sale.productsData.forEach(product => {
-                            const quantity = parseInt(product.quantity || 0, 10);
-                            const tax = parseFloat(product.taxRate || 0);
-                            const price = parseFloat(product.price || 0);
-
-                            const subTotal = price * quantity;
-                            totals.total += subTotal;
-                            const taxAmount = (tax * price * quantity) + saleTax;
-                            totals.totalTaxAmount += taxAmount;
-                        });
-                    }
-                    return totals;
-                }, { total: 0, totalTaxAmount: 0 });
-
-                const { grandTotal, totalDiscountAmount } = sales.reduce((totals, sale) => {
+                const { totalDiscountAmount, totalProfitAmount } = sales.reduce((totals, sale) => {
                     if (sale && sale.productsData) {
                         let saleSubtotal = 0;
                         let productDiscounts = 0;
+                        if (sale.pureProfit !== undefined) {
+                            totals.totalProfitAmount += parseFloat(sale.pureProfit) || 0;
+                        }
 
                         sale.productsData.forEach(product => {
-                            const quantity = parseInt(product.quantity || 0, 10);
+                            const quantity = parseFloat(product.quantity || 0);
                             const price = parseFloat(product.price || 0);
                             const discount = parseFloat(product.discount || 0);
                             const specialDiscount = parseFloat(product.specialDiscount || 0);
+                            const taxRate = parseFloat(product.taxRate || 0);
 
-                            const subTotal = price * quantity;
-                            saleSubtotal += subTotal;
-                            productDiscounts += (discount + specialDiscount) * quantity;
+                            productDiscounts += (discount * quantity) + specialDiscount;
+                            const netPrice = (((price - discount) * quantity) + (price * quantity * taxRate)) - specialDiscount;
+                            saleSubtotal += netPrice;
                         });
 
                         let saleDiscount = 0;
@@ -752,42 +723,43 @@ function PosSystemBody({ defaultWarehouse }) {
                                 : discountValue;
                         }
                         const offerDiscount = saleSubtotal * (parseFloat(sale.offerPercentage || 0) / 100);
+
                         totals.grandTotal += saleSubtotal;
                         totals.totalDiscountAmount += productDiscounts + saleDiscount + offerDiscount;
                     }
                     return totals;
-                }, { grandTotal: 0, totalDiscountAmount: 0 });
+                }, {
+                    grandTotal: 0,
+                    totalDiscountAmount: 0,
+                    totalProfitAmount: 0
+                });
 
                 setTotalDiscountAmount(totalDiscountAmount);
-                setTax(totalTaxAmount);
             } catch (error) {
                 console.error('Error fetching report data:', error);
                 setError('Failed to fetch report data');
             }
             finally {
-                setLoading(false)
+                setLoading(false);
             }
         };
 
         fetchReportData();
-    }, []);
+    }, [regDataFetching]);
 
     useEffect(() => {
         const fetchReportData = async () => {
             setLoading(true);
             try {
-                const warehouse = reportWarehouse;
-                let url = `${process.env.REACT_APP_BASE_URL}/api/getTodayReportData/${warehouse}`;
+                let url = `${process.env.REACT_APP_BASE_URL}/api/getZReportData/${cashRegisterID}`;
                 const response = await axios.get(url);
                 const sales = response.data.data.sales;
 
-                // Initialize payment type totals
                 let cardTotal = 0;
                 let cashTotal = 0;
                 let bankTransferTotal = 0;
 
                 sales.forEach(sale => {
-                    // Process each payment method in the paymentType array
                     sale.paymentType?.forEach(payment => {
                         switch (payment.type) {
                             case 'card':
@@ -806,9 +778,16 @@ function PosSystemBody({ defaultWarehouse }) {
                     });
                 });
 
+                const totalCashBalance = sales.reduce(
+                    (sum, sale) => sum + (sale.cashBalance || 0), 0
+                );
+                cashTotal += totalCashBalance;
+
+                const cashierTotalSale = cashTotal + cardTotal + bankTransferTotal;
                 setCardPaymentAmount(cardTotal);
                 setCashPaymentAmount(cashTotal);
                 setBankTransferPaymentAmount(bankTransferTotal);
+                setCashierTotalSale(cashierTotalSale);
 
             } catch (error) {
                 console.error('Error fetching report data:', error);
@@ -819,7 +798,32 @@ function PosSystemBody({ defaultWarehouse }) {
         };
 
         fetchReportData();
-    }, []);
+    }, [regDataFetching]);
+
+    useEffect(() => {
+        const fetchReportData = async () => {
+            setLoading(true);
+            try {
+                const response = await axios.get(
+                    `${process.env.REACT_APP_BASE_URL}/api/getTodayReportData/${warehouse}`
+                );
+                const posSales = response.data.data.sales.filter(sale => sale.saleType === 'POS');
+                const totalSaleAmount = posSales.reduce(
+                    (total, sale) => total + parseFloat(sale.grandTotal || 0),
+                    0
+                );
+                setTotalSale(totalSaleAmount);
+
+            } catch (error) {
+                console.error('Error fetching report data:', error);
+                setError('Failed to fetch report data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReportData();
+    }, [warehouse, registerData]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -868,7 +872,6 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     };
 
-    // Debounce function to limit how often we search
     const debounce = (func, delay) => {
         let timer;
         return function (...args) {
@@ -877,10 +880,8 @@ function PosSystemBody({ defaultWarehouse }) {
         };
     };
 
-    // Debounced version of our search function
     const debouncedSearch = debounce(handleRealTimeSearch, 300);
 
-    // Handle input change
     const handleInputNameChange = (e) => {
         const value = e.target.value;
         setProductNameOrCode(value);
@@ -1225,30 +1226,43 @@ function PosSystemBody({ defaultWarehouse }) {
                                 lg:w-[70%] lg:h-[680px] 
                                 xl:w-[64%] xl:h-[670px]
                                 2xl:w-[60%] xl:h-[650px] 
-                                p-6 rounded-md shadow-lg">
+                                p-6 rounded-md shadow-lg overflow-x-auto scroll-container">
                                     <h2 className="text-xl text-gray-800 font-semibold">Register Report</h2>
                                     {loading ? (
                                         <p>Loading</p>
                                     ) : registerData.length > 0 ? (
-                                        <div className="overflow-x-auto scroll-container pl-6 pr-6 pt-2 pb-1">
+                                        <div className=" pl-6 pr-6 pt-2 pb-1">
                                             <table className="min-w-full bg-white border border-gray-200">
                                                 <thead className="bg-gray-50">
                                                     <tr>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Open Time</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">user</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cash hand in</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Open Time</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cash hand in</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Your Sale <br /><p className='text-[10px]'>(Without Cash Hand)</p></th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Today Total Sale <br /><p className='text-[10px]'>(Without Cash Hand)</p></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="bg-white divide-y divide-gray-200">
                                                     {registerData.map((reg) => (
                                                         <tr key={reg._id}>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"><p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">{reg.openTime}</p></td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{reg.username || 'Unknown'}</td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{reg.name}</td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">{currency} {formatWithCustomCommas(reg.cashHandIn)}</p></td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">{currency} {formatWithCustomCommas(reg.totalBalance)}</p></td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                                <p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">
+                                                                    {new Date(reg.openTime).toLocaleString('en-US', {
+                                                                        timeZone: 'Asia/Colombo',
+                                                                        year: 'numeric',
+                                                                        month: '2-digit',
+                                                                        day: '2-digit',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit',
+                                                                        second: '2-digit',
+                                                                        hour12: false,
+                                                                    })}
+                                                                </p>
+                                                            </td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">{reg.name}</td>
+                                                            <td className="px-4 py-5 text-left whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">{currency} {formatWithCustomCommas(reg.cashHandIn)}</p></td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">{currency} {formatWithCustomCommas(cashierTotalSale)}</p></td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">{currency} {formatWithCustomCommas(totalSaleAmount)}</p></td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -1266,7 +1280,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         value={formatWithCustomCommas(totalDiscountAmount || 0)}
                                                         className="w-full border border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
@@ -1277,7 +1291,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         value={formatWithCustomCommas(cashPaymentAmount || 0)}
                                                         className="w-full border border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
@@ -1288,7 +1302,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         value={formatWithCustomCommas(cardPaymentAmount || 0)}
                                                         className="w-full border border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
@@ -1299,7 +1313,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         value={formatWithCustomCommas(bankTransferPaymentAmount || 0)}
                                                         className="w-full border  border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1420,14 +1434,23 @@ function PosSystemBody({ defaultWarehouse }) {
                                                 <div className='flex flex-col justify-end relative'>
                                                     <label className="mb-2 text-left">Total Cash</label>
                                                     <div className="relative w-[170px]">
-                                                        <span className="absolute rounded-l-lg left-2 top-1/2 transform -translate-y-1/2 text-gray-500">{currency}</span>
+                                                        <span className={`absolute rounded-l-lg left-2 top-1/2 transform -translate-y-1/2 ${calculateTotal() === 0 ? 'text-red-500' : 'text-gray-500'
+                                                            }`}>
+                                                            {currency}
+                                                        </span>
                                                         <input
                                                             type="text"
                                                             value={formatWithCustomCommas(calculateTotal())}
                                                             readOnly
-                                                            className="w-full border border-gray-300 px-3 py-2 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                                                            className={`w-full border-2 px-3 py-2 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-1 ${calculateTotal() === 0
+                                                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                                : 'border-gray-300 focus:ring-[#35AF87] focus:border-[#35AF87]'
+                                                                } transition-colors duration-200`}
                                                         />
                                                     </div>
+                                                    {calculateTotal() === 0 && (
+                                                        <p className="text-red-500 text-left text-xs mt-1 font-medium">No cash detected</p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1438,7 +1461,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         <span className="absolute rounded-l-lg left-2 top-1/2 transform -translate-y-1/2 text-gray-500">{currency}</span>
                                                         <input
                                                             type="text"
-                                                            value={formatWithCustomCommas(Math.max(0, cashPaymentAmount - calculateTotal()))}
+                                                            value={formatWithCustomCommas(Math.max(0, (cashPaymentAmount + cashHandIn) - calculateTotal()))}
                                                             readOnly
                                                             className="w-full border border-gray-300 px-3 py-2 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                         />
@@ -1458,19 +1481,24 @@ function PosSystemBody({ defaultWarehouse }) {
 
                                     <div className="flex mt-2 ml-5">
                                         <button
-                                            className="px-4 py-2 mr-2 bg-gray-500 text-white rounded-md"
+                                            className="px-4 py-3 mr-2 bg-gray-500 text-white rounded-md"
                                             onClick={() => handleRegisterReportClose(setIsPopupOpen)}
                                         >
                                             Cancel
                                         </button>
+
                                         <button
-                                            className="px-4 py-2 button-bg-color text-white rounded-md"
-                                            onClick={() => {
+                                            className="px-4 py-3 button-bg-color text-white rounded-md"
+                                            onClick={async () => {
                                                 console.log('POS closed');
-                                                handlePOSClose(setIsPopupOpen, navigate);
+                                                try {
+                                                    await handlePOSClose();
+                                                } catch (error) {
+                                                    console.error('Failed to fetch Z records:', error);
+                                                }
                                             }}
                                         >
-                                            Confirm
+                                            Close the POS
                                         </button>
                                     </div>
                                 </div>
@@ -1544,6 +1572,7 @@ function PosSystemBody({ defaultWarehouse }) {
                             setSelectedBrandProducts={setSelectedBrandProducts}
                             setSearchedProductData={setSearchedProductData}
                             setError={setError}
+                            setFetchRegData={setFetchRegData}
                         />
                     </div>
                 </div>
