@@ -1242,13 +1242,13 @@ const handleImageChange = async (e, setError) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Brand <span className='text-red-500'>*</span>
+                      Brand 
                     </label>
                     <div className="mt-2">
                       <select
                         id="brand"
                         name="brand"
-                        required
+                        
                         value={brand}
                         onChange={(e) => setBrands(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1269,13 +1269,13 @@ const handleImageChange = async (e, setError) => {
                 <div className="flex-1 w-full">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Supplier <span className='text-red-500'>*</span>
+                      Supplier 
                     </label>
                     <div className="mt-2">
                       <select
                         id="supplier"
                         name="supplier"
-                        required
+                        
                         value={supplier}
                         onChange={(e) => setSuplier(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1300,13 +1300,13 @@ const handleImageChange = async (e, setError) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Barcode type <span className='text-red-500'>*</span>
+                      Barcode type 
                     </label>
                     <div className="mt-2">
                       <select
                         id="barcode"
                         name="barcode"
-                        required
+                        
                         value={barcode}
                         onChange={(e) => setBarcode(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1349,13 +1349,13 @@ const handleImageChange = async (e, setError) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Status <span className='text-red-500'>*</span>
+                      Status 
                     </label>
                     <div className="mt-2">
                       <select
                         id="status"
                         name="status"
-                        required
+                       
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1432,14 +1432,14 @@ const handleImageChange = async (e, setError) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Quantity Limitation <span className='text-red-500'>*</span>
+                      Quantity Limitation 
                     </label>
                     <div className="mt-2">
                       <input
                         id="QuantityLimitation"
                         name="QuantityLimitation"
                         type="text"
-                        required
+                        
                         onChange={(e) => setQL(e.target.value)}
                         placeholder="Quantity Limitation"
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
