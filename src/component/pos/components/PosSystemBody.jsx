@@ -48,6 +48,7 @@ import { toast } from 'react-toastify';
 import { UserContext } from '../../../context/UserContext';
 import Draggable from 'react-draggable';
 
+
 function PosSystemBody({ defaultWarehouse }) {
     const ProductIcon = 'https://cdn0.iconfinder.com/data/icons/creative-concept-1/128/PACKAGING_DESIGN-512.png';
     // State management
@@ -89,6 +90,8 @@ function PosSystemBody({ defaultWarehouse }) {
     const [walkInCustomerName, setWalkInCustomerName] = useState('');
     const [walkInCustomerNic, setWalkInCustomerNic] = useState('');
     const [walkInCustomerMobile, setWalkInCustomerMobile] = useState('');
+    const [walkInCustomerLoyaltyRef, setWalkInCustomerLoyaltyRef] = useState('');
+    const [walkInCustomerRedeemedPoints, setWalkInCustomerRedeemedPoints] = useState('');
     const [success, setSuccess] = useState('');
     const [selectedBrand, setSelectedBrand] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -458,60 +461,115 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     };
 
+    // const handleWalkInCustomerSubmit = async (e) => {
+    //     e.preventDefault();
+
+    //     // Input validation
+    //     if (!walkInCustomerName.trim()) {
+    //         alert('Customer name is required.');
+    //         return;
+    //     }
+    //     const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
+    //     const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
+
+    //     if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
+    //         alert('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
+    //         return;
+    //     }
+    //     if (!walkInCustomerMobile.trim() || !/^\+94\d{9}$/.test(walkInCustomerMobile)) {
+    //         alert('Mobile is required and must follow the format +94XXXXXXXXX.');
+    //         return;
+    //     }
+
+    //     try {
+    //         const response = await axios.post(
+    //             `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
+    //             {
+    //                 name: walkInCustomerName.trim(),
+    //                 nic: walkInCustomerNic.trim(),
+    //                 mobile: walkInCustomerMobile.trim(),
+    //             }
+    //         );
+
+    //         // Handle success
+    //         toast.success(
+    //             "Customer created successfully!",
+    //             { autoClose: 2000 },
+    //             { className: "custom-toast" }
+    //         );
+    //         setSuccess(response.data.message);
+    //         setWalkInCustomerName('');
+    //         setWalkInCustomerNic('');
+    //         setWalkInCustomerMobile('');
+    //         setError('');
+    //         setIsModalOpen(false); // Close modal on success
+    //     } catch (error) {
+    //         toast.error("Customer not added",
+    //             { autoClose: 2000 },
+    //             { className: "custom-toast" });
+    //         console.error('Walk-in customer error:', error);
+
+    //         // Handle error from backend
+    //         setError(
+    //             error.response?.data?.message || 'An error occurred while creating the customer.'
+    //         );
+    //     }
+    // };
+
     const handleWalkInCustomerSubmit = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        // Input validation
-        if (!walkInCustomerName.trim()) {
-            alert('Customer name is required.');
-            return;
-        }
-        const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
-        const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
+    // Input validation
+    if (!walkInCustomerName.trim()) {
+        toast.error('Customer name is required.', { autoClose: 2000 });
+        return;
+    }
+    const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
+    const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
 
-        if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
-            alert('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
-            return;
-        }
-        if (!walkInCustomerMobile.trim() || !/^\+94\d{9}$/.test(walkInCustomerMobile)) {
-            alert('Mobile is required and must follow the format +94XXXXXXXXX.');
-            return;
-        }
+    if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
+        toast.error('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).', { autoClose: 2000 });
+        return;
+    }
+    if (!walkInCustomerMobile.trim() || !/^0\d{9}$/.test(walkInCustomerMobile)) {
+        toast.error('Mobile is required and must start with "0" and contain exactly 10 digits.', { autoClose: 2000 });
+        return;
+    }
 
-        try {
-            const response = await axios.post(
-                `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
-                {
-                    name: walkInCustomerName.trim(),
-                    nic: walkInCustomerNic.trim(),
-                    mobile: walkInCustomerMobile.trim(),
-                }
-            );
+    try {
+        const response = await axios.post(
+            `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
+            {
+                name: walkInCustomerName.trim(),
+                nic: walkInCustomerNic.trim(),
+                mobile: walkInCustomerMobile.trim(),
+                loyaltyReferenceNumber: walkInCustomerLoyaltyRef?.trim() || '', // Add loyalty reference if you have this field
+                redeemedPoints: walkInCustomerRedeemedPoints ? Number(walkInCustomerRedeemedPoints) : 0 // Add redeemed points if you have this field
+            }
+        );
 
-            // Handle success
-            toast.success(
-                "Customer created successfully!",
-                { autoClose: 2000 },
-                { className: "custom-toast" }
-            );
-            setSuccess(response.data.message);
-            setWalkInCustomerName('');
-            setWalkInCustomerNic('');
-            setWalkInCustomerMobile('');
-            setError('');
-            setIsModalOpen(false); // Close modal on success
-        } catch (error) {
-            toast.error("Customer not added",
-                { autoClose: 2000 },
-                { className: "custom-toast" });
-            console.error('Walk-in customer error:', error);
+        toast.success(
+            response.data.message || "Customer created successfully!",
+            { autoClose: 2000, className: "custom-toast" }
+        );
+        setWalkInCustomerName('');
+        setWalkInCustomerNic('');
+        setWalkInCustomerMobile('');
+        setWalkInCustomerLoyaltyRef && setWalkInCustomerLoyaltyRef('');
+        setWalkInCustomerRedeemedPoints && setWalkInCustomerRedeemedPoints('');
+        setError('');
+        setIsModalOpen(false); // Close modal on success
+    } catch (error) {
+        toast.error(
+            error.response?.data?.message || "Customer not added",
+            { autoClose: 2000, className: "custom-toast" }
+        );
+        setError('');
+    }
+};
 
-            // Handle error from backend
-            setError(
-                error.response?.data?.message || 'An error occurred while creating the customer.'
-            );
-        }
-    };
+
+
 
     const handleEditHoldProduct = async (heldProduct) => {
         try {
@@ -950,7 +1008,7 @@ function PosSystemBody({ defaultWarehouse }) {
                             </button>
 
                             {/* Modal for Walk-In Customer */}
-                            {isModalOpen && (
+                            {/* {isModalOpen && (
                                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-[1000]">
                                     <div
                                         className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn"
@@ -1022,7 +1080,115 @@ function PosSystemBody({ defaultWarehouse }) {
                                         </form>
                                     </div>
                                 </div>
-                            )}
+                            )} */}
+                            {/* Modal for Walk-In Customer */}
+{isModalOpen && (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-[1000]">
+        <div className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn">
+            <div className="flex items-center justify-center mb-6">
+                <h2 className="text-2xl font-semibold text-gray-700 text-center">
+                    Add Customer
+                </h2>
+            </div>
+            <form onSubmit={handleWalkInCustomerSubmit}>
+                <div className="relative mb-4">
+                    <input
+                        type="text"
+                        placeholder="Enter customer name"
+                        value={walkInCustomerName}
+                        onChange={(e) => setWalkInCustomerName(e.target.value)}
+                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                        required
+                        title="Customer name is required."
+                    />
+                    <span className="absolute left-3 top-3 text-gray-400">
+                        <i className="fas fa-user"></i>
+                    </span>
+                </div>
+                <div className="relative mb-4">
+                    <input
+                        type="text"
+                        placeholder="Enter NIC"
+                        value={walkInCustomerNic}
+                        onChange={(e) => setWalkInCustomerNic(e.target.value)}
+                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                        required
+                        title="NIC is required and must be exactly 12 characters."
+                    />
+                    <span className="absolute left-3 top-3 text-gray-400">
+                        <i className="fas fa-id-card"></i>
+                    </span>
+                </div>
+                <div className="relative mb-4">
+                    <input
+                        type="text"
+                        placeholder="Enter Mobile: 0XXXXXXXXX"
+                        value={walkInCustomerMobile}
+                        onChange={(e) => setWalkInCustomerMobile(e.target.value)}
+                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                        required
+                        // pattern="^0\d{9}$"
+                        // title="Enter a valid mobile number in the format 0XXXXXXXXX."
+                    />
+                    <span className="absolute left-3 top-3 text-gray-400">
+                        <i className="fas fa-phone-alt"></i>
+                    </span>
+                </div>
+                {/* Loyalty Reference Number */}
+                {typeof walkInCustomerLoyaltyRef !== "undefined" && (
+                    <div className="relative mb-4">
+                        <input
+                            type="text"
+                            placeholder="Loyalty Reference Number"
+                            value={walkInCustomerLoyaltyRef}
+                            onChange={(e) => setWalkInCustomerLoyaltyRef(e.target.value)}
+                            className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                            required
+                            title="Loyalty reference is required."
+                        />
+                        <span className="absolute left-3 top-3 text-gray-400">
+                            <i className="fas fa-id-card"></i>
+                        </span>
+                    </div>
+                )}
+                {/* Redeemed Points */}
+                {typeof walkInCustomerRedeemedPoints !== "undefined" && (
+                    <div className="relative mb-4">
+                        <input
+                            type="number"
+                            placeholder="Redeemed Points"
+                            value={walkInCustomerRedeemedPoints}
+                            onChange={(e) => setWalkInCustomerRedeemedPoints(e.target.value)}
+                            className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                            title="Redeemed Points (optional)"
+                        />
+                        <span className="absolute left-3 top-3 text-gray-400">
+                            <i className="fas fa-star"></i>
+                        </span>
+                    </div>
+                )}
+                <div className="flex justify-between">
+                    <button
+                        type="submit"
+                        className="submit text-white px-4 py-2 rounded-lg shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                        Create
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+)}
+
+
+
                         </div>
 
                     </div>
