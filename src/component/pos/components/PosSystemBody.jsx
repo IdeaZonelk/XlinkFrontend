@@ -92,6 +92,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [walkInCustomerMobile, setWalkInCustomerMobile] = useState('');
     const [walkInCustomerLoyaltyRef, setWalkInCustomerLoyaltyRef] = useState('');
     const [walkInCustomerRedeemedPoints, setWalkInCustomerRedeemedPoints] = useState('');
+    const [customerSearchError, setCustomerSearchError] = useState('');
     const [success, setSuccess] = useState('');
     const [selectedBrand, setSelectedBrand] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -446,20 +447,41 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     };
 
-    // Handle search form submission
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const searchType = determineSearchType(keyword);
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
-                params: { keyword, searchType }
-            });
-            console.log(response.data)
-            setSearchCustomerResults(response.data); // Save the search results// Select the first result if available
-        } catch (error) {
-            console.error('Find customer error:', error);
+    
+
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setCustomerSearchError(''); // Clear previous error
+    try {
+        const searchType = determineSearchType(keyword);
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
+            params: { keyword, searchType }
+        });
+        let customers = response.data.customers || [];
+        if (searchType === 'name' && keyword.trim()) {
+            if (keyword.trim().length === 1) {
+                customers = customers.filter(c =>
+                    c.name && c.name.toLowerCase() === keyword.trim().toLowerCase()
+                );
+            } else {
+                customers = customers.filter(c =>
+                    c.name && c.name.toLowerCase().includes(keyword.trim().toLowerCase())
+                );
+            }
         }
-    };
+        setSearchCustomerResults(customers);
+        if (customers.length === 0) {
+            toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
+        }
+    } catch (error) {
+        toast.error('Error searching customer.', { autoClose: 2000 });
+        console.error('Find customer error:', error);
+    }
+};
+
+
+
+
 
     // const handleWalkInCustomerSubmit = async (e) => {
     //     e.preventDefault();
@@ -968,13 +990,15 @@ function PosSystemBody({ defaultWarehouse }) {
                                 value={keyword}
                                 onChange={handleFindUser}
                             />
+                           
                             <button type="submit" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
                                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
                                     <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
                                 </svg>
                             </button>
-                        </form>
+                        </form> 
+
                         {keyword && searchCustomerResults.length > 0 && (
                             <div className="absolute top-[90px] w-[94%] mr-2 text-left overflow-y-scroll h-[350px] left-[7px] bg-white border border-gray-300 rounded-lg shadow-md">
                                 <ul className=''>
