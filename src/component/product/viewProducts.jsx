@@ -870,7 +870,7 @@ function ViewProductsBody() {
                   <p>
                     <strong className="font-medium">Created On:</strong>{" "}
                     <span className="text-gray-600">
-                      {new Date(selectedProduct.date).toLocaleDateString()}
+                     {selectedProduct.createdAt ? new Date(selectedProduct.createdAt).toLocaleDateString() : ''}
                     </span>
                   </p>
                 </div>

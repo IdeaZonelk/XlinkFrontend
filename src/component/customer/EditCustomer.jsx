@@ -22,13 +22,11 @@ import { toast } from 'react-toastify';
 function EditCustomerBody() {
     const { id } = useParams();
     const [formData, setFormData] = useState({
-        username: '',
         name: '',
         nic: '',
         mobile: '',
-        country: '',
-        city: '',
-        address: ''
+        loyaltyReferenceNumber: '',
+        redeemedPoints: ''
     });
     const [errors, setErrors] = useState({});
     const [progress, setProgress] = useState(false);
@@ -36,23 +34,27 @@ function EditCustomerBody() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
-    // Fetch user data when component mounts
+    // Fetch customer data for editing
     useEffect(() => {
         const fetchCustomerData = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
-                    params: { id }, // Pass `id` as a query parameter
-                });
+                
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/getCustomerForUpdate/${id}`);
                 const fetchedData = response.data;
-                setFormData(fetchedData);
+                setFormData({
+                    name: fetchedData.name || '',
+                    nic: fetchedData.nic || '',
+                    mobile: fetchedData.mobile || '',
+                    loyaltyReferenceNumber: fetchedData.loyaltyReferenceNumber || '',
+                    redeemedPoints: fetchedData.redeemedPoints ?? ''
+                });
                 setLoading(false);
             } catch (error) {
-                console.error('Error fetching customer data:', error);
+                toast.error('Failed to fetch customer data.', { autoClose: 2000 });
                 setErrors(prevErrors => ({ ...prevErrors, general: 'Failed to fetch customer data.' }));
                 setLoading(false);
             }
         };
-
         fetchCustomerData();
     }, [id]);
 
@@ -68,13 +70,11 @@ function EditCustomerBody() {
     const handleChange = (e) => {
         setErrors({});
         setResponseMessage('');
-
         const { name, value } = e.target;
         let updatedFormData = { ...formData, [name]: value };
 
         // Mobile number validation
         if (name === 'mobile') {
-            // Validate mobile input with isValidMobileInput function
             if (!isValidMobileInput(value) || value.length !== 10) {
                 setErrors(prevErrors => ({
                     ...prevErrors,
@@ -88,25 +88,9 @@ function EditCustomerBody() {
             }
         }
 
-        // Email validation for username field
-        if (name === 'username' && value) {
-            if (!value.includes('@')) {
-                setErrors(prevErrors => ({
-                    ...prevErrors,
-                    username: 'Email must contain "@"'
-                }));
-            } else {
-                setErrors(prevErrors => ({
-                    ...prevErrors,
-                    username: ''
-                }));
-            }
-        }
-
-        // NIC validation: Ensure it is exactly 12 characters long
-        const newNICRegex = /^\d{12}$/;         // 12 digits only
-        const oldNICRegex = /^\d{9}[VXvx]$/;    // 9 digits + 'V' or 'X'
-
+        // NIC validation
+        const newNICRegex = /^\d{12}$/;
+        const oldNICRegex = /^\d{9}[VXvx]$/;
         if (name === 'nic' && value) {
             if (!newNICRegex.test(value) && !oldNICRegex.test(value)) {
                 setErrors(prevErrors => ({
@@ -116,10 +100,41 @@ function EditCustomerBody() {
             } else {
                 setErrors(prevErrors => ({
                     ...prevErrors,
-                    nic: '' // Clear error if valid
+                    nic: ''
                 }));
             }
         }
+
+        // Loyalty reference validation
+        if (name === 'loyaltyReferenceNumber' && value) {
+            if (!/^[a-zA-Z0-9]+$/.test(value)) {
+                setErrors(prevErrors => ({
+                    ...prevErrors,
+                    loyaltyReferenceNumber: 'Loyalty reference must be alphanumeric.'
+                }));
+            } else {
+                setErrors(prevErrors => ({
+                    ...prevErrors,
+                    loyaltyReferenceNumber: ''
+                }));
+            }
+        }
+
+        // Redeemed points validation
+        if (name === 'redeemedPoints' && value) {
+            if (value && isNaN(Number(value))) {
+                setErrors(prevErrors => ({
+                    ...prevErrors,
+                    redeemedPoints: 'Redeemed Points must be a number.'
+                }));
+            } else {
+                setErrors(prevErrors => ({
+                    ...prevErrors,
+                    redeemedPoints: ''
+                }));
+            }
+        }
+
         setFormData(updatedFormData);
     };
 
@@ -128,34 +143,33 @@ function EditCustomerBody() {
         e.preventDefault();
         setErrors({});
         setResponseMessage('');
-        setProgress(true); // Show loading bar
+        setProgress(true);
 
-        if (errors.mobile || errors.username) {
-            alert('Please fix the errors before submitting.');
+        // Required fields check
+        if (!formData.name || !formData.nic || !formData.mobile || !formData.loyaltyReferenceNumber) {
+            setErrors(prev => ({ ...prev, general: 'All fields except Redeemed Points are required.' }));
+            setProgress(false);
+            return;
+        }
+
+        if (errors.mobile || errors.nic || errors.loyaltyReferenceNumber || errors.redeemedPoints) {
             setProgress(false);
             return;
         }
 
         const formDataToSubmit = {
             id,
-            name: formData.name,
-            mobile: formData.mobile,
+            name: formData.name.trim(),
+            nic: formData.nic.trim(),
+            mobile: formData.mobile.trim(),
+            loyaltyReferenceNumber: formData.loyaltyReferenceNumber.trim(),
+            redeemedPoints: formData.redeemedPoints ? Number(formData.redeemedPoints) : 0
         };
-
-        if (formData.username?.trim()) formDataToSubmit.username = formData.username.toLowerCase();
-        if (formData.nic?.trim()) formDataToSubmit.nic = formData.nic;
-        if (formData.country?.trim()) formDataToSubmit.country = formData.country;
-        if (formData.city?.trim()) formDataToSubmit.city = formData.city;
-        if (formData.address?.trim()) formDataToSubmit.address = formData.address;
-
 
         axios.put(`${process.env.REACT_APP_BASE_URL}/api/editCustomerProfileByAdmin`, formDataToSubmit)
             .then(response => {
                 setResponseMessage("Successfully updated the customer");
-                toast.success(
-                    "Successfully updated the customer",
-                    { autoClose: 2000, className: "custom-toast" }
-                );
+                toast.success("Successfully updated the customer", { autoClose: 2000, className: "custom-toast" });
                 setTimeout(() => {
                     navigate('/viewCustomers');
                 }, 1000);
@@ -164,28 +178,19 @@ function EditCustomerBody() {
             .catch((error) => {
                 const errorMessage =
                     error.response?.data?.message || 'An error occurred while updating the customer. Please try again.';
-                toast.error(
-                    errorMessage,
-                    {
-                        autoClose: 2000,
-                        className: "custom-toast"
-                    }
-                );
-                console.error('Error updating user:', error);
+                toast.error(errorMessage, { autoClose: 2000, className: "custom-toast" });
                 setProgress(false);
             });
     };
 
-    // Clear all fields except the profileImage
+    // Clear all fields
     const handleClear = () => {
         setFormData({
-            username: '',
             name: '',
             nic: '',
             mobile: '',
-            country: '',
-            city: '',
-            address: ''
+            loyaltyReferenceNumber: '',
+            redeemedPoints: ''
         });
         setErrors({});
         setResponseMessage('');
@@ -218,7 +223,6 @@ function EditCustomerBody() {
                     <form onSubmit={handleSubmit}>
                         <div className="flex space-x-16">
                             <div className="flex-1">
-
                                 {/* Name field */}
                                 <div className="mt-2">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Name <span className='text-red-500'>*</span></label>
@@ -235,71 +239,39 @@ function EditCustomerBody() {
                                     />
                                 </div>
 
-                                {/* Username field */}
-                                {/* <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">User Name</label>
+                                {/* NIC field */}
+                                <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC <span className='text-red-500'>*</span></label>
                                     <input
-                                        id="username"
-                                        name="username"
-                                        type="email"
-                                        placeholder='sample@gmail.com'
-                                        value={formData.username}
-                                        onChange={handleChange}
-                                        autoComplete="email"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                    {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
-                                </div> */}
-
-                                {/* Country field */}
-                                {/* <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Country <span className='text-red-500'>*</span></label>
-                                    <input
-                                        id="country"
-                                        name="country"
+                                        id="nic"
+                                        name="nic"
                                         type="text"
                                         required
-                                        placeholder='Sri Lanka'
-                                        value={formData.country}
+                                        placeholder='NIC'
+                                        value={formData.nic}
                                         onChange={handleChange}
-                                        autoComplete="given-name"
+                                        maxLength={12}
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
-                                </div> */}
+                                    {errors.nic && <p className="text-red-600 text-sm mt-1">{errors.nic}</p>}
+                                </div>
 
-                                {/* City field */}
-                                {/* <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">City <span className='text-red-500'>*</span></label>
+                                {/* Redeemed Points */}
+                                <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Redeemed Points</label>
                                     <input
-                                        id="city"
-                                        name="city"
-                                        type="text"
-                                        required
-                                        placeholder='Kandy'
-                                        value={formData.city}
+                                        id="redeemedPoints"
+                                        name="redeemedPoints"
+                                        type="number"
+                                        placeholder='0'
+                                        value={formData.redeemedPoints}
                                         onChange={handleChange}
-                                        autoComplete="given-name"
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
-                                </div> */}
-
-                                {/* Address field */}
-                                {/* <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Address</label>
-                                    <textarea
-                                        id="address"
-                                        name="address"
-                                        placeholder='No 46, Rock view Garden Thennekumbura'
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        autoComplete="given-name"
-                                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                    />
-                                </div> */}
+                                    {errors.redeemedPoints && <p className="text-red-600 text-sm mt-1">{errors.redeemedPoints}</p>}
+                                </div>
                             </div>
-
                             <div className="flex-1">
-
                                 {/* Mobile number field */}
                                 <div className="mt-2">
                                     <label htmlFor="mobile" className="block text-sm font-medium leading-6 text-gray-900 text-left">
@@ -320,22 +292,21 @@ function EditCustomerBody() {
                                     {errors.mobile && <p className="text-red-600 text-sm mt-1">{errors.mobile}</p>}
                                 </div>
                                 
-
-                                {/* NIC*/}
-                                {/* <div className="mt-5">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC</label>
+                                {/* Loyalty Reference Number */}
+                                <div className="mt-5">
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Loyalty Reference Number <span className='text-red-500'>*</span></label>
                                     <input
-                                        id="nic"
-                                        name="nic"
+                                        id="loyaltyReferenceNumber"
+                                        name="loyaltyReferenceNumber"
                                         type="text"
-                                        placeholder='200123456789'
-                                        value={formData.nic}
+                                        required
+                                        placeholder='Loyalty Ref'
+                                        value={formData.loyaltyReferenceNumber}
                                         onChange={handleChange}
-                                        maxLength={12}
                                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                     />
-                                </div> */}
-
+                                    {errors.loyaltyReferenceNumber && <p className="text-red-600 text-sm mt-1">{errors.loyaltyReferenceNumber}</p>}
+                                </div>
                                 
                             </div>
                         </div>
