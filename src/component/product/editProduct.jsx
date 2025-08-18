@@ -420,7 +420,7 @@ function EditProductBody() {
         && productData.unit
         && productData.saleUnit
         && productData.purchase
-        && productData.barcode
+        // && productData.barcode
         && selectedWarehouse.length > 0
         && (productData.ptype !== "Variation" || Object.keys(selectedVariationTypes).length > 0);
 
@@ -677,12 +677,12 @@ function EditProductBody() {
 
                                 {/* Barcode */}
                                 <div className="mt-7">
-                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Barcode type <span className='text-red-500'>*</span></label>
+                                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Barcode type </label>
                                     <div className="mt-2">
                                         <select
                                             id="barcode"
                                             name="barcode"
-                                            required
+                                            
                                             value={productData.barcode}
                                             onChange={(e) => setProductData({ ...productData, barcode: e.target.value })}
                                             className="block w-[90%]  rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -881,7 +881,7 @@ function EditProductBody() {
 
                                  <div className="mt-7">
                                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                                        Variation <span className="text-red-500">*</span>
+                                        Variation 
                                     </label>
                                     <div className="mt-2">
                                         <select
