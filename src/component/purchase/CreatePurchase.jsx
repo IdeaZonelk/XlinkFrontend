@@ -71,6 +71,7 @@ function CreatePurchaseBody() {
       const [purchase, setPurchaseUnit] = useState("");
       const [status, setStatus] = useState("");
       const [quantityLimit, setQL] = useState("");
+      const [warranty, setWarranty] = useState("");
       const [variation, setVariation] = useState("");
       const [variationType, setVariationTypes] = useState([]);
       const [variationValues, setVariationValues] = useState({});
@@ -198,6 +199,7 @@ function CreatePurchaseBody() {
           formData.append("note", note);
           formData.append("purchase", purchase);
           formData.append("quantityLimit", quantityLimit);
+          formData.append("warranty", warranty);
           formData.append("barcode", barcode);
           formData.append("variation", variation);
           formData.append("warehouse", JSON.stringify(formattedWarehouses));
@@ -521,6 +523,7 @@ const handleImageChange = async (e, setError) => {
     setSaleUnit("");
     setPurchaseUnit("");
     setQL("");
+    setWarranty("");
     setType("");
     setStatus("");
     setSuplier("");
@@ -619,6 +622,7 @@ const handleImageChange = async (e, setError) => {
         formData.append("note", note);
         formData.append("purchase", purchase);
         formData.append("quantityLimit", quantityLimit);
+        formData.append("warranty", warranty);
         formData.append("barcode", barcode);
         formData.append("variation", variation);
         formData.append("warehouse", JSON.stringify(formattedWarehouses));
@@ -1445,6 +1449,69 @@ const handleImageChange = async (e, setError) => {
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                       />
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:space-x-4 mt-5">
+              {/* Warranty Sub-Div ============================================================================== */}
+              <div className="flex flex-col lg:flex-row lg:space-x-8 w-full">
+                {/* Warranty Duration */}
+                <div className="flex-1 w-full mb-4 lg:mb-0">
+                  <div className="mt-5">
+                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
+                      Warranty Duration
+                    </label>
+                    <div className="mt-2">
+                      {warranty === 'custom' || (!['', 'No Warranty', '3 Months', '6 Months', '1 Year', '2 Years', '3 Years', '5 Years'].includes(warranty) && warranty !== '') ? (
+                        <input
+                          id="warranty-custom"
+                          name="warranty-custom"
+                          type="text"
+                          value={warranty === 'custom' ? '' : warranty}
+                          onChange={(e) => setWarranty(e.target.value)}
+                          onBlur={(e) => {
+                            if (e.target.value === '') {
+                              setWarranty('');
+                            }
+                          }}
+                          placeholder="Enter custom warranty duration"
+                          autoFocus
+                          className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-blue-500 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:outline-none sm:text-sm sm:leading-6"
+                        />
+                      ) : (
+                        <select
+                          id="warranty-select"
+                          name="warranty-select"
+                          value={warranty}
+                          onChange={(e) => {
+                            if (e.target.value === 'custom') {
+                              setWarranty('custom');
+                            } else {
+                              setWarranty(e.target.value);
+                            }
+                          }}
+                          className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                        >
+                          <option value="">Select warranty duration</option>
+                          <option value="No Warranty">No Warranty</option>
+                          <option value="3 Months">3 Months</option>
+                          <option value="6 Months">6 Months</option>
+                          <option value="1 Year">1 Year</option>
+                          <option value="2 Years">2 Years</option>
+                          <option value="3 Years">3 Years</option>
+                          <option value="5 Years">5 Years</option>
+                          <option value="custom">Custom...</option>
+                        </select>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {warranty === 'custom' || (!['', 'No Warranty', '3 Months', '6 Months', '1 Year', '2 Years', '3 Years', '5 Years'].includes(warranty) && warranty !== '') 
+                        ? 'Enter your custom warranty duration' 
+                        : 'Select from predefined options or choose Custom for custom input'
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
