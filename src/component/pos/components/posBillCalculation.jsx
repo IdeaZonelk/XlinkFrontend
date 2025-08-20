@@ -41,6 +41,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [password, setPassword] = useState('');
     const [specialDiscountPopUp, setSpecialDiscountPopUp] = useState(false);
     const [specialDiscount, setSpecialDiscount] = useState(0);
+    const [specialDiscountType, setSpecialDiscountType] = useState('');
+    const [specialDiscountInput, setSpecialDiscountInput] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [selectedProductIndex, setSelectedProductIndex] = useState(null);
     const [offersData, setOffers] = useState([]);
@@ -121,22 +123,60 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     useEffect(() => {
         if (specialDiscountPopUp) {
             setTimeout(() => {
-                adminPasswordRef.current?.focus();
+                discountInputRef.current?.focus();
             }, 100);
         }
     }, [specialDiscountPopUp]);
 
+    // Handle discount type change in modal
+    const handleSpecialDiscountTypeChange = (e) => {
+        setSpecialDiscountType(e.target.value);
+        setSpecialDiscountInput('');
+        setSpecialDiscount(0);
+    };
+
+    // Handle discount value change in modal
+    const handleSpecialDiscountInputChange = (e) => {
+        const value = e.target.value;
+        setSpecialDiscountInput(value);
+        if (specialDiscountType === 'fixed') {
+            setSpecialDiscount(Number(value));
+        } else if (specialDiscountType === 'percentage') {
+            // Calculate discount for selected product
+            if (selectedProductIndex !== null) {
+                const product = productBillingHandling[selectedProductIndex];
+                let basePrice = Number(product.price) || 0;
+                let productDiscount = Number(product.discount) || 0;
+                let productTax = Number(product.tax) || 0;
+                let discountedPrice = basePrice - productDiscount;
+                let taxedPrice = discountedPrice + (basePrice * productTax / 100);
+                let percentDiscount = taxedPrice * (Number(value) / 100);
+
+                console.log(`Base Price: ${basePrice}, Discount: ${productDiscount}, Tax: ${productTax}, Percent Discount: ${percentDiscount}`);
+                setSpecialDiscount(Number(percentDiscount.toFixed(2)));
+            } else {
+                setSpecialDiscount(0);
+            }
+        } else {
+            setSpecialDiscount(0);
+        }
+    };
+
+    // Add special discount to product
     const handleAddSpecialDiscount = () => {
         if (selectedProductIndex !== null) {
             const updatedProducts = [...productBillingHandling];
             updatedProducts[selectedProductIndex].specialDiscount = parseFloat(specialDiscount) || 0;
+            updatedProducts[selectedProductIndex].specialDiscountType = specialDiscountType;
+            updatedProducts[selectedProductIndex].specialDiscountInput = specialDiscountInput;
             setProductBillingHandling(updatedProducts);
             setSpecialDiscountPopUp(false);
             setSelectedProductIndex(null);
-
             setTimeout(() => {
                 calculateTotalPrice();
                 setSpecialDiscount('');
+                setSpecialDiscountType('');
+                setSpecialDiscountInput('');
             }, 0);
         }
     };
@@ -909,16 +949,31 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                 Add Discount
                             </h2>
                             <div className="relative mb-4">
-                                <label className="block text-left text-sm font-medium text-gray-700">Discount Amount : </label>
+                                <label className="block text-left text-sm font-medium text-gray-700">Discount Type :</label>
+                                <select
+                                    value={specialDiscountType}
+                                    onChange={handleSpecialDiscountTypeChange}
+                                    className="w-full border border-gray-300 p-3 pl-5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87] mb-2"
+                                    required
+                                >
+                                    <option value="">Select Discount Type</option>
+                                    <option value="fixed">Fixed</option>
+                                    <option value="percentage">Percentage</option>
+                                </select>
+                                <label className="block text-left text-sm font-medium text-gray-700">Discount Amount :</label>
                                 <input
                                     type="number"
-                                    placeholder="Discount"
-                                    value={specialDiscount}
-                                    onChange={(e) => setSpecialDiscount(e.target.value)}
-                                    ref={discountInputRef} // Set ref
+                                    placeholder={specialDiscountType === 'percentage' ? 'Discount (%)' : 'Discount'}
+                                    value={specialDiscountInput}
+                                    onChange={handleSpecialDiscountInputChange}
+                                    ref={discountInputRef}
                                     className="w-full border border-gray-300 p-3 pl-5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                     required
+                                    disabled={!specialDiscountType}
                                 />
+                                {specialDiscountType === 'percentage' && (
+                                    <p className="text-xs text-gray-500 mt-1">Calculated Discount: {specialDiscount}</p>
+                                )}
                             </div>
                             <div className="flex justify-between">
                                 <button
