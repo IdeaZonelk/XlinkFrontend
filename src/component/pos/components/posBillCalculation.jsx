@@ -54,52 +54,52 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const discountInputRef = useRef(null);
     const [useCreditPayment, setUseCreditPayment] = useState(false);
     const [creditDetails, setCreditDetails] = useState({
-    interestRate: '',
-    months: '',
-    interestAmount: '',
-    monthlyInstallment: '',
+        interestRate: '',
+        months: '',
+        interestAmount: '',
+        monthlyInstallment: '',
     });
 
 
-           const getApplicablePrice = (product) => {
-                const qty = product.qty || 0;
+    const getApplicablePrice = (product) => {
+        const qty = product.qty || 0;
 
-                if (product.selectedVariation) {
-                    const variation = product.variationValues?.[product.selectedVariation];
+        if (product.selectedVariation) {
+            const variation = product.variationValues?.[product.selectedVariation];
 
-                    // ✅ NEW: fallback if variationValues is empty (held product case)
-                    if (!variation && product.wholesaleEnabled) {
-                        const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
-                        const wholesalePrice = parseFloat(product.wholesalePrice || 0);
-                        if (meetsMinQty && wholesalePrice > 0) return wholesalePrice;
-                        return parseFloat(product.price || 0); // fallback
-                    }
+            // ✅ NEW: fallback if variationValues is empty (held product case)
+            if (!variation && product.wholesaleEnabled) {
+                const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+                const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+                if (meetsMinQty && wholesalePrice > 0) return wholesalePrice;
+                return parseFloat(product.price || 0); // fallback
+            }
 
-                    if (variation) {
-                        const hasWholesale = variation.wholesaleEnabled === true;
-                        const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
-                        const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+            if (variation) {
+                const hasWholesale = variation.wholesaleEnabled === true;
+                const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+                const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
 
-                        if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
-                            return wholesalePrice;
-                        }
-
-                        return parseFloat(variation.productPrice || 0);
-                    }
-
-                    return parseFloat(product.price || 0);
-                } else {
-                    const hasWholesale = product.wholesaleEnabled === true;
-                    const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
-                    const wholesalePrice = parseFloat(product.wholesalePrice || 0);
-
-                    if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
-                        return wholesalePrice;
-                    }
-
-                    return parseFloat(product.price || 0);
+                if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                    return wholesalePrice;
                 }
-            };
+
+                return parseFloat(variation.productPrice || 0);
+            }
+
+            return parseFloat(product.price || 0);
+        } else {
+            const hasWholesale = product.wholesaleEnabled === true;
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                return wholesalePrice;
+            }
+
+            return parseFloat(product.price || 0);
+        }
+    };
 
 
 
@@ -182,46 +182,46 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
     useEffect(() => {
-                calculateTotalPrice();
-            }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
+        calculateTotalPrice();
+    }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
 
 
-/*     const handleDiscountAccess = async (e) => {
-        e.preventDefault();
-        if (!username || !password) {
-            alert('Please enter both username and password.');
-            return;
-        }
-        const data = { username: username, password: password };
-        try {
-            const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/getDiscountAccess`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
+    /*     const handleDiscountAccess = async (e) => {
+            e.preventDefault();
+            if (!username || !password) {
+                alert('Please enter both username and password.');
+                return;
             }
-            const result = await response.json();
-            const status = result.status;
-            sessionStorage.setItem('status', status);
-            if (status === 'success') {
-                setSpecialDiscountPopUp(true);
-                if (discountInputRef.current) {
-                    discountInputRef.current.focus();
+            const data = { username: username, password: password };
+            try {
+                const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/getDiscountAccess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
                 }
-                toast.success('Access granted successfully!');
-            } else {
-                toast.error('Access denied. Please check your credentials.');
+                const result = await response.json();
+                const status = result.status;
+                sessionStorage.setItem('status', status);
+                if (status === 'success') {
+                    setSpecialDiscountPopUp(true);
+                    if (discountInputRef.current) {
+                        discountInputRef.current.focus();
+                    }
+                    toast.success('Access granted successfully!');
+                } else {
+                    toast.error('Access denied. Please check your credentials.');
+                }
+                setOpenAuthModel(false);
+            } catch (error) {
+                console.error('There was a problem with your fetch operation:', error);
+                toast.error('An error occurred while processing your request.');
             }
-            setOpenAuthModel(false);
-        } catch (error) {
-            console.error('There was a problem with your fetch operation:', error);
-            toast.error('An error occurred while processing your request.');
-        }
-    }; */
+        }; */
 
     const fetchOfferData = async () => {
         try {
@@ -366,11 +366,11 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
 
-     const getRowSubtotal = (product) => {
+    const getRowSubtotal = (product) => {
         const variation = product.selectedVariation
             ? product.variationValues?.[product.selectedVariation]
             : null;
-    
+
         const price = getApplicablePrice(product);
         const tax = variation?.orderTax !== undefined ? parseFloat(variation.orderTax) : parseFloat(product.tax) || 0;
         const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
@@ -378,9 +378,9 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
         const newPrice = price - discount - specialDiscount;
-    
+
         const productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
-    
+
         return (productTotal).toFixed(2);
     };
 
@@ -415,22 +415,22 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     //calculating total price
     const calculateTotalPrice = () => {
         let total = calculateBaseTotal();
-    
+
         let discountAmount = 0;
         if (discountType === 'fixed') {
             discountAmount = parseFloat(discount) || 0;
         } else if (discountType === 'percentage') {
             discountAmount = (total * (parseFloat(discount) || 0) / 100);
         }
-    
+
         const taxAmount = (total * (parseFloat(tax) || 0) / 100);
         const shippingCost = parseFloat(shipping) || 0;
-        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
+        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);
 
         let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
 
         total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
-    
+
         return isNaN(total) ? "0.00" : total.toFixed(2);
     };
 
@@ -439,7 +439,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     //     setTotalPrice(newTotal); // Ensure state updates the total price
     // }, [productBillingHandling]);
 
-    
+
 
     const calculateTaxLessTotal = () => {
         let subtotal = productBillingHandling
@@ -450,13 +450,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     : null;
 
                 const price = getApplicablePrice(product);
-                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;                
+                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
                 const qty = product.qty || 0;
 
                 const netPrice = (price - discount - specialDiscount) * qty;
-                const productSubtotal = netPrice ;
+                const productSubtotal = netPrice;
                 return acc + productSubtotal;
             }, 0);
         const total = subtotal;
@@ -464,18 +464,18 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
     // Function to calculate the profit for a product
-     const calculateProfit = () => {
+    const calculateProfit = () => {
         let pureProfit = productBillingHandling
             .filter(product => product.ptype !== 'Base')
             .reduce((acc, product) => {
                 const variation = product.selectedVariation
-                ? product.variationValues?.[product.selectedVariation]
-                : null;
+                    ? product.variationValues?.[product.selectedVariation]
+                    : null;
 
                 const price = getApplicablePrice(product);
                 const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const productCost = variation?.productCost !== undefined ? parseFloat(variation.productCost) : parseFloat(product.productCost) || 0;
-                
+
                 const qty = product.qty || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
                 const newPrice = price - discount - specialDiscount;
@@ -486,7 +486,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                 return acc + profitOfProduct;
             }, 0);
-        
+
         const totalPrice = calculateTaxLessTotal();
         let discountAmount = 0;
         if (discountType === 'fixed') {
@@ -501,7 +501,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         return totalProfit;
     };
 
-    
+
 
     const calculateDiscountAmount = (baseTotal) => {
         let discountAmount = 0;
@@ -609,16 +609,16 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
 
             setCreditDetails(prev => ({
-            ...prev,
-            interestAmount,
-            monthlyInstallment
+                ...prev,
+                interestAmount,
+                monthlyInstallment
             }));
         } else {
             // Reset interest when credit is off
             setCreditDetails(prev => ({
-            ...prev,
-            interestAmount: '0',
-            monthlyInstallment: '0'
+                ...prev,
+                interestAmount: '0',
+                monthlyInstallment: '0'
             }));
         }
     }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
@@ -634,7 +634,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                 const discount = isVariation ? variationData.discount || 0 : product.discount || 0;
                 const tax = isVariation ? variationData.orderTax || 0 : product.tax || 0;
-                
+
                 const applicablePrice = getApplicablePrice(product);
                 const subTotal = (((applicablePrice - discount) * product.qty) + ((applicablePrice - discount) * product.qty * (tax) / 100)).toFixed(2);
 
@@ -821,11 +821,11 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                             <div className="flex flex-col">
                                                                 {hasWholesale && originalPrice > wholesalePrice && (
                                                                     <span className="text-[11px] h-[12px] text-red-500 line-through">
-                                                                         {formatWithCustomCommas(originalPrice)}
+                                                                        {formatWithCustomCommas(originalPrice)}
                                                                     </span>
                                                                 )}
                                                                 <span>
-                                                                     {formatWithCustomCommas(wholesalePrice)}
+                                                                    {formatWithCustomCommas(wholesalePrice)}
                                                                 </span>
                                                             </div>
                                                         );
@@ -835,7 +835,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                                                 {/* Total Price = price * qty */}
                                                 <td className="px-4 py-2 text-sm text-gray-600 text-left">
-                                                     {formatWithCustomCommas(getRowSubtotal(product))}
+                                                    {formatWithCustomCommas(getRowSubtotal(product))}
                                                 </td>
 
                                                 {/* Delete Button */}
@@ -869,7 +869,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             </div>
 
             {/* Container for Discount, Shipping, and Tax Inputs */}
-            <div className='fixed w-full justify-between mt-4 relative bottom-0 w-[32.5%]'>
+            <div className='fixed w-full justify-between mt-4 relative bottom-0 w-[32%]'>
                 <div className="flex gap-2 px-[9px] justify-between py-1 mt-0 w-[100%]">
                     {permissionData.assign_offer && (
                         <div className="flex md:w-1/2 gap-2  mt-4 w-full">
@@ -904,16 +904,15 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                 <div className='flex w-full gap-2 px-1.5 py-1 mt-0'>
                     {permissionData.assign_offer && (
                         <div className="flex gap-4 w-[100%]'">
-                        <button
-                            onClick={(e) => setOpenOffersModel(true)}
-                            className={`flex w-[160px] items-center text-white px-4 py-2 rounded-md hover:opacity-90 ${
-                                selectedOffer ? 'bg-red-600' : 'bg-[#35AF87]'
-                            }`}
-                        >
-                        <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
-                            Add Offers
-                        </button>
-                    </div>
+                            <button
+                                onClick={(e) => setOpenOffersModel(true)}
+                                className={`flex w-[160px] items-center text-white px-4 py-2 rounded-md hover:opacity-90 ${selectedOffer ? 'bg-red-600' : 'bg-[#35AF87]'
+                                    }`}
+                            >
+                                <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
+                                Add Offers
+                            </button>
+                        </div>
                     )}
                     <div className="relative w-[32%]">
                         <input
@@ -928,7 +927,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         </span>
                     </div>
 
-                    <div className="relative w-[32.1%]">
+                    <div className="relative w-[36%]">
                         <input
                             onChange={handleShippng}
                             value={shipping}
@@ -994,7 +993,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </div>
                 )}
 
-{/*                 {openAuthModel && (
+                {/*                 {openAuthModel && (
                     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-xs z-[1000]">
                         <div className="bg-white w-[350px] sm:w-[460px] p-6 rounded-2xl shadow-2xl">
                             <h2 className="text-lg font-semibold text-gray-700 text-center mb-6">
@@ -1142,13 +1141,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         calculateTotalPrice={calculateTotalPrice}
                         setError={setError}
                         setProgress={setProgress}
-                        setSelectedOffer = {setSelectedOffer}
-                        useCreditPayment ={ useCreditPayment}
-                        setUseCreditPayment = {setUseCreditPayment}
-                        creditDetails = {creditDetails}
-                        setCreditDetails = {setCreditDetails}
+                        setSelectedOffer={setSelectedOffer}
+                        useCreditPayment={useCreditPayment}
+                        setUseCreditPayment={setUseCreditPayment}
+                        creditDetails={creditDetails}
+                        setCreditDetails={setCreditDetails}
                     />
-                )} 
+                )}
             </div>
 
             {/*PRODUCT HOLDING POP UP*/}
@@ -1189,7 +1188,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                 <td className="px-4 py-2 border text-left">{currency} {formatWithCustomCommas(getRowSubtotal(product))}</td>
                                             </tr>
                                         );
-                                    })}  
+                                    })}
                                 </tbody>
                             </table>
 
