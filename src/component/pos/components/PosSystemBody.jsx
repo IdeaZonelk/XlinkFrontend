@@ -49,6 +49,7 @@ import { UserContext } from '../../../context/UserContext';
 import Draggable from 'react-draggable';
 
 
+
 function PosSystemBody({ defaultWarehouse }) {
     const ProductIcon = 'https://cdn0.iconfinder.com/data/icons/creative-concept-1/128/PACKAGING_DESIGN-512.png';
     // State management
@@ -108,6 +109,7 @@ function PosSystemBody({ defaultWarehouse }) {
         amount20: 0, amount50: 0, amount100: 0, amount500: 0, amount1000: 0, amount5000: 0, amount1: 0, amount2: 0, amount5: 0, amount10: 0,
     });
     const [ProductNameOrCode, setProductNameOrCode] = useState('')
+    const notFoundToastShown = useRef(false);
     const [searchedProductDataByName, setSearchedProductDataByName] = useState([]);
     const selectedWarehouseAccess = permissionData?.warehousePermissions?.[warehouse]?.access ?? false;
     const { currency } = useCurrency();
@@ -431,112 +433,68 @@ function PosSystemBody({ defaultWarehouse }) {
         setIsHoldList(!isHoldList);
     };
 
-    // Handle search input change
-    const handleFindUser = (e) => {
-        setKeyword(e.target.value);
-    };
+//     // Handle search input change
+//     const handleFindUser = (e) => {
+//         setKeyword(e.target.value);
+//     };
 
-    // Determine search type based on the keyword
-    const determineSearchType = (keyword) => {
-        if (/^\d+$/.test(keyword)) { // If the keyword is numeric
-            return 'mobile';
-        } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) { // If the keyword looks like an email
-            return 'username';
-        } else {
-            return 'name'; // Default to name if nothing else fits
-        }
-    };
+//     // Determine search type based on the keyword
+//     const determineSearchType = (keyword) => {
+//         if (/^\d+$/.test(keyword)) { // If the keyword is numeric
+//             return 'mobile';
+//         } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) { // If the keyword looks like an email
+//             return 'username';
+//         } else {
+//             return 'name'; // Default to name if nothing else fits
+//         }
+//     };
 
     
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    setCustomerSearchError(''); // Clear previous error
+
+
+const handleFindUser = async (e) => {
+    const value = e.target.value;
+    setKeyword(value);
+
+    if (value.trim() === "") {
+        setSearchCustomerResults([]);
+        setCustomerSearchError('');
+        notFoundToastShown.current = false;
+        return;
+    }
+
+    setCustomerSearchError('');
     try {
-        const searchType = determineSearchType(keyword);
+        const searchType = determineSearchType(value);
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
-            params: { keyword, searchType }
+            params: { keyword: value, searchType }
         });
         let customers = response.data.customers || [];
-        if (searchType === 'name' && keyword.trim()) {
-            if (keyword.trim().length === 1) {
-                customers = customers.filter(c =>
-                    c.name && c.name.toLowerCase() === keyword.trim().toLowerCase()
-                );
-            } else {
-                customers = customers.filter(c =>
-                    c.name && c.name.toLowerCase().includes(keyword.trim().toLowerCase())
-                );
-            }
-        }
         setSearchCustomerResults(customers);
-        if (customers.length === 0) {
-            toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
-        }
+        notFoundToastShown.current = false; // Reset if found
     } catch (error) {
-        toast.error('Error searching customer.', { autoClose: 2000 });
-        console.error('Find customer error:', error);
+        if (!notFoundToastShown.current) {
+            toast.error(error.response?.data?.message || 'Customer not found', { autoClose: 2000 });
+            setCustomerSearchError(error.response?.data?.message || 'Customer not found');
+            notFoundToastShown.current = true;
+        }
+        setSearchCustomerResults([]);
     }
+};
+
+
+const determineSearchType = (keyword) => {
+    if (/^\d+$/.test(keyword)) return 'mobile';
+    if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) return 'username';
+    return 'name';
 };
 
 
 
 
 
-    // const handleWalkInCustomerSubmit = async (e) => {
-    //     e.preventDefault();
-
-    //     // Input validation
-    //     if (!walkInCustomerName.trim()) {
-    //         alert('Customer name is required.');
-    //         return;
-    //     }
-    //     const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
-    //     const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
-
-    //     if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
-    //         alert('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
-    //         return;
-    //     }
-    //     if (!walkInCustomerMobile.trim() || !/^\+94\d{9}$/.test(walkInCustomerMobile)) {
-    //         alert('Mobile is required and must follow the format +94XXXXXXXXX.');
-    //         return;
-    //     }
-
-    //     try {
-    //         const response = await axios.post(
-    //             `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
-    //             {
-    //                 name: walkInCustomerName.trim(),
-    //                 nic: walkInCustomerNic.trim(),
-    //                 mobile: walkInCustomerMobile.trim(),
-    //             }
-    //         );
-
-    //         // Handle success
-    //         toast.success(
-    //             "Customer created successfully!",
-    //             { autoClose: 2000 },
-    //             { className: "custom-toast" }
-    //         );
-    //         setSuccess(response.data.message);
-    //         setWalkInCustomerName('');
-    //         setWalkInCustomerNic('');
-    //         setWalkInCustomerMobile('');
-    //         setError('');
-    //         setIsModalOpen(false); // Close modal on success
-    //     } catch (error) {
-    //         toast.error("Customer not added",
-    //             { autoClose: 2000 },
-    //             { className: "custom-toast" });
-    //         console.error('Walk-in customer error:', error);
-
-    //         // Handle error from backend
-    //         setError(
-    //             error.response?.data?.message || 'An error occurred while creating the customer.'
-    //         );
-    //     }
-    // };
+    
 
     const handleWalkInCustomerSubmit = async (e) => {
     e.preventDefault();
@@ -981,23 +939,24 @@ const handleSubmit = async (e) => {
             <div className="flex justify-between  w-full h-[80px]">
                 <div className="flex justify-between w-[34.9%] bg-white h-[80px] rounded-[15px] ">
                     <div className="w-1/2 h-[82px] flex items-center relative  pb-[2px]">
-                        <form onChange={handleSubmit} className="flex items-center relative w-full">
-                            <input
-                                name="keyword"
-                                type="text"
-                                placeholder="Find Customer"
-                                className="searchBox w-[100%] m-2 pl-10 py-5 px-4 border border-gray-300 rounded-[10px] shadow-sm focus:border-transparent"
-                                value={keyword}
-                                onChange={handleFindUser}
-                            />
-                           
-                            <button type="submit" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
-                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
-                                    <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </form> 
+                        <form className="flex items-center relative w-full">
+                        <input
+                       name="keyword"
+                       type="text"
+                       placeholder="Find Customer"
+                       className="searchBox w-[100%] m-2 pl-10 py-5 px-4 border border-gray-300 rounded-[10px] shadow-sm focus:border-transparent"
+                       value={keyword}
+                     onChange={handleFindUser}
+                     />
+                   <button type="button" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
+               <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
+               </svg>
+               </button>
+                </form>
+
+
 
                         {keyword && searchCustomerResults.length > 0 && (
                             <div className="absolute top-[90px] w-[94%] mr-2 text-left overflow-y-scroll h-[350px] left-[7px] bg-white border border-gray-300 rounded-lg shadow-md">
@@ -1031,82 +990,10 @@ const handleSubmit = async (e) => {
                                 />
                             </button>
 
+                         
+                            
                             {/* Modal for Walk-In Customer */}
-                            {/* {isModalOpen && (
-                                <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-[1000]">
-                                    <div
-                                        className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn"
-                                    >
-                                        <div className="flex items-center justify-center mb-6">
-                                            <h2 className="text-2xl font-semibold text-gray-700 text-center">
-                                                Add Customer
-                                            </h2>
-                                        </div>
-                                        <form onSubmit={handleWalkInCustomerSubmit}>
-                                            <div className="relative mb-4">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Enter customer name"
-                                                    value={walkInCustomerName}
-                                                    onChange={(e) => setWalkInCustomerName(e.target.value)}
-                                                    className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                                                    required
-                                                    title="Customer name is required."
-                                                />
-                                                <span className="absolute left-3 top-3 text-gray-400">
-                                                    <i className="fas fa-user"></i>
-                                                </span>
-                                            </div>
-                                            <div className="relative mb-4">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Enter NIC"
-                                                    value={walkInCustomerNic}
-                                                    onChange={(e) => setWalkInCustomerNic(e.target.value)}
-                                                    className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                                                    required
-                                                    title="NIC is required and must be exactly 12 characters."
-                                                />
-                                                <span className="absolute left-3 top-3 text-gray-400">
-                                                    <i className="fas fa-id-card"></i>
-                                                </span>
-                                            </div>
-                                            <div className="relative mb-6">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Enter Mobile: +94XXXXXXXXX"
-                                                    value={walkInCustomerMobile}
-                                                    onChange={(e) => setWalkInCustomerMobile(e.target.value)}
-                                                    className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                                                    required
-                                                    pattern="^\+94\d{9}$"
-                                                    title="Enter a valid mobile number in the format +94XXXXXXXXX."
-                                                />
-                                                <span className="absolute left-3 top-3 text-gray-400">
-                                                    <i className="fas fa-phone-alt"></i>
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <button
-                                                    type="submit"
-                                                    className="submit text-white px-4 py-2 rounded-lg shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                                >
-                                                    Create
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsModalOpen(false)}
-                                                    className="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            )} */}
-                            {/* Modal for Walk-In Customer */}
-{isModalOpen && (
+      {isModalOpen && (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-[1000]">
         <div className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn">
             <div className="flex items-center justify-center mb-6">
@@ -1210,9 +1097,6 @@ const handleSubmit = async (e) => {
         </div>
     </div>
 )}
-
-
-
                         </div>
 
                     </div>
@@ -1269,7 +1153,7 @@ const handleSubmit = async (e) => {
                             </form>
 
                             {/* Search by Name */}
-                            <form
+                            {/* <form
                                 onSubmit={handleSubmit}
                                 className="relative w-full sm:w-auto flex-grow"
                             >
@@ -1287,7 +1171,26 @@ const handleSubmit = async (e) => {
                                         <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
                                     </svg>
                                 </p>
-                            </form>
+                            </form> */}
+
+                            <form className="relative w-full sm:w-auto flex-grow">
+                             <input
+                            name="Productkeyword"
+                            type="text"
+                             placeholder="Find By Name / code"
+                             className="searchBox w-full m-2 pl-10 pr-2 py-5 border border-gray-300 rounded-[10px] shadow-sm focus:border-transparent"
+                             value={ProductNameOrCode}
+                           onChange={handleInputNameChange}
+                          />
+                          <p type="button" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
+            <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
+        </svg>
+    </p>
+</form>
+
+
                         </div>
                     </div>
 
