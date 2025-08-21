@@ -50,16 +50,14 @@ function ViedRegisterReportBody() {
 
     const tableColumns = ['Open Time', 'Username', 'User', `Cash Hand In(${currency})`, `Total(${currency})`];
     const dataKeys = ['openTime', 'username', 'name', 'cashHandIn', 'totalBalance'];
+    const totalCashHandIn = registerData.reduce((acc, reg) => acc + (reg.cashHandIn || 0), 0);
+    const totalBalance = registerData.reduce((acc, reg) => acc + (reg.totalBalance || 0), 0);
 
-     // Calculate summary data
-     const totalCashHandIn = registerData.reduce((acc, reg) => acc + (reg.cashHandIn || 0), 0);
-     const totalBalance = registerData.reduce((acc, reg) => acc + (reg.totalBalance || 0), 0);
- 
 
     return (
         <div className='relative background-white absolute top-[80px] left-[18%] w-[82%] min-h-screen p-5'>
             <div className='absolute right-10'>
-            <button
+                <button
                     onClick={() => handleExportPdf({
                         data: registerData,
                         currency,
@@ -101,7 +99,20 @@ function ViedRegisterReportBody() {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {registerData.map((reg) => (
                                         <tr key={reg._id}>
-                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900"><p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">{reg.openTime}</p></td>
+                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                <p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">
+                                                    {new Date(reg.openTime).toLocaleString('en-US', {
+                                                        timeZone: 'Asia/Colombo',
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit',
+                                                        hour12: false,
+                                                    })}
+                                                </p>
+                                            </td>
                                             <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">{reg.username}</td>
                                             <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">{reg.name}</td>
                                             <td className="px-4 py-5 text-left whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">{currency}{' '} {formatWithCustomCommas(reg.cashHandIn)}</p></td>

@@ -20,7 +20,7 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
-const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer , useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails }) => {
+const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer , useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, setFetchRegData }) => {
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -48,7 +48,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         email: '',
         currency: '',
     });
-    const [showKotConfirm, setShowKotConfirm] = useState(false);
+    const cashierUsername = sessionStorage.getItem('cashierUsername');
+    const cashRegisterID = sessionStorage.getItem('cashRegisterID');
     const kotRef = useRef(null);
 
     useEffect(() => {
@@ -244,7 +245,10 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 shouldPrint,
                 discountValue,
                 useCreditPayment,
-                creditDetails
+                creditDetails,
+                cashierUsername,
+                cashRegisterID,
+                setFetchRegData
                 
             );
             console.log("type of setProgress", setProgress);

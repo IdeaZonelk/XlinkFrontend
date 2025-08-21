@@ -11,7 +11,7 @@
 
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
-import React, { Fragment, useState, useEffect,} from 'react';
+import React, { Fragment, useState, useEffect, } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import avatar from '../../img/avatar.png';
 import exit from '../../img/exit.png';
@@ -315,7 +315,8 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
     else {
       const username = decryptedUser.username;
       const name = decryptedUser.firstName;
-      const openTime = new Date().toLocaleString();
+      const now = new Date();
+      const openTime = now.toISOString();
       const newCash = {
         username,
         name,
@@ -343,10 +344,10 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
           const cashID = response.data.cash._id;
           const cashierUsername = response.data.cash.username;
           const name = response.data.cash.name;
-          toast.success(response.data.message ||'New cash record created successfully!', { autoClose: 2000 }, { className: "custom-toast" } );
+          toast.success(response.data.message || 'New cash record created successfully!', { autoClose: 2000 }, { className: "custom-toast" });
           sessionStorage.setItem('cashRegisterID', cashID);
           sessionStorage.setItem('cashierUsername', cashierUsername);
-          sessionStorage.setItem('name',name);
+          sessionStorage.setItem('name', name);
 
           setShowModal(false);
           navigate('/posSystem');
@@ -425,7 +426,7 @@ export default function Header({ userData, grandTotal, orderStatus, paymentStatu
                 <div className="relative h-20 flex items-center justify-between">
                   <div className="flex flex-shrink-0 items-center sm:left-0 absolute sm:relative  left-[0px]  sm:left-auto">
                     <img
-                      className="max-h-[70px] max-w-[105px] object-contain" 
+                      className="max-h-[70px] max-w-[105px] object-contain"
                       src={logo}
                       alt="Your Company"
                     />
