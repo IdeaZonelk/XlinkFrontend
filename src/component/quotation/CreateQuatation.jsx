@@ -23,6 +23,7 @@ import User from '../../img/add-user (1).png';
 import { isValidMobileInput, isAllowedKey } from '../utill/MobileValidation';
 import { useCurrency } from '../../context/CurrencyContext';
 import formatWithCustomCommas from '../utill/NumberFormate';
+import { toast } from 'react-toastify';
 
 function CreateQuatationBody() {
     // State management
@@ -53,13 +54,19 @@ function CreateQuatationBody() {
     const [paymentType, setPaymentType] = useState('');
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [statusOfQuatation, setStatusOfQuatation] = useState(false)
-    const [username, setUsername] = useState('');
+    // const [username, setUsername] = useState('');
+    // const [name, setName] = useState('');
+    // const [nic, setNIC] = useState('');
+    // const [country, setCountry] = useState('');
+    // const [city, setCity] = useState('');
+    // const [address, setAddress] = useState('');
+    // const [mobile, setMobile] = useState('');
+
     const [name, setName] = useState('');
     const [nic, setNIC] = useState('');
-    const [country, setCountry] = useState('');
-    const [city, setCity] = useState('');
-    const [address, setAddress] = useState('');
     const [mobile, setMobile] = useState('');
+    const [loyaltyReferenceNumber, setLoyaltyReferenceNumber] = useState('');
+    const [redeemedPoints, setRedeemedPoints] = useState('');
     const [progress, setProgress] = useState(false);
     const navigate = useNavigate()
 
@@ -248,76 +255,161 @@ function CreateQuatationBody() {
         setIsPopupOpen(!isPopupOpen);
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
+    // const handleSubmit = async (event) => {
+    //     event.preventDefault();
+    //     setError('');
+    //     setResponseMessage('');
+    //     setProgress(true);
+
+    //     try {
+    //         if (!username.includes('@')) {
+    //             const errorMsg = 'Username must be a valid email address containing "@"';
+    //             setError(errorMsg);
+    //             console.error(errorMsg);
+    //             return;
+    //         }
+
+    //         // Mobile number validation
+    //         const mobileRegex = /^\+94\d{9}$/;
+    //         if (!mobileRegex.test(mobile)) {
+    //             const errorMsg = 'Invalid mobile number. Format: +94xxxxxxxxx';
+    //             setError(errorMsg);
+    //             console.error(errorMsg);
+    //             return;
+    //         }
+
+    //         // NIC validation: Ensure it is exactly 12 characters long
+    //         const newNicFormat = /^\d{12}$/; // 12 digits for the new format
+    //     const oldNicFormat = /^\d{9}[VX]$/; // 9 digits followed by V or X for the old format
+        
+    //     if (!newNicFormat.test(nic) && !oldNicFormat.test(nic)) {
+    //         const errorMsg = 'NIC must be either 12 digits (new format) or 9 digits followed by V/X (old format)';
+    //         setError(errorMsg);
+    //         console.error(errorMsg);
+    //         return;
+    //     }
+    //         // Customer data
+    //         const customerData = {
+    //             username,
+    //             name,
+    //             nic,
+    //             country,
+    //             city,
+    //             mobile,
+    //             address,
+    //         };
+    //         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/createCustomer`, customerData);
+
+    //         if (response.data && response.data.message) {
+    //             setResponseMessage(response.data.message);
+
+    //             setTimeout(() => {
+    //                 navigate('/createQuotation');
+    //                 setIsPopupOpen(!isPopupOpen);
+    //             }, 1000);
+    //         } else {
+    //             setTimeout(() => {
+    //                 navigate('/createQuotation');
+    //                 setIsPopupOpen(!isPopupOpen);
+    //             }, 1000);
+    //             setResponseMessage('Customer created successfully.');
+    //             console.log('Success: Customer created.');
+    //         }
+    //     } catch (error) {
+    //         const errorMessage =
+    //             error.response?.data?.message || 'An error occurred while adding the customer.please try again.';
+    //         setError(errorMessage || 'Error creating customer.');
+    //         console.error('Error:', errorMessage, error);
+    //     }
+    //     finally {
+    //         setProgress(false);
+    //     }
+    // };
+ const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setResponseMessage('');
+    setProgress(true);
+
+    // Validate required fields
+    if (!name || !nic || !mobile || !loyaltyReferenceNumber) {
+        toast.error('All fields except Redeemed Points are required.', { autoClose: 2000 });
+        setProgress(false);
+        return;
+    }
+
+    // NIC validation
+    const newNicFormat = /^\d{12}$/;
+    const oldNicFormat = /^\d{9}[VXvx]$/;
+    if (!newNicFormat.test(nic) && !oldNicFormat.test(nic)) {
+        toast.error('NIC must be either 12 digits (new format) or 9 digits followed by V/X (old format)', { autoClose: 2000 });
+        setProgress(false);
+        return;
+    }
+
+    // Mobile number validation
+    const mobileRegex = /^0\d{9}$/;
+    if (!mobileRegex.test(mobile)) {
+        toast.error('Invalid mobile number. It must start with "0" and contain exactly 10 digits.', { autoClose: 2000 });
+        setProgress(false);
+        return;
+    }
+
+    // Loyalty reference validation
+    if (!/^[a-zA-Z0-9]+$/.test(loyaltyReferenceNumber)) {
+        toast.error('Loyalty reference must be alphanumeric.', { autoClose: 2000 });
+        setProgress(false);
+        return;
+    }
+
+    // Redeemed points validation (optional, must be a number if provided)
+    if (redeemedPoints && isNaN(Number(redeemedPoints))) {
+        toast.error('Redeemed Points must be a number.', { autoClose: 2000 });
+        setProgress(false);
+        return;
+    }
+
+    // Prepare customer data
+    const customerData = {
+        name,
+        nic,
+        mobile,
+        loyaltyReferenceNumber,
+        redeemedPoints: redeemedPoints ? Number(redeemedPoints) : 0
+    };
+
+    try {
+        const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/createCustomer`, customerData);
+        if (response.data && response.data.message) {
+            toast.success(response.data.message, { autoClose: 2000 });
+        } else {
+            toast.success('Customer created successfully.', { autoClose: 2000 });
+        }
+        // Clear form fields and messages
+        setName('');
+        setNIC('');
+        setMobile('');
+        setLoyaltyReferenceNumber('');
+        setRedeemedPoints('');
         setError('');
         setResponseMessage('');
-        setProgress(true);
+        setTimeout(() => {
+            setIsPopupOpen(false);
+        }, 1000);
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || 'An error occurred while adding the customer. Please try again.';
+        toast.error(errorMessage, { autoClose: 2000 });
+        setError('');
+        setResponseMessage('');
+    } finally {
+        setProgress(false);
+    }
+};
 
-        try {
-            if (!username.includes('@')) {
-                const errorMsg = 'Username must be a valid email address containing "@"';
-                setError(errorMsg);
-                console.error(errorMsg);
-                return;
-            }
+    
 
-            // Mobile number validation
-            const mobileRegex = /^\+94\d{9}$/;
-            if (!mobileRegex.test(mobile)) {
-                const errorMsg = 'Invalid mobile number. Format: +94xxxxxxxxx';
-                setError(errorMsg);
-                console.error(errorMsg);
-                return;
-            }
 
-            // NIC validation: Ensure it is exactly 12 characters long
-            const newNicFormat = /^\d{12}$/; // 12 digits for the new format
-        const oldNicFormat = /^\d{9}[VX]$/; // 9 digits followed by V or X for the old format
-        
-        if (!newNicFormat.test(nic) && !oldNicFormat.test(nic)) {
-            const errorMsg = 'NIC must be either 12 digits (new format) or 9 digits followed by V/X (old format)';
-            setError(errorMsg);
-            console.error(errorMsg);
-            return;
-        }
-            // Customer data
-            const customerData = {
-                username,
-                name,
-                nic,
-                country,
-                city,
-                mobile,
-                address,
-            };
-            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/createCustomer`, customerData);
-
-            if (response.data && response.data.message) {
-                setResponseMessage(response.data.message);
-
-                setTimeout(() => {
-                    navigate('/createQuotation');
-                    setIsPopupOpen(!isPopupOpen);
-                }, 1000);
-            } else {
-                setTimeout(() => {
-                    navigate('/createQuotation');
-                    setIsPopupOpen(!isPopupOpen);
-                }, 1000);
-                setResponseMessage('Customer created successfully.');
-                console.log('Success: Customer created.');
-            }
-        } catch (error) {
-            const errorMessage =
-                error.response?.data?.message || 'An error occurred while adding the customer.please try again.';
-            setError(errorMessage || 'Error creating customer.');
-            console.error('Error:', errorMessage, error);
-        }
-        finally {
-            setProgress(false);
-        }
-    };
 
     const handleQtyInputChange = (index, value) => {
     const newQty = parseInt(value, 10);
@@ -773,14 +865,14 @@ function CreateQuatationBody() {
                     </div>
                 </div>
 
-                {isPopupOpen && (
+                {/* {isPopupOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
                         <div className="bg-white w-[800px] h-[62cdb0px] overflow-auto p-8 pt-4 rounded-md shadow-lg mt-28 mb-10" data-aos="fade-down">
                             <form onSubmit={handleSubmit}>
                                 <div className="flex space-x-16">
                                     <div className="flex-1">
                                         {/* Username field */}
-                                        <div className="mt-2">
+                                        {/* <div className="mt-2">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">User Name <span className='text-red-500'>*</span></label>
                                             <input
                                                 id="email"
@@ -793,10 +885,10 @@ function CreateQuatationBody() {
                                                 autoComplete="email"
                                                 className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                             />
-                                        </div>
+                                        </div> */}
 
                                         {/* Country field */}
-                                        <div className="mt-5">
+                                        {/* <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Country <span className='text-red-500'>*</span></label>
                                             <input
                                                 id="country"
@@ -809,10 +901,10 @@ function CreateQuatationBody() {
                                                 autoComplete="given-name"
                                                 className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                             />
-                                        </div>
+                                        </div> */} 
 
                                         {/* City field */}
-                                        <div className="mt-5">
+                                        {/* <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">City <span className='text-red-500'>*</span></label>
                                             <input
                                                 id="city"
@@ -825,10 +917,10 @@ function CreateQuatationBody() {
                                                 autoComplete="given-name"
                                                 className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                             />
-                                        </div>
+                                        </div> */}
 
                                         {/* Address field */}
-                                        <div className="mt-5">
+                                        {/* <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Address <span className='text-red-500'>*</span></label>
                                             <textarea
                                                 id="address"
@@ -843,11 +935,11 @@ function CreateQuatationBody() {
                                             />
                                         </div>
 
-                                    </div>
+                                    </div> */}
 
-                                    <div className="flex-1">
+                                    {/* <div className="flex-1">
                                         {/* Name field */}
-                                        <div className="mt-2">
+                                        {/* <div className="mt-2">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Name <span className='text-red-500'>*</span></label>
                                             <input
                                                 id="name"
@@ -860,10 +952,10 @@ function CreateQuatationBody() {
                                                 autoComplete="given-name"
                                                 className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                             />
-                                        </div>
+                                        </div> */} 
 
                                         {/* Date of Birth field */}
-                                        <div className="mt-5">
+                                        {/* <div className="mt-5">
                                             <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC <span className='text-red-500'>*</span></label>
                                             <input
                                                 id="nic"
@@ -876,10 +968,10 @@ function CreateQuatationBody() {
                                                 maxLength={12}
                                                 className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                             />
-                                        </div>
+                                        </div> */}
 
                                         {/* Mobile number field */}
-                                        <div className="mt-5">
+                                        {/* <div className="mt-5">
                                             <label htmlFor="mobile" className="block text-sm font-medium leading-6 text-gray-900 text-left">
                                                 Mobile number <span className='text-red-500'>*</span>
                                             </label>
@@ -927,12 +1019,12 @@ function CreateQuatationBody() {
                                         </button>
                                     </div>
                                 </div>
-                            </form>
+                            </form> */}
                             {/* Error and Response Messages */}
-                            <div className="mt-10">
+                            {/* <div className="mt-10">
                                 <div className="relative">
                                     {/* Reserve space for messages */}
-                                    <div className="absolute top-0 left-0 w-full">
+                                    {/* <div className="absolute top-0 left-0 w-full">
                                         {error && (
                                             <p className="text-red-600 px-5 py-2 rounded-md bg-red-100 text-center mx-auto max-w-sm">
                                                 {error}
@@ -945,12 +1037,129 @@ function CreateQuatationBody() {
                                         )}
                                     </div>
                                     {/* Reserve empty space to maintain layout */}
-                                    <div className="h-[50px]"></div>
-                                </div>
+                                    {/* <div className="h-[50px]"></div>
+                                </div> 
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
+
+
+                {isPopupOpen && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="bg-white w-[800px] h-[62cdb0px] overflow-auto p-8 pt-4 rounded-md shadow-lg mt-28 mb-10" data-aos="fade-down">
+            <form onSubmit={handleSubmit}>
+                <div className="flex space-x-16">
+                    <div className="flex-1">
+                        {/* Name field */}
+                        <div className="mt-2">
+                            <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Name <span className='text-red-500'>*</span></label>
+                            <input
+                                id="name"
+                                name="name"
+                                type="text"
+                                required
+                                placeholder='Ben'
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                autoComplete="given-name"
+                                className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                            />
+                        </div>
+                        {/* NIC field */}
+                        <div className="mt-5">
+                            <label className="block text-sm font-medium leading-6 text-gray-900 text-left">NIC <span className='text-red-500'>*</span></label>
+                            <input
+                                id="nic"
+                                name="nic"
+                                type="text"
+                                required
+                                placeholder='200123456789'
+                                value={nic}
+                                onChange={(e) => setNIC(e.target.value)}
+                                maxLength={12}
+                                className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                            />
+                        </div>
+
+
+                        {/* Redeemed Points */}
+                        <div className="mt-5">
+                            <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Redeemed Points</label>
+                            <input
+                                id="redeemedPoints"
+                                name="redeemedPoints"
+                                type="number"
+                                placeholder='0'
+                                value={redeemedPoints}
+                                onChange={(e) => setRedeemedPoints(e.target.value)}
+                                className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                            />
+                        </div>
+                       
+
+                        </div>
+                         <div className="flex-1">
+
+                          {/* Mobile number field */}
+                        <div className="mt-5">
+                            <label htmlFor="mobile" className="block text-sm font-medium leading-6 text-gray-900 text-left">
+                                Mobile number <span className='text-red-500'>*</span>
+                            </label>
+                            <input
+                                id="mobile"
+                                name="mobile"
+                                type="text"
+                                required
+                               
+                                 placeholder='xxx xxxx xxx'
+                                value={mobile}
+                                onChange={(e) => setMobile(e.target.value)}
+                                maxLength={12}
+                                className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                            />
+                        </div>
+
+                        {/* Loyalty Reference Number */}
+                        <div className="mt-5">
+                            <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Loyalty Reference Number <span className='text-red-500'>*</span></label>
+                            <input
+                                id="loyaltyReferenceNumber"
+                                name="loyaltyReferenceNumber"
+                                type="text"
+                                required
+                                placeholder='Loyalty Ref'
+                                value={loyaltyReferenceNumber}
+                                onChange={(e) => setLoyaltyReferenceNumber(e.target.value)}
+                                className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                            />
+                        </div>
+                        
+                        
+                    </div>
+                </div>
+                <div className="container mx-auto text-left">
+                    <div className='mt-10 flex justify-start'>
+                        <button
+                            type='submit'
+                            className={`button-bg-color button-bg-color:hover flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 w-[100px] text-center focus-visible:outline-offset-2 focus-visible:outline-indigo-50`}
+                        >
+                            Save
+                        </button>
+                        <button
+                            type="button"
+                            className="inline-flex ml-2 justify-center rounded-md bg-gray-600 py-2.5 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-500 focus:outline-none focus:ring-2 w-[100px] focus:ring-gray-500 focus:ring-offset-2"
+                            onClick={handleClose}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+)}
+
             </div>
         </div>
     );

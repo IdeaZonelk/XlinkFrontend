@@ -506,8 +506,8 @@ useEffect(() => {
     ptype &&
     unit &&
     saleUnit &&
-    purchase &&
-    barcode;
+    purchase ; 
+    // barcode
 
   //Handle submit for save product
   const handleSubmit = async (event) => {
@@ -1254,13 +1254,13 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Barcode type <span className='text-red-500'>*</span>
+                      Barcode type 
                     </label>
                     <div className="mt-2">
                       <select
                         id="barcode"
                         name="barcode"
-                        required
+                        
                         value={barcode}
                         onChange={(e) => setBarcode(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
