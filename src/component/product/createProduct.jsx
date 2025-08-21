@@ -1386,11 +1386,13 @@ function CreateProductBody() {
                           name="warranty-select"
                           value={warranty}
                           onChange={(e) => {
-                            if (e.target.value === 'custom') {
-                              setWarranty('custom');
-                            } else {
-                              setWarranty(e.target.value);
-                            }
+                              if (e.target.value === 'custom') {
+                                setWarranty('custom');
+                              } else if (e.target.value === 'No Warranty') {
+                                setWarranty('');
+                              } else {
+                                setWarranty(e.target.value);
+                              }
                           }}
                           className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                         >
