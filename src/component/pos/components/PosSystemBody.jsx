@@ -439,20 +439,19 @@ function PosSystemBody({ defaultWarehouse }) {
     };
 
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const searchType = determineSearchType(keyword);
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
-                params: { keyword, searchType }
-            });
-            console.log(response.data)
-            setSearchCustomerResults(response.data); // Save the search results// Select the first result if available
-        } catch (error) {
-            console.error('Find customer error:', error);
-        }
-        setSearchCustomerResults(customers);
-        if (customers.length === 0) {
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        const searchType = determineSearchType(keyword);
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
+            params: { keyword, searchType }
+        });
+
+        console.log(response.data);
+        setSearchCustomerResults(response.data); // Save the search results
+
+        // Check if customers list is empty
+        if (response.data.length === 0) {
             toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
         }
     } catch (error) {
@@ -460,7 +459,6 @@ function PosSystemBody({ defaultWarehouse }) {
         console.error('Find customer error:', error);
     }
 };
-
 
 
 
