@@ -40,7 +40,6 @@ export const handleProductSearch = async (e, setSearchTerm, setFilteredProducts,
     }
 };
 
-
 //HANDLE SEARCH CUSTOMERS
 export const handleCustomerSearch = async (e, setSearchCustomer, setFilteredCustomer) => {
     const keyword = e.target.value;
@@ -50,7 +49,7 @@ export const handleCustomerSearch = async (e, setSearchCustomer, setFilteredCust
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/searchCustomerByName`, {
                 params: { name: keyword },
             });
-            setFilteredCustomer(response.data.customer); // assuming response data has a customer field
+            setFilteredCustomer(response.data.customer); 
         } catch (error) {
             console.error('Error fetching customer:', error);
             setFilteredCustomer([]);
@@ -89,11 +88,17 @@ export const handleWarehouseChange = (
 
 
 //HANDLE CUSTOMER SELECT
-export const handleCustomerSelect = (customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer) => {
-    setSelectedCustomer(customer);
-    setSearchCustomer(customer.name);
-    setFilteredCustomer([]);
-};
+export const handleCustomerSelect = (customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer, setClaimedPoints, setIsPointsClaimed, setSelectedCustomerName) => {
+        setSelectedCustomer(customer);
+        setSearchCustomer(customer.name);
+        setFilteredCustomer([]);
+        setSelectedCustomerName(customer.name);
+
+        // Set the customer's redeemed points as available points
+        setClaimedPoints(customer.redeemedPoints?.toString() || '0');
+        setIsPointsClaimed(false);
+    };
+
 
 // HANDLE PRODUCT SELECTION
 export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, setFilteredProducts, warehouse) => {
@@ -383,7 +388,8 @@ export const getDiscount = (product, selectedVariation) => {
 
 
 
-export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , useCreditPayment, creditDetails, shouldPrintKOT = false  ) => {
+export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedCustomerName,selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , useCreditPayment, creditDetails, claimedPoints=0, redeemedPointsFromSale=0) => {
+      console.log('[saleController] handleSave received claimedPoints:', claimedPoints);
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
     setInvoiceNumber(invoiceNumber);
@@ -524,6 +530,7 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
     const commonSaleData = {
         date,
         customer: selectedCustomer || 'Unknown',
+        customerName: selectedCustomerName || 'Unknown',
         warehouse: defaultWarehouse,
         tax,
         discountType: discountType || 'fixed',
@@ -543,7 +550,9 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
         note,
         cashBalance,
         useCreditPayment,
-        creditDetails
+        creditDetails,
+        claimedPoints,
+        redeemedPointsFromSale
     };
 
     const finalSaleData = {
@@ -637,7 +646,7 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
 export const handleUpdateSale = async (
     id, grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping,
     discountType, discount, tax, warehouse, selectedCustomer,
-    productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate, useCreditPayment, creditDetails,
+    productData, date, offerPercentage, setError, setResponseMessage, setProgress, navigate, useCreditPayment, creditDetails, claimedPoints=0, redeemedPointsFromSale=0
 
 ) => {
     setError('')
@@ -731,6 +740,8 @@ export const handleUpdateSale = async (
         offerPercentage,
         useCreditPayment,
         creditDetails,
+        claimedPoints,
+        redeemedPointsFromSale
 
     };
 

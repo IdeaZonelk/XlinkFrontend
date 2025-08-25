@@ -49,6 +49,10 @@ function EditSaleBody() {
         interestAmount: '',
         monthlyInstallment: '',
     });
+    const [claimedPoints, setClaimedPoints] = useState('');
+    const [isPointsClaimed, setIsPointsClaimed] = useState(false);
+    const [redeemedPointsFromSale, setRedeemedPointsFromSale] = useState(0);
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
     useEffect(() => {
         const findSaleById = async () => {
@@ -66,6 +70,14 @@ function EditSaleBody() {
                 setSaleReturProductData(initializedProductsQty);
                 setSaleProduct(response.data);
 
+                if (response.data.claimedPoints) {
+        setClaimedPoints(response.data.claimedPoints);
+        setIsPointsClaimed(true);
+      }
+      
+      if (response.data.redeemedPointsFromSale) {
+        setRedeemedPointsFromSale(response.data.redeemedPointsFromSale);
+      }
                 if ('useCreditPayment' in response.data) {
                     setUseCreditPayment(response.data.useCreditPayment);
                 }
@@ -116,6 +128,44 @@ function EditSaleBody() {
             setLoading(false);
         }
     };
+
+    const calculateRedeemedPoints = (saleTotal) => {
+        const total = parseFloat(saleTotal) || parseFloat(calculateTotal()) || 0;
+        const loyaltyPoints = total * 0.01;
+        // Truncate to 2 decimal places without rounding up
+        const truncated = Math.trunc(loyaltyPoints * 100) / 100;
+        return isNaN(truncated) ? 0 : truncated.toFixed(2);
+    };
+
+
+
+useEffect(() => {
+        // Calculate total first
+        const newTotal = calculateTotal();
+        
+        // Then calculate redeemed points based on the current total
+        const points = calculateRedeemedPoints(newTotal);
+        setRedeemedPointsFromSale(points);
+        
+        // Update saleProduct with the new redeemed points value
+        setSaleProduct(prev => ({
+            ...prev,
+            redeemedPointsFromSale: points
+        }));
+    }, [
+        saleReturProductData,
+        saleProduct.discount,
+        saleProduct.tax,
+        saleProduct.shipping,
+        saleProduct.discountType,
+        saleProduct.offerPercentage,
+        isPointsClaimed,
+        claimedPoints,
+        useCreditPayment,
+        creditDetails.interestRate,
+        creditDetails.months,
+        // Remove calculateTotal from dependencies to avoid circular references
+    ]);
 
     useEffect(() => {
         fetchData(`${process.env.REACT_APP_BASE_URL}/api/fetchWarehouses`, setWarehouseData);
@@ -224,17 +274,42 @@ function EditSaleBody() {
         return newTotal;
     };
 
-    const calculateTotal = () => {
-        const baseTotal = calculateTotalWithoutInterest();
+const calculateTotal = () => {
+  const baseTotal = calculateTotalWithoutInterest();
 
-        if (useCreditPayment) {
-            const interest = (baseTotal * (parseFloat(creditDetails.interestRate) || 0)) / 100;
-            setTotal((baseTotal + interest).toFixed(2));
-            return baseTotal + interest;
-        }
-        setTotal(baseTotal.toFixed(2));
-        return baseTotal;
+  if (useCreditPayment) {
+    const interest = (baseTotal * (parseFloat(creditDetails.interestRate) || 0)) / 100;
+    setTotal((baseTotal + interest).toFixed(2));
+    return baseTotal + interest;
+  }
+  
+  // Add loyalty points deduction
+  if (isPointsClaimed && claimedPoints) {
+    const pointsValue = parseFloat(claimedPoints) || 0;
+    const totalAfterPoints = Math.max(0, baseTotal - pointsValue);
+    setTotal(totalAfterPoints.toFixed(2));
+    return totalAfterPoints;
+  }
+  
+  setTotal(baseTotal.toFixed(2));
+  return baseTotal;
+};
+
+    const updatePointsOnSaleChange = () => {
+        const newTotal = calculateTotal();
+        const points = calculateRedeemedPoints(newTotal);
+        setRedeemedPointsFromSale(points);
+        setSaleProduct(prev => ({
+            ...prev,
+            redeemedPointsFromSale: points
+        }));
     };
+
+    // Call updatePointsOnSaleChange when relevant sale data changes
+    useEffect(() => {
+        updatePointsOnSaleChange();
+    }, [saleReturProductData, saleProduct.discount, saleProduct.tax, 
+        saleProduct.shipping, saleProduct.offerPercentage]);
 
 
     const calculateTaxLessTotal = () => {
@@ -277,25 +352,7 @@ function EditSaleBody() {
         return pureProfit;
     };
 
-    // useEffect(() => {
-    //     setSaleReturProductData(prevProducts =>
-    //         prevProducts.map(product => {
-    //             const price = product.price || getPriceRange(product, product.selectedVariation);
-    //             const quantity = product.quantity || 1;
-    //             const taxRate = product.taxRate * 100
-    //                 ? product.taxRate
-    //                 : getTax(product, product.selectedVariation);
-    //             const discount = getDiscount(product, product.selectedVariation);
-    //             const specialDiscount = product.specialDiscount || 0;
-    //             const discountedPrice = price - discount - specialDiscount;
-    //             const newSubtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
-    //             return {
-    //                 ...product,
-    //                 subtotal: newSubtotal.toFixed(2),
-    //             };
-    //         })
-    //     );
-    // }, [saleReturProductData]);
+    
 
     const handleUpdateClick = () => {
         // Ensure saleReturProductData is an array and has items
@@ -311,6 +368,8 @@ function EditSaleBody() {
                 amount: amounts[type] ? Number(amounts[type]) : 0,
             }))
             .filter(({ amount }) => amount > 0);
+
+            const currentRedeemedPoints = calculateRedeemedPoints(calculateTotal());
     
         handleUpdateSale(
             id, 
@@ -336,6 +395,8 @@ function EditSaleBody() {
             navigate,
             useCreditPayment,
             creditDetails,
+            claimedPoints,
+            currentRedeemedPoints
 
         );
     };
@@ -519,6 +580,13 @@ function EditSaleBody() {
     const handleShippng = (e) => {
         setSaleProduct({ ...saleProduct, shipping: e.target.value });
     };
+
+const handleClaimedPoints = () => {
+  if (selectedCustomer && selectedCustomer.redeemedPoints > 0) {
+    setIsPointsClaimed(true);
+    setClaimedPoints(selectedCustomer.redeemedPoints);
+  }
+};
 
     const handleCheckboxChange = (type) => {
         setPaymentType((prev) => {
@@ -750,7 +818,7 @@ function EditSaleBody() {
                                 <input
                                     id="customer"
                                     name="customer"
-                                    value={saleProduct.customer}
+                                    value={saleProduct.customerName}
                                     required
                                     //onChange={(e) => handleCustomerSearch(e, setSearchCustomer, setFilteredCustomer)}
                                     placeholder={searchCustomer ? "" : "        Search..."}
@@ -954,58 +1022,104 @@ function EditSaleBody() {
                     </div>
 
                     <div className="">
-                        {/* DISCOUNT, SHIPPING AND TAX INPUT */}
-                        <div className="grid grid-cols-4 gap-4 mb-4 mt-60">
-                            <div className="relative">
-                                <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
-                                <select
-                                    onChange={handleDiscountType}
-                                    value={saleProduct.discountType}
-                                    className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                >
-                                    <option value=''>Discount type</option>
-                                    <option value='fixed'>Fixed</option>
-                                    <option value='percentage'>Percentage</option>
-                                </select>
-                            </div>
-                            <div className='relative'>
-                                <label className="block text-left text-sm font-medium text-gray-700">Discount:</label>
-                                <input
-                                    onChange={handleDiscount}
-                                    value={saleProduct.discount}
-                                    type="text"
-                                    placeholder="Discount"
-                                    className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm' />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    {discountType === 'percentage' ? '%' : currency}
-                                </span>
-                            </div>
-                            <div className="relative">
-                                <label className="block text-left text-sm font-medium text-gray-700">Tax:</label>
-                                <input
-                                    onChange={handleTax}
-                                    value={saleProduct.tax}
-                                    type="text"
-                                    placeholder="Tax"
-                                    className="block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    %
-                                </span>
-                            </div>
-                            <div className='relative'>
-                                <label className="block text-left text-sm font-medium text-gray-700">Shipping:</label>
-                                <input
-                                    onChange={handleShippng}
-                                    value={saleProduct.shipping}
-                                    type="text"
-                                    placeholder="Shipping"
-                                    className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm' />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    {currency}
-                                </span>
-                            </div>
-                        </div>
+                 {/* DISCOUNT, SHIPPING, TAX AND CLAIMED POINTS INPUT */}
+  <div className="grid grid-cols-5 gap-4 mb-4 mt-60">
+    <div className="relative">
+      <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
+      <select
+        onChange={handleDiscountType}
+        value={saleProduct.discountType}
+        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+      >
+        <option value=''>Discount type</option>
+        <option value='fixed'>Fixed</option>
+        <option value='percentage'>Percentage</option>
+      </select>
+    </div>
+    
+<div className='relative'>
+  <label className="block text-left text-sm font-medium text-gray-700">Discount:</label>
+  <div className="relative">
+    <input
+      onChange={handleDiscount}
+      value={saleProduct.discount}
+      type="text"
+      placeholder="Discount"
+      className='block w-full rounded-md border-0 py-2.5 pl-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm' 
+    />
+    <span className="absolute inset-y-0 right-3 flex items-center text-gray-500 pointer-events-none">
+      {discountType === 'percentage' ? '%' : currency}
+    </span>
+  </div>
+</div>
+    
+<div className="relative">
+  <label className="block text-left text-sm font-medium text-gray-700">Tax:</label>
+  <div className="relative">
+    <input
+      onChange={handleTax}
+      value={saleProduct.tax}
+      type="text"
+      placeholder="Tax"
+      className="block w-full rounded-md border-0 py-2.5 pl-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
+    />
+    <span className="absolute inset-y-0 right-3 flex items-center text-gray-500 pointer-events-none">
+      %
+    </span>
+  </div>
+</div>
+    
+<div className='relative'>
+  <label className="block text-left text-sm font-medium text-gray-700">Shipping:</label>
+  <div className="relative">
+    <input
+      onChange={handleShippng}
+      value={saleProduct.shipping}
+      type="text"
+      placeholder="Shipping"
+      className='block w-full rounded-md border-0 py-2.5 pl-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm' 
+    />
+    <span className="absolute inset-y-0 right-3 flex items-center text-gray-500 pointer-events-none">
+      {currency}
+    </span>
+  </div>
+</div>
+    
+ <div className="relative">
+  <label className="block text-left text-sm font-medium text-gray-700">Claimed Points:</label>
+  <input
+    value={
+      claimedPoints && Number(claimedPoints) > 0
+        ? claimedPoints
+        : "No points claimed."
+    }
+    disabled
+    placeholder="Claimed Points"
+    readOnly={isPointsClaimed}
+    className={`block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm ${
+      isPointsClaimed ? 'bg-green-50' : ''
+    }`}
+  />
+  {selectedCustomer?.redeemedPoints > 0 && !isPointsClaimed && (
+    <button
+      onClick={handleClaimedPoints}
+      className="absolute right-2 top-7 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+    >
+      Claim
+    </button>
+  )}
+  {isPointsClaimed && (
+    <span className="absolute right-2 top-8 text-xs text-green-600">
+      ✓ Claimed
+    </span>
+  )}
+  <span className="text-xs text-gray-500 mt-1 block">
+    {isPointsClaimed 
+      ? `${claimedPoints} points deducted from total` 
+      : "Customer's available loyalty points"}
+  </span>
+</div>
+  </div>
 
                         {/* Order, Payment Status, and Payment Type Selects */}
                         <div className="flex justify-between gap-4 mt-10">
@@ -1150,6 +1264,10 @@ function EditSaleBody() {
                                 : '0.00'
                         }
                     </div>
+
+                    <div className="mt-4 text-right text-lg font-semibold">
+  Redeemed Points From Total Sale (1%): {redeemedPointsFromSale} 
+</div>
                     
                     <button
                         onClick={handleUpdateClick}

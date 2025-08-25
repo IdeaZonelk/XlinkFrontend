@@ -104,7 +104,8 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
 
     const commonSaleData = {
         date,
-        customer: selectedCustomer.name,
+        customerName: selectedCustomer.name,
+        customer: selectedCustomer,
         warehouse: warehouse || null,
         tax,
         discountType,
@@ -321,7 +322,7 @@ export const handleUpdateQuatation = async (
 };
 
 //HANDLE SAVE PRODUCT
-export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount, discountValue, tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit, useCreditPayment, creditDetails) => {
+export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount, discountValue, tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit, useCreditPayment, creditDetails, claimedPoints=0, redeemedPointsFromSale=0) => {
     setProgress(true);
     setError('');
     setResponseMessage('')
@@ -422,7 +423,9 @@ export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,pa
         saleType:'Non-POS',
         invoiceNumber,
         useCreditPayment,
-        creditDetails
+        creditDetails,
+        claimedPoints,
+        redeemedPointsFromSale
     };
 
     // Create products data array

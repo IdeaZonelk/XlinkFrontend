@@ -74,6 +74,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [heldProducts, setHeldProducts] = useState([])
     const [isExitingPopupOpen, setIsExitingPopupOpen] = useState(false);
     const [isPopUpRegisterReport, setIsPopUpRegisterReport] = useState(false);
+    const [selectedCustomerData, setSelectedCustomerData] = useState(null);
     const [registerData, setRegisterData] = useState({
         openTime: '',
         username: '',
@@ -111,6 +112,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [searchedProductDataByName, setSearchedProductDataByName] = useState([]);
     const selectedWarehouseAccess = permissionData?.warehousePermissions?.[warehouse]?.access ?? false;
     const { currency } = useCurrency();
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
     //COMBINE ALL DATA FETCHING TYPE INTO ONE STATE
     const combinedProductData = searchedProductData.length > 0
@@ -436,20 +438,7 @@ function PosSystemBody({ defaultWarehouse }) {
         setKeyword(e.target.value);
     };
 
-    // Determine search type based on the keyword
-    const determineSearchType = (keyword) => {
-        if (/^\d+$/.test(keyword)) { // If the keyword is numeric
-            return 'mobile';
-        } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) { // If the keyword looks like an email
-            return 'username';
-        } else {
-            return 'name'; // Default to name if nothing else fits
-        }
-    };
-
-    
-
-const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setCustomerSearchError(''); // Clear previous error
     try {
@@ -457,7 +446,10 @@ const handleSubmit = async (e) => {
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
             params: { keyword, searchType }
         });
+
         let customers = response.data.customers || [];
+
+        // Handle search filtering
         if (searchType === 'name' && keyword.trim()) {
             if (keyword.trim().length === 1) {
                 customers = customers.filter(c =>
@@ -468,75 +460,39 @@ const handleSubmit = async (e) => {
                     c.name && c.name.toLowerCase().includes(keyword.trim().toLowerCase())
                 );
             }
+        } else if (searchType === 'loyaltyReferenceNumber' && keyword.trim()) {
+            customers = customers.filter(c =>
+                c.loyaltyReferenceNumber &&
+                c.loyaltyReferenceNumber.toString().includes(keyword.trim())
+            );
         }
+
         setSearchCustomerResults(customers);
-        if (customers.length === 0) {
+
+        // Show error toast if nothing found
+        if (customers.length === 0 && keyword.trim().length > 1) {
             toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
         }
+
     } catch (error) {
         toast.error('Error searching customer.', { autoClose: 2000 });
         console.error('Find customer error:', error);
     }
 };
 
+// Updated determineSearchType
+const determineSearchType = (keyword) => {
+    if (/^\d+$/.test(keyword)) {
+        // If numeric, decide whether it's mobile or loyaltyReferenceNumber
+        // For example, mobiles are usually 10 digits
+        return keyword.length === 10 ? 'mobile' : 'loyaltyReferenceNumber';
+    } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) {
+        return 'username'; // email
+    } else {
+        return 'name';
+    }
+};
 
-
-
-
-    // const handleWalkInCustomerSubmit = async (e) => {
-    //     e.preventDefault();
-
-    //     // Input validation
-    //     if (!walkInCustomerName.trim()) {
-    //         alert('Customer name is required.');
-    //         return;
-    //     }
-    //     const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
-    //     const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
-
-    //     if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
-    //         alert('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
-    //         return;
-    //     }
-    //     if (!walkInCustomerMobile.trim() || !/^\+94\d{9}$/.test(walkInCustomerMobile)) {
-    //         alert('Mobile is required and must follow the format +94XXXXXXXXX.');
-    //         return;
-    //     }
-
-    //     try {
-    //         const response = await axios.post(
-    //             `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
-    //             {
-    //                 name: walkInCustomerName.trim(),
-    //                 nic: walkInCustomerNic.trim(),
-    //                 mobile: walkInCustomerMobile.trim(),
-    //             }
-    //         );
-
-    //         // Handle success
-    //         toast.success(
-    //             "Customer created successfully!",
-    //             { autoClose: 2000 },
-    //             { className: "custom-toast" }
-    //         );
-    //         setSuccess(response.data.message);
-    //         setWalkInCustomerName('');
-    //         setWalkInCustomerNic('');
-    //         setWalkInCustomerMobile('');
-    //         setError('');
-    //         setIsModalOpen(false); // Close modal on success
-    //     } catch (error) {
-    //         toast.error("Customer not added",
-    //             { autoClose: 2000 },
-    //             { className: "custom-toast" });
-    //         console.error('Walk-in customer error:', error);
-
-    //         // Handle error from backend
-    //         setError(
-    //             error.response?.data?.message || 'An error occurred while creating the customer.'
-    //         );
-    //     }
-    // };
 
     const handleWalkInCustomerSubmit = async (e) => {
     e.preventDefault();
@@ -1007,8 +963,12 @@ const handleSubmit = async (e) => {
                                             key={index}
                                             className="p-2 cursor-pointer hover:bg-gray-100"
                                             onClick={() => {
-                                                setSelectedCustomer(customer.name);
-                                                setKeyword('');
+                                                 console.log('Selected customer:', customer); 
+                                                setSelectedCustomer(customer._id);
+                        setSelectedCustomerData(customer); 
+                        setSelectedCustomerName(customer.name);
+                        setKeyword("");
+                        setSearchCustomerResults([]);
                                             }}
                                         >
                                             {customer.name}
@@ -1719,6 +1679,7 @@ const handleSubmit = async (e) => {
             {/* Produc billing section in right */}
             <div className="flex justify-between mt-2 w-full h-screen ">
                 <div className="w-[35%] h-screen rounded-[15px] bg-white p-2">
+                    
                     <div>
                         <BillingSection
                             productBillingHandling={productBillingHandling}
@@ -1726,7 +1687,10 @@ const handleSubmit = async (e) => {
                             handleDeleteHoldProduct={handleDeleteHoldProduct}
                             setProductData={setProductData}
                             selectedCustomer={selectedCustomer}
-                            setSelectedCustomer={setSelectedCustomer}
+                            selectedCustomerName={selectedCustomerName} 
+    selectedCustomerData={selectedCustomerData}
+                            setSelectedCustomerData={setSelectedCustomerData}
+                             setSelectedCustomer={setSelectedCustomer}
                             warehouse={warehouse}
                             setReloadStatus={setReloadStatus}
                             setHeldProductReloading={setHeldProductReloading}

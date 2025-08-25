@@ -65,6 +65,11 @@ function CreateSaleFromQuatationBody() {
             bank_transfer: ''
         });
 
+        const [claimedPoints, setClaimedPoints] = useState('');
+        const [isPointsClaimed, setIsPointsClaimed] = useState(false);
+        const [redeemedPointsFromSale, setRedeemedPointsFromSale] = useState('');
+        const [selectedCustomerName, setSelectedCustomerName] = useState('');
+
     const navigate = useNavigate();
     const { id } = useParams();
 
@@ -80,6 +85,9 @@ function CreateSaleFromQuatationBody() {
                 }));
                 setQuatationProductData(initializedProductsQty);
                 setQuatationData(response.data);
+                 if (response.data.redeemedPoints) {
+                    setClaimedPoints(response.data.redeemedPoints.toString());
+                }
             } catch (error) {
                 console.error('Error fetching sale by ID:', error.response ? error.response.data : error.message);
                 setError('Error fetching sale by Id.');
@@ -107,6 +115,11 @@ function CreateSaleFromQuatationBody() {
 
         fetchAllWarehouses();
     }, []);
+
+    useEffect(() => {
+        const points = calculateRedeemedPoints();
+        setRedeemedPointsFromSale(points);
+    }, [quatationProductData, quatationData.discount, quatationData.tax, quatationData.shipping, quatationData.discountType]);
 
     const getApplicablePrice = (product) => {
         const qty = product.quantity || 0;
@@ -159,14 +172,22 @@ function CreateSaleFromQuatationBody() {
         return total;
     };
 
-    const calculateTotal = () => {
+      const calculateTotal = () => {
         const baseTotal = totalWithoutInterest();
+        let total = baseTotal;
+        
         if (useCreditPayment) {
             const interestRate = parseFloat(creditDetails.interestRate) || 0;
             const interest = (baseTotal * interestRate) / 100;
-            return (baseTotal + interest)
+            total = baseTotal + interest;
         }
-        return baseTotal.toFixed(2);
+        
+             if (isPointsClaimed && claimedPoints) {
+            const pointsValue = parseFloat(claimedPoints) || 0;
+            total = Math.max(0, total - pointsValue);
+        }
+        
+        return total.toFixed(2);
     };
 
     const calculateBalance = () => {
@@ -219,6 +240,13 @@ function CreateSaleFromQuatationBody() {
         return profitTotal - discountValue;
     };
 
+        const calculateRedeemedPoints = () => {
+        const total = parseFloat(calculateTotal()) || 0;
+        const loyaltyPoints = total * 0.01;
+        const truncated = Math.trunc(loyaltyPoints * 100) / 100;
+        return isNaN(truncated) ? 0 : truncated.toFixed(2);
+    };
+
 
     const calculateDiscountValue = () => {
         const subtotal = quatationProductData.reduce((acc, product, index) => {
@@ -253,9 +281,13 @@ function CreateSaleFromQuatationBody() {
     };
 
     //handle selected customer
-    useEffect(() => {
+ useEffect(() => {
         if (quatationData.customer) {
             setSelectedCustomer(quatationData.customer);
+            // If customer has loyalty points, set them up
+            if (quatationData.customer.redeemedPoints > 0) {
+                setClaimedPoints(quatationData.customer.redeemedPoints.toString());
+            }
         }
     }, [quatationData.customer]);
 
@@ -392,6 +424,15 @@ function CreateSaleFromQuatationBody() {
         });
     };
 
+    const handleClaimedPoints = () => {
+        // FIX: Use the redeemedPoints from quatationData instead of selectedCustomer
+        if (quatationData.redeemedPoints > 0) {
+            setIsPointsClaimed(true);
+            // Optionally, you can set the claimed points value here
+            setClaimedPoints(quatationData.redeemedPoints.toString());
+        }
+    };
+
 
 
     useEffect(() => {
@@ -518,7 +559,7 @@ function CreateSaleFromQuatationBody() {
                                 <input
                                     id="customer"
                                     name="customer"
-                                    value={selectedCustomer}
+                                    value={quatationData.customerName}
                                     disabled
                                     required
                                     placeholder={"      Search..."}
@@ -679,54 +720,91 @@ function CreateSaleFromQuatationBody() {
                     </div>
 
                     <div className="">
-                        {/* DISCOUNT, SHIPPING AND TAX INPUT */}
-                        <div className="grid grid-cols-4 gap-4 mb-4 mt-60">
-                            <div className="relative">
-                                <select
-                                    onChange={handleDiscountType}
-                                    value={quatationData.discountType}
-                                    className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                                >
-                                    <option value=''>Discount type</option>
-                                    <option value='fixed'>Fixed</option>
-                                    <option value='percentage'>Percentage</option>
-                                </select>
-                            </div>
-                            <div className='relative'>
-                                <input
-                                    onChange={handleDiscount}
-                                    value={quatationData.discount}
-                                    type="text"
-                                    placeholder="Discount"
-                                    className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm' />
-                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
-                                    {discountType === 'percentage' ? '%' : currency}
-                                </span>
-                            </div>
-                            <div className="relative">
-                                <input
-                                    onChange={handleTax}
-                                    value={quatationData.tax}
-                                    type="text"
-                                    placeholder="Tax"
-                                    className="block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
-                                    %
-                                </span>
-                            </div>
-                            <div className='relative'>
-                                <input
-                                    onChange={handleShippng}
-                                    value={quatationData.shipping}
-                                    type="text"
-                                    placeholder="Shipping"
-                                    className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm' />
-                                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
-                                    {currency}
-                                </span>
-                            </div>
-                        </div>
+                       {/* DISCOUNT, SHIPPING, TAX AND CLAIMED POINTS INPUT - ALL IN ONE ROW */}
+<div className="grid grid-cols-5 gap-4 mb-4 mt-60">
+    <div className="relative">
+        <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
+        <select
+            onChange={handleDiscountType}
+            value={quatationData.discountType}
+            className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+        >
+            <option value=''>Discount type</option>
+            <option value='fixed'>Fixed</option>
+            <option value='percentage'>Percentage</option>
+        </select>
+    </div>
+    <div className='relative'>
+        <label className="block text-left text-sm font-medium text-gray-700">Discount:</label>
+        <input
+            onChange={handleDiscount}
+            value={quatationData.discount}
+            type="text"
+            placeholder="Discount"
+            className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm' />
+        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+            {discountType === 'percentage' ? '%' : currency}
+        </span>
+    </div>
+    <div className="relative">
+        <label className="block text-left text-sm font-medium text-gray-700">Tax:</label>
+        <input
+            onChange={handleTax}
+            value={quatationData.tax}
+            type="text"
+            placeholder="Tax"
+            className="block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
+        />
+        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+            %
+        </span>
+    </div>
+    <div className='relative'>
+        <label className="block text-left text-sm font-medium text-gray-700">Shipping:</label>
+        <input
+            onChange={handleShippng}
+            value={quatationData.shipping}
+            type="text"
+            placeholder="Shipping"
+            className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm' />
+        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+            {currency}
+        </span>
+    </div>
+    <div className="relative">
+        <label className="block text-left text-sm font-medium text-gray-700">Claimed Points:</label>
+        <div className="relative">
+            <input
+                value={claimedPoints}
+                disabled
+                placeholder="Claimed Points"
+                readOnly={isPointsClaimed}
+                className={`block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm ${
+                    isPointsClaimed ? 'bg-green-50' : ''
+                }`}
+            />
+            {quatationData.redeemedPoints > 0 && !isPointsClaimed && (
+                <button
+                    type="button"
+                    onClick={handleClaimedPoints}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                >
+                    Claim
+                </button>
+            )}
+            {isPointsClaimed && (
+                <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-green-600">
+                    ✓ Claimed
+                </span>
+            )}
+        </div>
+        <span className="text-xs text-gray-500 mt-1 block">
+            {isPointsClaimed 
+                ? `${claimedPoints} points deducted` 
+                : `Available: ${quatationData.redeemedPoints || 0}`}
+        </span>
+    </div>
+</div>
 
                         {/* Order, Payment Status, and Payment Type Selects */}
                         <div>
@@ -877,6 +955,9 @@ function CreateSaleFromQuatationBody() {
                     <div className="mt-4 text-right text-lg font-semibold">
                         Profit: {currency} {calculateProfitOfSale().toFixed(2)}
                     </div>
+                    <div className="mt-4 text-right text-lg font-semibold">
+                        Redeemed Points From Total Sale (1%): {formatWithCustomCommas(calculateRedeemedPoints())}
+                    </div>
                     <button
                         onClick={() =>  {
                             const total = parseFloat(calculateTotal());
@@ -917,7 +998,9 @@ function CreateSaleFromQuatationBody() {
                             navigate,
                             calculateProfitOfSale().toFixed(2), // profit
                             useCreditPayment,
-                            creditDetails
+                            creditDetails,
+                            isPointsClaimed ? claimedPoints : 0,
+                            calculateRedeemedPoints()
                         )}}
                         className="mt-5 submit w-[300px] text-white rounded py-2 px-4"
                     >

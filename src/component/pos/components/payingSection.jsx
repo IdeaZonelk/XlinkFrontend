@@ -20,7 +20,7 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
-const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer , useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails }) => {
+const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, selectedCustomerName, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer , useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, claimedPoints, isPointsClaimed, redeemedPointsFromSale, logPoints }) => {
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -51,6 +51,11 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     const [showKotConfirm, setShowKotConfirm] = useState(false);
     const kotRef = useRef(null);
 
+     useEffect(() => {
+        console.log('[payingSection] Component mounted/received new props - claimedPoints:', claimedPoints, 
+                   'isPointsClaimed:', isPointsClaimed);
+        if (logPoints) logPoints();
+    }, [claimedPoints, isPointsClaimed, logPoints]);
     useEffect(() => {
         const fetchSettings = async () => {
             try {
@@ -174,7 +179,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     }, [decryptedUser]);
 
 
-    const updateProductQuantities = async (productDetails, shouldPrint = false) => {
+    const updateProductQuantities = async (productDetails, shouldPrint = false, claimedPoints) => {
+         console.log('[payingSection] updateProductQuantities - claimedPoints:', claimedPoints);
         try {
             setSelectedOffer('');
             const reStructuredProductDetails = productDetails.map(product => {
@@ -203,7 +209,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     orderTax,
                     wholesaleEnabled,
                     wholesaleMinQty,
-                    wholesalePrice
+                    wholesalePrice,
+                    claimedPoints
                 };
             });
 
@@ -214,6 +221,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 }
                 return acc;
             }, {});
+            console.log('[payingSection] Calling handleSave with claimedPoints:', claimedPoints);
 
             const result = await handleSave(
                 calculateTotalPrice(),
@@ -229,6 +237,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 tax,
                 warehouse ? warehouse : 'Unknown',
                 selectedCustomer ? selectedCustomer : 'Unknown',
+                selectedCustomerName || 'Unknown',
                 selectedProduct,
                 date,
                 preFix,
@@ -244,8 +253,10 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 shouldPrint,
                 discountValue,
                 useCreditPayment,
-                creditDetails
-                
+                creditDetails,
+                claimedPoints,
+                redeemedPointsFromSale,
+
             );
             console.log("type of setProgress", setProgress);
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
@@ -256,6 +267,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     };
 
     const handleSubmitPayment = async (shouldPrint) => {
+        console.log('[payingSection] handleSubmitPayment - claimedPoints:', claimedPoints, 
+               'isPointsClaimed:', isPointsClaimed);
         if (!validatePaymentStatus()) return;
     
         const hasValidPayment = Object.values(amounts).some(amount => parseFloat(amount) > 0);
@@ -287,7 +300,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         }
 
         try {
-            await updateProductQuantities(productDetails, shouldPrint); 
+            console.log('[payingSection] Calling updateProductQuantities with claimedPoints:', claimedPoints);
+            await updateProductQuantities(productDetails, shouldPrint, claimedPoints);
             if (shouldPrint) {
                 setPrintTrigger(true);
                 await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);

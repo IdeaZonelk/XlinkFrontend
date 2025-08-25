@@ -19,7 +19,7 @@ import { UserContext } from '../../../context/UserContext';
 import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
-const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, setSelectedCustomer, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
+const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
@@ -48,7 +48,11 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [selectedOffer, setSelectedOffer] = useState('');
     const [offerPercentage, setOfferPercentage] = useState(0);
     const [progress, setProgress] = useState(false);
+    // Add this near your other state declarations
+const [claimedPoints, setClaimedPoints] = useState(0);
+const [isPointsClaimed, setIsPointsClaimed] = useState(false);
     const adminPasswordRef = useRef(null);
+    // const [selectedCustomerData, setSelectedCustomerData] = useState(null);
     const discountInputRef = useRef(null);
     const [useCreditPayment, setUseCreditPayment] = useState(false);
     const [creditDetails, setCreditDetails] = useState({
@@ -125,6 +129,30 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             }, 100);
         }
     }, [specialDiscountPopUp]);
+
+    const handleClaimPoints = () => {
+    if (!selectedCustomerData || !selectedCustomerData.redeemedPoints) {
+        toast.error('No points available to claim');
+        return;
+    }
+
+    if (isPointsClaimed) {
+        toast.info('Points already claimed');
+        return;
+    }
+ console.log('[posBillCalculation] handleClaimPoints - Current selectedCustomerData.redeemedPoints:', selectedCustomerData?.redeemedPoints);
+    console.log('[posBillCalculation] handleClaimPoints - Current calculatedLoyaltyPoints:', calculateLoyaltyPoints());
+    const pointsToClaim = selectedCustomerData.redeemedPoints;
+    const pointsValue = pointsToClaim; // 1 point = 1 currency unit
+    console.log('[posBillCalculation] handleClaimPoints - Points to claim:', pointsToClaim);
+    
+    setClaimedPoints(pointsToClaim);
+    setIsPointsClaimed(true);
+    console.log('[posBillCalculation] handleClaimPoints - claimedPoints set to:', pointsToClaim);
+    
+    toast.success(`Successfully claimed ${pointsToClaim} points (${currency}${pointsValue})`);
+};
+
 
     const handleAddSpecialDiscount = () => {
         if (selectedProductIndex !== null) {
@@ -374,25 +402,34 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
     //calculating total price
     const calculateTotalPrice = () => {
-        let total = calculateBaseTotal();
+    let total = calculateBaseTotal();
     
-        let discountAmount = 0;
-        if (discountType === 'fixed') {
-            discountAmount = parseFloat(discount) || 0;
-        } else if (discountType === 'percentage') {
-            discountAmount = (total * (parseFloat(discount) || 0) / 100);
-        }
+    let discountAmount = 0;
+    if (discountType === 'fixed') {
+        discountAmount = parseFloat(discount) || 0;
+    } else if (discountType === 'percentage') {
+        discountAmount = (total * (parseFloat(discount) || 0) / 100);
+    }
     
-        const taxAmount = (total * (parseFloat(tax) || 0) / 100);
-        const shippingCost = parseFloat(shipping) || 0;
-        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
+    const taxAmount = (total * (parseFloat(tax) || 0) / 100);
+    const shippingCost = parseFloat(shipping) || 0;
+    const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
 
-        let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
+    let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
 
-        total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
+    // Apply discounts first
+    total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
     
-        return isNaN(total) ? "0.00" : total.toFixed(2);
-    };
+    // Then subtract claimed points (1 point = 1 currency unit)
+    if (isPointsClaimed) {
+        total = total - claimedPoints;
+    }
+    
+    // Ensure total doesn't go below 0
+    total = Math.max(0, total);
+    
+    return isNaN(total) ? "0.00" : total.toFixed(2);
+};
 
     // useEffect(() => {
     //     const newTotal = calculateTotalPrice();
@@ -508,6 +545,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         setSelectedCustomer('')
         setSelectedOffer('');
         setOfferPercentage(0);
+        setClaimedPoints(0);
+    setIsPointsClaimed(false);
         sessionStorage.removeItem('status');
     };
 
@@ -522,6 +561,15 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         const audio = new Audio(delSound);
         audio.play().catch((error) => console.error('Audio play failed:', error));
     };
+
+
+const calculateLoyaltyPoints = () => {
+    const total = parseFloat(calculateTotalPrice()) || 0;
+    const loyaltyPoints = total * 0.01;
+    // Truncate to 2 decimal places without rounding
+    const truncated = Math.trunc(loyaltyPoints * 100) / 100;
+    return isNaN(truncated) ? 0 : truncated.toFixed(2);
+};
 
     const handleDiscountType = (e) => {
         setDiscountType(e.target.value)
@@ -665,7 +713,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         <div>
             <div className='flex justify-between'>
                 <h2 className="text-lg font-semibold text-sm mb-4 text-gray-500"> {new Date().toLocaleDateString('en-GB')} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h2>
-                <h2 className="text-lg font-semibold mb-4 text-gray-500">{selectedCustomer}</h2>
+                <h2 className="text-lg font-semibold mb-4 text-gray-500">{selectedCustomerName}</h2>
             </div>
 
             <div style={{ minHeight: '260px' }}>
@@ -819,7 +867,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </table>
                 </div>
             </div >
-            <div className="mt-8">
+            <div className="mt-0">
                 <div className="px-4 py-2 text-left text-gray-500 text-base text-xl text-right">
                     <h1>Total Items: {totalItems}</h1>
                 </div>
@@ -829,37 +877,89 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             </div>
 
             {/* Container for Discount, Shipping, and Tax Inputs */}
-            <div className='fixed w-full justify-between mt-4 relative bottom-0 w-[32.5%]'>
-                <div className="flex gap-2 px-[9px] justify-between py-1 mt-0 w-[100%]">
-                    {permissionData.assign_offer && (
-                        <div className="flex md:w-1/2 gap-2  mt-4 w-full">
-                            <select
-                                onChange={handleDiscountType}
-                                className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
-                            >
-                                <option value=''>Discount type</option>
-                                <option value='fixed'>Fixed</option>
-                                <option value='percentage'>Percentage</option>
-                            </select>
-                        </div>
-                    )}
-                    {permissionData.assign_offer && (
-                        <div className="flex md:w-1/2  mt-4 w-full">
-                            <div className="relative w-full">
-                                <input
-                                    onChange={handleDiscount}
-                                    value={discount}
-                                    type="text"
-                                    placeholder="Discount"
-                                    className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-2 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500">
-                                    {discountSymbole}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <div className='fixed w-full justify-between mt-0 relative bottom-0 w-[32.5%]'>
+
+<div className="flex gap-2 px-[9px] justify-between py-1 mb-1 w-[100%]">
+    {/* Loyalty Points (1%) */}
+    <div className="flex flex-col md:w-1/2 w-full">
+        <label className="text-gray-700 text-sm font-medium mb-1">
+            Loyalty Points (1%)
+        </label>
+        <input
+            type="text"
+            value={calculateLoyaltyPoints()}
+            readOnly
+            className="w-full bg-gray-100 rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+        />
+        <span className="text-xs text-gray-500 mt-1">
+            Redeemed Points: {calculateLoyaltyPoints()}
+        </span>
+    </div>
+{/* Total Points */}
+<div className="flex flex-col md:w-1/2 w-full">
+    <label className="text-gray-700 text-sm font-medium mb-1">
+        Total Points
+    </label>
+    <div className="relative">
+        <input
+            type="text"
+            value={isPointsClaimed ? 
+                `${(selectedCustomerData?.redeemedPoints || 0) - claimedPoints}` : 
+                (selectedCustomerData?.redeemedPoints ?? 0)}
+            readOnly
+            className={`w-full ${isPointsClaimed ? 'bg-green-50' : 'bg-gray-100'} rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm`}
+        />
+        {selectedCustomerData?.redeemedPoints > 0 && !isPointsClaimed && (
+            <button
+                onClick={handleClaimPoints}
+                className="absolute right-2 top-2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+            >
+                Claim
+            </button>
+        )}
+        {isPointsClaimed && (
+            <span className="absolute right-2 top-2 text-xs text-green-600">
+                ✓ Claimed
+            </span>
+        )}
+    </div>
+    <span className="text-xs text-gray-500 mt-1">
+        {isPointsClaimed ? 
+            `${claimedPoints} points deducted from total` : 
+            'Customer\'s total loyalty points'}
+    </span>
+</div>
+</div>
+<div className="flex gap-2 px-[9px] justify-between py-1 mb-2 w-[100%]">
+    {permissionData.assign_offer && (
+        <div className="flex md:w-1/2 gap-2 w-full">
+            <select
+                onChange={handleDiscountType}
+                className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+            >
+                <option value=''>Discount type</option>
+                <option value='fixed'>Fixed</option>
+                <option value='percentage'>Percentage</option>
+            </select>
+        </div>
+    )}
+    {permissionData.assign_offer && (
+        <div className="flex md:w-1/2 w-full">
+            <div className="relative w-full">
+                <input
+                    onChange={handleDiscount}
+                    value={discount}
+                    type="text"
+                    placeholder="Discount"
+                    className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-2 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                />
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500">
+                    {discountSymbole}
+                </span>
+            </div>
+        </div>
+    )}
+</div>
 
                 <div className='flex w-full gap-2 px-1.5 py-1 mt-0'>
                     {permissionData.assign_offer && (
@@ -881,7 +981,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                             value={tax}
                             type="text"
                             placeholder="Tax"
-                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                         />
                         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
                             %
@@ -894,7 +994,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                             value={shipping}
                             type="text"
                             placeholder="Shipping"
-                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                         />
                         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
                             {currency}
@@ -1092,6 +1192,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         setUseCreditPayment = {setUseCreditPayment}
                         creditDetails = {creditDetails}
                         setCreditDetails = {setCreditDetails}
+                         claimedPoints={claimedPoints}
+        isPointsClaimed={isPointsClaimed}
+        redeemedPointsFromSale={calculateLoyaltyPoints()}
+        logPoints={() => {
+        console.log('[posBillCalculation] Passing to PayingSection - claimedPoints:', claimedPoints, 
+                  'isPointsClaimed:', isPointsClaimed);
+    }}
                     />
                 )} 
             </div>
