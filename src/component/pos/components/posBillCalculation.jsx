@@ -19,7 +19,7 @@ import { UserContext } from '../../../context/UserContext';
 import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
-const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, setSelectedCustomer, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
+const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, setSelectedCustomer, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError, setFetchRegData }) => {
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
@@ -213,6 +213,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                 });
                 if (!response.ok) {
                     throw new Error('Network response was not ok ' + response.statusText);
+
                 }
                 const result = await response.json();
                 const status = result.status;
@@ -226,6 +227,21 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                 } else {
                     toast.error('Access denied. Please check your credentials.');
                 }
+
+                }
+                const result = await response.json();
+                const status = result.status;
+                sessionStorage.setItem('status', status);
+                if (status === 'success') {
+                    setSpecialDiscountPopUp(true);
+                    if (discountInputRef.current) {
+                        discountInputRef.current.focus();
+                    }
+                    toast.success('Access granted successfully!');
+                } else {
+                    toast.error('Access denied. Please check your credentials.');
+                }
+
                 setOpenAuthModel(false);
             } catch (error) {
                 console.error('There was a problem with your fetch operation:', error);
@@ -1156,6 +1172,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         setUseCreditPayment={setUseCreditPayment}
                         creditDetails={creditDetails}
                         setCreditDetails={setCreditDetails}
+                        setFetchRegData={setFetchRegData}
+
                     />
                 )}
             </div>
