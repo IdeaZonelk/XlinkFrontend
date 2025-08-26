@@ -136,6 +136,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
     // Handle discount value change in modal
+
     const handleSpecialDiscountInputChange = (e) => {
         const value = e.target.value;
         setSpecialDiscountInput(value);
@@ -145,14 +146,23 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             // Calculate discount for selected product
             if (selectedProductIndex !== null) {
                 const product = productBillingHandling[selectedProductIndex];
-                let basePrice = Number(product.price) || 0;
-                let productDiscount = Number(product.discount) || 0;
-                let productTax = Number(product.tax) || 0;
+                let basePrice, productDiscount, productTax;
+
+                if (product.selectedVariation && product.variationValues) {
+                    const variation = product.variationValues[product.selectedVariation];
+                    basePrice = Number(variation?.productPrice) || 0;
+                    productDiscount = Number(variation?.discount) || 0;
+                    productTax = Number(variation?.orderTax) || 0;
+                } else {
+                    basePrice = Number(product.price) || 0;
+                    productDiscount = Number(product.discount) || 0;
+                    productTax = Number(product.tax) || 0;
+                }
+
                 let discountedPrice = basePrice - productDiscount;
                 let taxedPrice = discountedPrice + (basePrice * productTax / 100);
                 let percentDiscount = taxedPrice * (Number(value) / 100);
 
-                console.log(`Base Price: ${basePrice}, Discount: ${productDiscount}, Tax: ${productTax}, Percent Discount: ${percentDiscount}`);
                 setSpecialDiscount(Number(percentDiscount.toFixed(2)));
             } else {
                 setSpecialDiscount(0);
