@@ -361,7 +361,7 @@ export const getDiscount = (product, selectedVariation) => {
     return !isNaN(singleDiscount) && singleDiscount > 0 ? `${singleDiscount}` : 0;
 };
 
-export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false, discountValue, useCreditPayment, creditDetails, cashierID, RegisterID, setFetchRegData) => {
+export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false, discountValue, useCreditPayment, creditDetails, cashierID, RegisterID, setFetchRegData = () => {}) => {
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
     setInvoiceNumber(invoiceNumber);
@@ -547,8 +547,8 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
 
         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}${endpoint}`, finalSaleData);
         if (response.data.status === 'success') {
-            if (isPosSale) {
-                setFetchRegData(true);
+           if (isPosSale && typeof setFetchRegData === 'function') {
+                setFetchRegData(true); // Only call if it's a function
             }
             setInvoiceData(response.data);
             if (shouldPrint) {
