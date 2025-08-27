@@ -422,7 +422,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                                     className="block w-[300px] ml-10 rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
                                 >
                                     <option value="paid">Paid</option>
-                                    <option value="partial">Partial</option>
+                                    {/* <option value="partial">Partial</option> */}
                                     <option value="unpaid">Unpaid</option>
                                 </select>
                             </div>
