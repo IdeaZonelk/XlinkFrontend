@@ -62,6 +62,21 @@ const [isPointsClaimed, setIsPointsClaimed] = useState(false);
     monthlyInstallment: '',
     });
 
+    // Add these useEffect hooks near the top of the BillingSection component
+useEffect(() => {
+    console.log('BillingSection - selectedCustomer prop:', selectedCustomer);
+    console.log('BillingSection - selectedCustomerName prop:', selectedCustomerName);
+    console.log('BillingSection - selectedCustomerData prop:', selectedCustomerData);
+}, [selectedCustomer, selectedCustomerName, selectedCustomerData]);
+
+// Add this to log when the component mounts
+useEffect(() => {
+    console.log('BillingSection mounted with customer data:', {
+        id: selectedCustomer,
+        name: selectedCustomerName,
+        data: selectedCustomerData
+    });
+}, []);
 
            const getApplicablePrice = (product) => {
                 const qty = product.qty || 0;
@@ -131,6 +146,8 @@ const [isPointsClaimed, setIsPointsClaimed] = useState(false);
     }, [specialDiscountPopUp]);
 
     const handleClaimPoints = () => {
+         console.log('handleClaimPoints - selectedCustomerData:', selectedCustomerData);
+          console.log('handleClaimPoints - redeemedPoints:', selectedCustomerData?.redeemedPoints);
     if (!selectedCustomerData || !selectedCustomerData.redeemedPoints) {
         toast.error('No points available to claim');
         return;
@@ -867,6 +884,7 @@ const calculateLoyaltyPoints = () => {
                     </table>
                 </div>
             </div >
+            
             <div className="mt-0">
                 <div className="px-4 py-2 text-left text-gray-500 text-base text-xl text-right">
                     <h1>Total Items: {totalItems}</h1>
@@ -1178,6 +1196,7 @@ const calculateLoyaltyPoints = () => {
                         setSearchedProductData={setSearchedProductData}
                         setProductData={setProductData}
                         selectedCustomer={selectedCustomer || 'Unknown'}
+                         selectedCustomerName={selectedCustomerName}
                         discountType={discountType}
                         warehouse={warehouse}
                         responseMessage={responseMessage}

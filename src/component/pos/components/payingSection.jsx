@@ -51,6 +51,15 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     const [showKotConfirm, setShowKotConfirm] = useState(false);
     const kotRef = useRef(null);
 
+    useEffect(() => {
+    console.log('[payingSection] Received customer data:', {
+        selectedCustomer: selectedCustomer,
+        selectedCustomerName: selectedCustomerName,
+        claimedPoints: claimedPoints,
+        isPointsClaimed: isPointsClaimed
+    });
+}, [selectedCustomer, selectedCustomerName, claimedPoints, isPointsClaimed]);
+
      useEffect(() => {
         console.log('[payingSection] Component mounted/received new props - claimedPoints:', claimedPoints, 
                    'isPointsClaimed:', isPointsClaimed);
@@ -237,7 +246,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 tax,
                 warehouse ? warehouse : 'Unknown',
                 selectedCustomer ? selectedCustomer : 'Unknown',
-                selectedCustomerName || 'Unknown',
+                selectedCustomerName,
                 selectedProduct,
                 date,
                 preFix,
@@ -259,6 +268,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
 
             );
             console.log("type of setProgress", setProgress);
+            console.log("selected customer name: ", selectedCustomerName)
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
             return;
         } catch (error) {
@@ -267,6 +277,12 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     };
 
     const handleSubmitPayment = async (shouldPrint) => {
+           console.log('[payingSection] handleSubmitPayment - customer data:', {
+        customerId: selectedCustomer,
+        customerName: selectedCustomerName,
+        claimedPoints: claimedPoints,
+        isPointsClaimed: isPointsClaimed
+    });
         console.log('[payingSection] handleSubmitPayment - claimedPoints:', claimedPoints, 
                'isPointsClaimed:', isPointsClaimed);
         if (!validatePaymentStatus()) return;

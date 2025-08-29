@@ -1699,6 +1699,9 @@ const determineSearchType = (keyword) => {
                             setSearchedProductData={setSearchedProductData}
                             setError={setError}
                         />
+                        console.log("selectedCustomerData",selectedCustomerData);
+                        console.log("selectedCustomer",selectedCustomer);
+                        console.log("selectedCustomerName",selectedCustomerName);
                     </div>
                 </div>
 
