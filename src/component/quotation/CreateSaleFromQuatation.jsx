@@ -988,6 +988,7 @@ function CreateSaleFromQuatationBody() {
                             quatationData.tax, // tax
                             quatationData.warehouse, // warehouse
                             selectedCustomer, // customer
+                            quatationData.customerName,
                             quatationProductData, // productsData
                             selectedDate,
                             preFix, // date

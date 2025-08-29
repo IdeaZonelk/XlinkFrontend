@@ -19,7 +19,7 @@ import { UserContext } from '../../../context/UserContext';
 import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
-const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
+const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerName, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
@@ -559,7 +559,9 @@ useEffect(() => {
         setDiscount('');
         setShipping('');
         setTax('');
-        setSelectedCustomer('')
+        setSelectedCustomer('');
+        setSelectedCustomerName('');
+        setSelectedCustomerData(null);
         setSelectedOffer('');
         setOfferPercentage(0);
         setClaimedPoints(0);
@@ -580,12 +582,19 @@ useEffect(() => {
     };
 
 
+// const calculateLoyaltyPoints = () => {
+//     const total = parseFloat(calculateTotalPrice()) || 0;
+//     const loyaltyPoints = total * 0.01;
+//     // Truncate to 2 decimal places without rounding
+//     const truncated = Math.trunc(loyaltyPoints * 100) / 100;
+//     return isNaN(truncated) ? 0 : truncated.toFixed(2);
+// };
+
 const calculateLoyaltyPoints = () => {
     const total = parseFloat(calculateTotalPrice()) || 0;
     const loyaltyPoints = total * 0.01;
-    // Truncate to 2 decimal places without rounding
-    const truncated = Math.trunc(loyaltyPoints * 100) / 100;
-    return isNaN(truncated) ? 0 : truncated.toFixed(2);
+    // Return with 2 decimal places
+    return isNaN(loyaltyPoints) ? "0.00" : loyaltyPoints.toFixed(2);
 };
 
     const handleDiscountType = (e) => {
@@ -922,8 +931,8 @@ const calculateLoyaltyPoints = () => {
         <input
             type="text"
             value={isPointsClaimed ? 
-                `${(selectedCustomerData?.redeemedPoints || 0) - claimedPoints}` : 
-                (selectedCustomerData?.redeemedPoints ?? 0)}
+                `${(parseFloat(selectedCustomerData?.redeemedPoints || 0) - parseFloat(claimedPoints || 0)).toFixed(2)}` : 
+                (parseFloat(selectedCustomerData?.redeemedPoints || 0)).toFixed(2)}
             readOnly
             className={`w-full ${isPointsClaimed ? 'bg-green-50' : 'bg-gray-100'} rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm`}
         />
@@ -943,7 +952,7 @@ const calculateLoyaltyPoints = () => {
     </div>
     <span className="text-xs text-gray-500 mt-1">
         {isPointsClaimed ? 
-            `${claimedPoints} points deducted from total` : 
+            `${parseFloat(claimedPoints || 0).toFixed(2)} points deducted from total` : 
             'Customer\'s total loyalty points'}
     </span>
 </div>

@@ -1687,10 +1687,11 @@ const determineSearchType = (keyword) => {
                             handleDeleteHoldProduct={handleDeleteHoldProduct}
                             setProductData={setProductData}
                             selectedCustomer={selectedCustomer}
-                            selectedCustomerName={selectedCustomerName} 
+    selectedCustomerName={selectedCustomerName}
     selectedCustomerData={selectedCustomerData}
-                            setSelectedCustomerData={setSelectedCustomerData}
-                             setSelectedCustomer={setSelectedCustomer}
+    setSelectedCustomer={setSelectedCustomer}
+    setSelectedCustomerName={setSelectedCustomerName}
+    setSelectedCustomerData={setSelectedCustomerData}
                             warehouse={warehouse}
                             setReloadStatus={setReloadStatus}
                             setHeldProductReloading={setHeldProductReloading}

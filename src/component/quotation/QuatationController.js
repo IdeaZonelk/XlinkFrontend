@@ -212,7 +212,7 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
 
 export const handleUpdateQuatation = async (
     id, grandTotal, orderStatus, paymentStatus, paidAmount, paymentType, shipping,
-    discountType, discount, discountValue, tax, warehouse, selectedCustomer,
+    discountType, discount, discountValue, tax, warehouse, selectedCustomer, customerName,
     productData, date, setError, setResponseMessage, setProgress, navigate
 ) => {
     setProgress(true);
@@ -231,6 +231,7 @@ export const handleUpdateQuatation = async (
     const commonSaleData = {
         date,
         selectedCustomer,
+        customerName,
         warehouse: warehouse || null,
         tax,
         discountType,
@@ -322,7 +323,7 @@ export const handleUpdateQuatation = async (
 };
 
 //HANDLE SAVE PRODUCT
-export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount, discountValue, tax,warehouse,selectedCustomer,quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit, useCreditPayment, creditDetails, claimedPoints=0, redeemedPointsFromSale=0) => {
+export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,paymentStatus,paymentType,amounts,shipping,discountType,discount, discountValue, tax,warehouse,selectedCustomer,customerName, quatationProductData,date,preFix,setInvoiceNumber,setError,setResponseMessage,setProgress, navigate, profit, useCreditPayment, creditDetails, claimedPoints=0, redeemedPointsFromSale=0) => {
     setProgress(true);
     setError('');
     setResponseMessage('')
@@ -407,6 +408,7 @@ export const handleCreateSale = async (id, grandTotal, baseTotal, orderStatus,pa
         refferenceId,
         date,
         customer: selectedCustomer,
+        customerName: customerName,
         warehouse: warehouse || null,
         tax,
         discountType,

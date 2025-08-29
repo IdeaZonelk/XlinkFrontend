@@ -371,7 +371,7 @@ function EditQuatationBody() {
                                     id="customer"
                                     name="customer"
                                     disabled
-                                    value={quatationData.customer}
+                                    value={quatationData.customerName}
                                     required
                                     placeholder={"      Search..."}
                                     className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
@@ -627,7 +627,7 @@ function EditQuatationBody() {
                         Profit: {currency} {formatWithCustomCommas(calculateProfitOfSale().toFixed(2))}
                     </div>
                     <button
-                        onClick={() => handleUpdateQuatation(id, calculateTotal(), quatationData.orderStatus, quatationData.paymentStatus, quatationData.paidAmount, quatationData.paymentType, quatationData.shipping, quatationData.discountType, quatationData.discount, calculateDiscountValue() , quatationData.tax, quatationData.warehouse, quatationData.selectedCustomer, quatationProductData, selectedDate, setError, setResponseMessage, setProgress, navigate)}
+                        onClick={() => handleUpdateQuatation(id, calculateTotal(), quatationData.orderStatus, quatationData.paymentStatus, quatationData.paidAmount, quatationData.paymentType, quatationData.shipping, quatationData.discountType, quatationData.discount, calculateDiscountValue() , quatationData.tax, quatationData.warehouse, quatationData.selectedCustomer, quatationData.customerName,quatationProductData, selectedDate, setError, setResponseMessage, setProgress, navigate)}
                         className="mt-5 submit w-[200px] text-white rounded py-2 px-4"
                     >
                         Update & Save
