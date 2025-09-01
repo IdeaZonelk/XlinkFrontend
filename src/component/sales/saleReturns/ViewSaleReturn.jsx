@@ -373,7 +373,7 @@ function ViewSaleReturnBody() {
                             {combinedProductData.map((sale) => (
                                 <tr key={sale._id}>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.refferenceId}</p></td>
-                                    <td className="px-6 py-4 text-leftwhitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.customer}</p></td>
+                                    <td className="px-6 py-4 text-leftwhitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.customerName || "Unknown"}</p></td>
                                     <td className="px-6 py-4 text-leftwhitespace-nowrap text-m text-gray-900">{sale.warehouse}</td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{new Date(sale.date).toLocaleDateString()}</td>
                                     <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">
@@ -450,7 +450,7 @@ function ViewSaleReturnBody() {
                                                                 <i className="fas fa-user mr-2 text-gray-600"></i>
                                                                 Customer Info
                                                             </h3>
-                                                            <p className="mb-1 text-left"><i className="fas fa-user ml-2 mr-2 text-gray-400"></i><span className="font-medium">Customer:</span> {sale.customer}</p>
+                                                            <p className="mb-1 text-left"><i className="fas fa-user ml-2 mr-2 text-gray-400"></i><span className="font-medium">Customer:</span> {sale.customerName || "Unknown"}</p>
 
                                                             {/* {filteredSaleData.map((customer) => (
                                                                 <div>

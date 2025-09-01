@@ -754,7 +754,7 @@ function ViewSaleBody() {
                                                     >
                                                         {/* Header */}
                                                         <div className="mb-6 flex justify-between items-center border-b pb-4">
-                                                            <h2 className="text-2xl font-bold text-gray-700">Sale Details for {sale.customer}</h2>
+                                                            <h2 className="text-2xl font-bold text-gray-700">Sale Details for {sale.customerName || "Unknown"}</h2>
                                                         </div>
 
                                                         {/* Sale Info Section */}
@@ -765,7 +765,7 @@ function ViewSaleBody() {
                                                                     <i className="fas fa-user mr-2 text-gray-600 "></i>
                                                                     Customer Info
                                                                 </h3>
-                                                                <p className="mb-1 text-left"><i className="fas fa-user ml-2 mr-2 text-gray-400 text-left"></i><span className="font-medium">Customer:</span> {sale.customer}</p>
+                                                                <p className="mb-1 text-left"><i className="fas fa-user ml-2 mr-2 text-gray-400 text-left"></i><span className="font-medium">Customer:</span> {sale.customerName || "Unknown"}</p>
 
                                                                 {filteredSaleData
                                                                     .filter((customer) => customer.id === sale.customerId) // Ensure it matches the relevant customer

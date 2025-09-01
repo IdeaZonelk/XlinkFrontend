@@ -818,7 +818,7 @@ const handleClaimedPoints = () => {
                                 <input
                                     id="customer"
                                     name="customer"
-                                    value={saleProduct.customerName}
+                                    value={saleProduct.customerName || "Unknown"}
                                     required
                                     //onChange={(e) => handleCustomerSearch(e, setSearchCustomer, setFilteredCustomer)}
                                     placeholder={searchCustomer ? "" : "        Search..."}

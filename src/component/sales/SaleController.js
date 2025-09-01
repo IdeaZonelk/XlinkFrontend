@@ -836,7 +836,7 @@ export const handleUpdateSale = async (
 };
 
 //HANDLE THE RETURN OF SALE
-export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmountDetail, warehouse, customer, selectedProduct, date, discountValue, shipping, tax, note, setError, setResponseMessage, setProgress, navigate) => {
+export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmountDetail, warehouse, customer, customerName,selectedProduct, date, discountValue, shipping, tax, note, setError, setResponseMessage, setProgress, navigate) => {
 
     setError('')
     setResponseMessage('')
@@ -854,6 +854,7 @@ export const handleReturnSale = async (id, grandTotal, paidAmount, returnAmountD
         id,
         date,
         customer,
+        customerName,
         warehouse: warehouse || null,
         grandTotal,
         paidAmount,
