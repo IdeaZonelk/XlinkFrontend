@@ -28,8 +28,6 @@ import { useNavigate } from 'react-router-dom';
 
 function CreateSaleBody() {
     const navigate = useNavigate();
-
-    // State management
     const { currency } = useCurrency()
     const [warehouseData, setWarehouseData] = useState([]);
     const [warehouse, setWarehouse] = useState('');
@@ -82,6 +80,15 @@ function CreateSaleBody() {
         monthlyInstallment : '',
     });
     const dropdownRef = useRef(null); // Ref for the dropdown container
+    const [claimedPoints, setClaimedPoints] = useState('');
+    const [isPointsClaimed, setIsPointsClaimed] = useState(false);
+    const [redeemedPointsFromSale, setRedeemedPointsFromSale] = useState(0);
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
+
+    useEffect(() => {
+        const points = calculateRedeemedPoints();
+        setRedeemedPointsFromSale(points);
+    }, [selectedProduct, discount, tax, shipping, discountType]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -203,6 +210,10 @@ function CreateSaleBody() {
             const interest = (total * interestRate) / 100;
             return total + interest;
         }
+         if (isPointsClaimed && claimedPoints) {
+            const pointsValue = parseFloat(claimedPoints) || 0;
+            return Math.max(0, total - pointsValue);
+        }
         return total;
     }
 
@@ -250,6 +261,14 @@ function CreateSaleBody() {
         return pureProfit;
     };
 
+const calculateRedeemedPoints = () => {
+    const total = parseFloat(calculateTotal()) || 0;
+    const loyaltyPoints = total * 0.01;
+    // Truncate to 2 decimal places without rounding up
+    const truncated = Math.trunc(loyaltyPoints * 100) / 100;
+    return isNaN(truncated) ? 0 : truncated.toFixed(2);
+};
+
 
     const calculateDiscountValue = () =>{
 
@@ -288,6 +307,15 @@ function CreateSaleBody() {
     };
 
    const handleAmountChange = (type, value) => {
+    // Allow empty value (user clearing the field)
+    if (value === '') {
+        setAmounts((prev) => ({
+            ...prev,
+            [type]: '',
+        }));
+        return;
+    }
+
     const numericValue = parseFloat(value);
 
     if (isNaN(numericValue)) {
@@ -353,7 +381,17 @@ function CreateSaleBody() {
         setShipping(e.target.value)
     }
 
+    const handleClaimedPoints = () => {
+        if (selectedCustomer && selectedCustomer.redeemedPoints > 0) {
+            setIsPointsClaimed(true);
+        }
+    };
+
     function restructureProductData(products) {
+          if (!Array.isArray(products)) {
+    console.error('restructureProductData: products is not an array', products);
+    return [];
+  }
         return products.map((product) => {
             // If product is of type Variation
             if (product.ptype === "Variation" && product.selectedVariation && product.variationValues) {
@@ -513,10 +551,10 @@ function CreateSaleBody() {
                                         {filteredCustomer.map((customer) => (
                                             <li
                                                 key={customer._id}
-                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer)}
+                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer,setClaimedPoints,setIsPointsClaimed, setSelectedCustomerName)}
                                                 className="cursor-pointer hover:bg-gray-100 px-4 py-4"
                                             >
-                                                {customer.name}
+                                                {customer.name} {customer.redeemedPoints ? `(${customer.redeemedPoints} points)` : ''}
                                             </li>
                                         ))}
                                     </ul>
@@ -704,7 +742,7 @@ function CreateSaleBody() {
 
                     <div className="">
                         {/* DISCOUNT, SHIPPING AND TAX INPUT */}
-                        <div className="grid grid-cols-4 gap-4 mb-4 mt-60">
+                        <div className="grid grid-cols-5 gap-5 mb-4 mt-60">
                             <div className="relative">
                                 <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
                                 <select
@@ -723,66 +761,110 @@ function CreateSaleBody() {
                                     <option value="percentage">Percentage</option>
                                 </select>
                             </div>
-                            <div className="relative">
-                                <label className="block text-left text-sm font-medium text-gray-700">Discount:</label>
-                                <input
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (!/^\d*\.?\d*$/.test(value)) {
-                                            alert("Only numbers are allowed for discount.");
-                                            return;
-                                        }
-                                        handleDiscount({ target: { value } });
-                                    }}
-                                    value={discount}
-                                    type="text"
-                                    placeholder="Discount"
-                                    className="block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    {discountSymbole}
-                                </span>
-                            </div>
-                            <div className="relative">
-                                <label className="block text-left text-sm font-medium text-gray-700">Tax:</label>
-                                <input
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (!/^\d*\.?\d*$/.test(value)) {
-                                            alert("Only numbers are allowed for tax.");
-                                            return;
-                                        }
-                                        handleTax({ target: { value } });
-                                    }}
-                                    value={tax}
-                                    type="text"
-                                    placeholder="Tax"
-                                    className="block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    %
-                                </span>
-                            </div>
-                            <div className="relative">
-                                <label className="block text-left text-sm font-medium text-gray-700">Shipping:</label>
-                                <input
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (!/^\d*\.?\d*$/.test(value)) {
-                                            alert("Only numbers are allowed for shipping.");
-                                            return;
-                                        }
-                                        handleShipping({ target: { value } });
-                                    }}
-                                    value={shipping}
-                                    type="text"
-                                    placeholder="Shipping"
-                                    className="block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    {currency}
-                                </span>
-                            </div>
+                           <div className="relative">
+    <label className="block text-left text-sm font-medium text-gray-700">Discount:</label>
+    <input
+        onChange={(e) => {
+            const value = e.target.value;
+            if (!/^\d*\.?\d*$/.test(value)) {
+                alert("Only numbers are allowed for discount.");
+                return;
+            }
+            handleDiscount({ target: { value } });
+        }}
+        value={discount}
+        type="text"
+        placeholder="Discount"
+        className="block w-full rounded-md border-0 py-2.5 pr-10 pl-2 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm"
+    />
+    <span className="absolute inset-y-0 right-2 flex items-center text-gray-500 pr-2">
+        {discountSymbole}
+    </span>
+</div>
+
+<div className="relative">
+    <label className="block text-left text-sm font-medium text-gray-700">Tax:</label>
+    <input
+        onChange={(e) => {
+            const value = e.target.value;
+            if (!/^\d*\.?\d*$/.test(value)) {
+                alert("Only numbers are allowed for tax.");
+                return;
+            }
+            handleTax({ target: { value } });
+        }}
+        value={tax}
+        type="text"
+        placeholder="Tax"
+        className="block w-full rounded-md border-0 py-2.5 pr-10 pl-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
+    />
+    <span className="absolute inset-y-0 right-2 flex items-center text-gray-500 pr-2">
+        %
+    </span>
+</div>
+
+<div className="relative">
+    <label className="block text-left text-sm font-medium text-gray-700">Shipping:</label>
+    <input
+        onChange={(e) => {
+            const value = e.target.value;
+            if (!/^\d*\.?\d*$/.test(value)) {
+                alert("Only numbers are allowed for shipping.");
+                return;
+            }
+            handleShipping({ target: { value } });
+        }}
+        value={shipping}
+        type="text"
+        placeholder="Shipping"
+        className="block w-full rounded-md border-0 py-2.5 pr-10 pl-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm"
+    />
+    <span className="absolute inset-y-0 right-2 flex items-center text-gray-500 pr-2">
+        {currency}
+    </span>
+</div>
+
+                           <div className="relative">
+    <label className="block text-left text-sm font-medium text-gray-700">Claimed Points:</label>
+    <input
+        onChange={(e) => {
+            const value = e.target.value;
+            if (!/^\d*\.?\d*$/.test(value)) {
+                alert("Only numbers are allowed for loyalty points.");
+                return;
+            }
+            handleClaimedPoints({ target: { value } });
+        }}
+        value={claimedPoints}
+        disabled
+        placeholder="Claimed Points"
+        readOnly={isPointsClaimed}
+        className={`block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm ${
+            isPointsClaimed ? 'bg-green-50' : ''
+        }`}
+    />
+    {selectedCustomer?.redeemedPoints > 0 && !isPointsClaimed && (
+        <button
+            onClick={handleClaimedPoints}
+            className="absolute right-2 top-7 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+        >
+            Claim
+        </button>
+    )}
+    {isPointsClaimed && (
+        <span className="absolute right-2 top-8 text-xs text-green-600">
+            ✓ Claimed
+        </span>
+    )}
+
+    {/* Move the message here, just below the input field */}
+    <span className="text-xs text-gray-500 mt-1 block">
+        {isPointsClaimed 
+            ? `${claimedPoints} points will be deducted from total` 
+            : "Customer's available loyalty points"}
+    </span>
+</div>
+
                         </div>
 
                         {/* Order, Payment Status, and Payment Type Selects */}
@@ -952,6 +1034,10 @@ function CreateSaleBody() {
                         Profit: {currency}  {formatWithCustomCommas(calculateProfitOfSale())}
                     </div>
 
+                     <div className="mt-4 text-right text-lg font-semibold">
+                        Redeemed Points From Total Sale (1%): {formatWithCustomCommas(calculateRedeemedPoints())}
+                    </div>
+
                     <div className="container mx-auto text-left">
                         <div className='mt-10 flex justify-start'>
                             <button onClick={() => { 
@@ -962,6 +1048,10 @@ function CreateSaleBody() {
                                     return;
                                 }
                                 
+                                const restructuredProducts = restructureProductData(selectedProduct);
+console.log('Restructured products:', restructuredProducts);
+console.log('Type:', Array.isArray(restructuredProducts) ? 'Array' : typeof restructuredProducts);
+
                                 handleSave(
                                 calculateTotal().toFixed(2),
                                 calculateBaseTotal().toFixed(2),
@@ -975,7 +1065,8 @@ function CreateSaleBody() {
                                 discount,
                                 tax,
                                 warehouse,
-                                selectedCustomer?.name,
+                                selectedCustomer?._id || 'unknown',
+                                selectedCustomerName,
                                 restructureProductData(selectedProduct),
                                 date,
                                 preFix,
@@ -991,7 +1082,9 @@ function CreateSaleBody() {
                                 shouldPrint,
                                 calculateDiscountValue(),
                                 useCreditPayment,
-                                creditDetails
+                                creditDetails,
+                                isPointsClaimed ? claimedPoints : 0,
+                                calculateRedeemedPoints() 
                             )}} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                                 Save sale
                             </button>
