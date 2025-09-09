@@ -9,6 +9,7 @@
  * Contact info@ideazone.lk for more information.
  */
 
+
 import { useState, useEffect, useRef, useContext } from 'react';
 import ProductFilters from './ProductFilters';
 import CryptoJS from 'crypto-js';

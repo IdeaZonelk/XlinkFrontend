@@ -12,7 +12,6 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { generateBillNumber } from '../pos/utils/invoiceNumber';
-import { initial } from 'lodash';
 
 export const handleProductSearch = async (e, setSearchTerm, setFilteredProducts, warehouse, saleProductWarehouse) => {
     const keyword = e.target.value;
@@ -40,7 +39,6 @@ export const handleProductSearch = async (e, setSearchTerm, setFilteredProducts,
     }
 };
 
-//HANDLE SEARCH CUSTOMERS
 export const handleCustomerSearch = async (e, setSearchCustomer, setFilteredCustomer) => {
     const keyword = e.target.value;
     setSearchCustomer(keyword);
@@ -59,7 +57,6 @@ export const handleCustomerSearch = async (e, setSearchCustomer, setFilteredCust
     }
 };
 
-//HANDLE WAREHOUSE CHANGE
 export const handleWarehouseChange = (
     e,
     setWarehouse,
@@ -86,7 +83,6 @@ export const handleWarehouseChange = (
     );
 };
 
-
 //HANDLE CUSTOMER SELECT
 export const handleCustomerSelect = (customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer, setClaimedPoints, setIsPointsClaimed, setSelectedCustomerName) => {
         setSelectedCustomer(customer);
@@ -99,8 +95,6 @@ export const handleCustomerSelect = (customer, setSelectedCustomer, setSearchCus
         setIsPointsClaimed(false);
     };
 
-
-// HANDLE PRODUCT SELECTION
 export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, setFilteredProducts, warehouse) => {
     console.log('Product selected:', product);
     console.log('Selected warehouse:', warehouse);
@@ -163,8 +157,6 @@ export const handleProductSelect = (product, setSelectedProduct, setSearchTerm, 
     console.log('Search term cleared and filtered products reset');
 };
 
-
-//HANDLE VARIATION CHANGE
 export const handleVariationChange = (index, variation, setSelectedProduct) => {
     setSelectedProduct((prevProducts) =>
         prevProducts.map((product, i) => {
@@ -197,8 +189,6 @@ export const handleVariationChange = (index, variation, setSelectedProduct) => {
     );
 };
 
-
-// CALCULATE SINGLE & VARIATION PRODUCT QTY
 export const getQty = (product, selectedVariation) => {
     // If the product has variations
     if (product.variationValues && selectedVariation) {
@@ -210,8 +200,6 @@ export const getQty = (product, selectedVariation) => {
     return !isNaN(singleProductQty) && singleProductQty > 0 ? singleProductQty : 0;
 };
 
-
-// CALCULATE SINGLE & VARIATION PRODUCT PRICE
 export const getPriceRange = (product, selectedVariation) => {
     if (product.variationValues) {
         // If a variation is selected, return the price of that variation
@@ -254,7 +242,6 @@ export const getProductCost = (product, selectedVariation) => {
     return !isNaN(singlePrice) && singlePrice > 0 ? `${singlePrice}` : 0;
 };
 
-//REMOVE PRODUCT FROM LIST
 export const handleDelete = (index, selectedProduct, setSelectedProduct) => {
     // Ensure selectedProduct is an array before performing filter
     if (Array.isArray(selectedProduct)) {
@@ -265,8 +252,6 @@ export const handleDelete = (index, selectedProduct, setSelectedProduct) => {
     }
 };
 
-
-// HANDLE QUANTITY CHANGING
 export const handleQtyChange = (index, selectedVariation, setSelectedProduct, value) => {
     setSelectedProduct((prevProducts) =>
         prevProducts.map((product, i) => {
@@ -337,8 +322,6 @@ export const handleQtyChange = (index, selectedVariation, setSelectedProduct, va
     );
 };
 
-
-//GET TAX
 export const getTax = (product, selectedVariation) => {
     if (product.variationValues && selectedVariation && product.variationValues[selectedVariation]) {
         const variationTax = Number(product.variationValues[selectedVariation].orderTax);
@@ -347,7 +330,6 @@ export const getTax = (product, selectedVariation) => {
     return 0;
 };
 
-//HANDLE DISCOUNT TYPE
 export const handleDiscount = (e, discountType, setDiscount) => {
     if (!discountType) {
         alert('Please select a discount type first.');
@@ -364,7 +346,6 @@ export const handleDiscount = (e, discountType, setDiscount) => {
     setDiscount(value);
 };
 
-// CALCULATE SINGLE & VARIATION PRODUCT DISCOUNT
 export const getDiscount = (product, selectedVariation) => {
     if (product.variationValues) {
         // If a variation is selected, return the discount of that variation
@@ -447,20 +428,20 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
     if (typeof date === 'string' && date.length === 10) {
         const now = new Date();
         const [year, month, day] = date.split('-');
-    
+
         // Create a new Date with the selected date and current LOCAL time
         const fullDate = new Date(
             Number(year), Number(month) - 1, Number(day),
             now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds()
         );
-    
+
         // Adjust to local timezone by removing timezone offset
         const timezoneOffsetMs = fullDate.getTimezoneOffset() * 60 * 1000;
         const localDate = new Date(fullDate.getTime() - timezoneOffsetMs);
-    
+
         date = localDate.toISOString();  // ISO string in local time
     }
-    
+
     if (!paymentStatus) {
         toast.error('Payment Status is required', { autoClose: 2000 }, { className: "custom-toast" });
         setProgress(false);
@@ -477,6 +458,8 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
         .map((type) => ({ type, amount: Number(amounts[type]) }));
 
     const cashierUsername = sessionStorage.getItem('name');
+    const cashRegisterKey = cashierID ? cashierID : sessionStorage.getItem('cashierUsername');
+    const cashRegisterID = RegisterID ? RegisterID : sessionStorage.getItem('cashRegisterID');
     const defaultWarehouse = sessionStorage.getItem('defaultWarehouse') || 'Unknown';
 
     // **Define productsData FIRST**
@@ -484,17 +467,13 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
         const currentID = product._id;
         const ptype = product.ptype;
         const variationValue = product.selectedVariation;
-
         const quantity = product.barcodeQty || 1;
         const wholesaleEnabled = product.wholesaleEnabled || false;
         const wholesaleMinQty = product.wholesaleMinQty || 0;
         const wholesalePrice = product.wholesalePrice || 0;
-
         const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
         const applicablePrice = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
-
         const price = product.price || getPriceRange(product, product.selectedVariation);
-
         const productCost = product.producrCost || getProductCost(product, product.selectedVariation);
         const discount = product.discount || getDiscount(product, product.selectedVariation);
         const specialDiscount = product.specialDiscount || 0;
@@ -553,6 +532,8 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
         creditDetails,
         claimedPoints,
         redeemedPointsFromSale
+        cashRegisterKey,
+        cashRegisterID
     };
 
     const finalSaleData = {
@@ -561,9 +542,12 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
     };
     try {
         let endpoint = '';
+        let isPosSale = false;
+
         if (window.location.pathname === '/posSystem') {
             endpoint = '/api/createSale';
             finalSaleData.saleType = 'POS';
+            isPosSale = true;
         } else if (window.location.pathname === '/createSale') {
             endpoint = '/api/createNonPosSale';
             finalSaleData.saleType = 'Non-POS';
@@ -575,50 +559,50 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
 
         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}${endpoint}`, finalSaleData);
         if (response.data.status === 'success') {
-            // Store the invoice data for potential printing
+           if (isPosSale && typeof setFetchRegData === 'function') {
+                setFetchRegData(true); // Only call if it's a function
+            }
             setInvoiceData(response.data);
-            
-            // Only print if shouldPrint is true
             if (shouldPrint) {
                 const iframe = document.createElement('iframe');
-                iframe.style.display = 'none'; 
+                iframe.style.display = 'none';
                 document.body.appendChild(iframe);
-              
+
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                 iframeDoc.open();
                 iframeDoc.write(response.data.html);
                 iframeDoc.close();
-              
+
                 setTimeout(() => {
                     iframe.contentWindow.focus();
                     iframe.contentWindow.print();
-                   
-                     // KOT printing logic
-        // if (shouldPrintKOT && response.data.kotHtml) {
-        //     const kotIframe = document.createElement('iframe');
-        //     kotIframe.style.display = 'none';
-        //     document.body.appendChild(kotIframe);
 
-        //     const kotDoc = kotIframe.contentDocument || kotIframe.contentWindow.document;
-        //     kotDoc.open();
-        //     kotDoc.write(response.data.kotHtml);
-        //     kotDoc.close();
+                    // KOT printing logic
+                    // if (shouldPrintKOT && response.data.kotHtml) {
+                    //     const kotIframe = document.createElement('iframe');
+                    //     kotIframe.style.display = 'none';
+                    //     document.body.appendChild(kotIframe);
 
-        //     setTimeout(() => {
-        //         kotIframe.contentWindow.focus();
-        //         kotIframe.contentWindow.print();
-        //         setTimeout(() => document.body.removeChild(kotIframe), 1000);
-        //     }, 500);
-        // }
+                    //     const kotDoc = kotIframe.contentDocument || kotIframe.contentWindow.document;
+                    //     kotDoc.open();
+                    //     kotDoc.write(response.data.kotHtml);
+                    //     kotDoc.close();
 
-        setTimeout(() => document.body.removeChild(iframe), 1000);
-    }, 500);
+                    //     setTimeout(() => {
+                    //         kotIframe.contentWindow.focus();
+                    //         kotIframe.contentWindow.print();
+                    //         setTimeout(() => document.body.removeChild(kotIframe), 1000);
+                    //     }, 500);
+                    // }
+
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                }, 500);
             }
-            
+
             handlePrintAndClose();
-            toast.success('Sale created successfully!', { 
-                autoClose: 2000, 
-                className: "custom-toast" 
+            toast.success('Sale created successfully!', {
+                autoClose: 2000,
+                className: "custom-toast"
             });
         }
     } catch (error) {
@@ -762,7 +746,7 @@ export const handleUpdateSale = async (
         const applicablePrice = appliedWholesale ? wholesalePrice : price;
 
         const productCost = product.producrCost ? product.producrCost : getProductCost(product, product.selectedVariation);
-        
+
         const discount = getDiscount(product, product.selectedVariation) || 0;
         const specialDiscount = product.specialDiscount || 0;
         const taxRate = product.taxRate ? product.taxRate : product.taxRate ? product.taxRate : getTax(product, product.selectedVariation) / 100;

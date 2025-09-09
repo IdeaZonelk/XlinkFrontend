@@ -41,6 +41,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [password, setPassword] = useState('');
     const [specialDiscountPopUp, setSpecialDiscountPopUp] = useState(false);
     const [specialDiscount, setSpecialDiscount] = useState(0);
+    const [specialDiscountType, setSpecialDiscountType] = useState('');
+    const [specialDiscountInput, setSpecialDiscountInput] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [selectedProductIndex, setSelectedProductIndex] = useState(null);
     const [offersData, setOffers] = useState([]);
@@ -56,10 +58,10 @@ const [isPointsClaimed, setIsPointsClaimed] = useState(false);
     const discountInputRef = useRef(null);
     const [useCreditPayment, setUseCreditPayment] = useState(false);
     const [creditDetails, setCreditDetails] = useState({
-    interestRate: '',
-    months: '',
-    interestAmount: '',
-    monthlyInstallment: '',
+        interestRate: '',
+        months: '',
+        interestAmount: '',
+        monthlyInstallment: '',
     });
 
     // Add these useEffect hooks near the top of the BillingSection component
@@ -78,45 +80,45 @@ useEffect(() => {
     });
 }, []);
 
-           const getApplicablePrice = (product) => {
-                const qty = product.qty || 0;
+    const getApplicablePrice = (product) => {
+        const qty = product.qty || 0;
 
-                if (product.selectedVariation) {
-                    const variation = product.variationValues?.[product.selectedVariation];
+        if (product.selectedVariation) {
+            const variation = product.variationValues?.[product.selectedVariation];
 
-                    // ✅ NEW: fallback if variationValues is empty (held product case)
-                    if (!variation && product.wholesaleEnabled) {
-                        const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
-                        const wholesalePrice = parseFloat(product.wholesalePrice || 0);
-                        if (meetsMinQty && wholesalePrice > 0) return wholesalePrice;
-                        return parseFloat(product.price || 0); // fallback
-                    }
+            // ✅ NEW: fallback if variationValues is empty (held product case)
+            if (!variation && product.wholesaleEnabled) {
+                const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+                const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+                if (meetsMinQty && wholesalePrice > 0) return wholesalePrice;
+                return parseFloat(product.price || 0); // fallback
+            }
 
-                    if (variation) {
-                        const hasWholesale = variation.wholesaleEnabled === true;
-                        const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
-                        const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+            if (variation) {
+                const hasWholesale = variation.wholesaleEnabled === true;
+                const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+                const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
 
-                        if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
-                            return wholesalePrice;
-                        }
-
-                        return parseFloat(variation.productPrice || 0);
-                    }
-
-                    return parseFloat(product.price || 0);
-                } else {
-                    const hasWholesale = product.wholesaleEnabled === true;
-                    const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
-                    const wholesalePrice = parseFloat(product.wholesalePrice || 0);
-
-                    if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
-                        return wholesalePrice;
-                    }
-
-                    return parseFloat(product.price || 0);
+                if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                    return wholesalePrice;
                 }
-            };
+
+                return parseFloat(variation.productPrice || 0);
+            }
+
+            return parseFloat(product.price || 0);
+        } else {
+            const hasWholesale = product.wholesaleEnabled === true;
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                return wholesalePrice;
+            }
+
+            return parseFloat(product.price || 0);
+        }
+    };
 
 
 
@@ -140,7 +142,7 @@ useEffect(() => {
     useEffect(() => {
         if (specialDiscountPopUp) {
             setTimeout(() => {
-                adminPasswordRef.current?.focus();
+                discountInputRef.current?.focus();
             }, 100);
         }
     }, [specialDiscountPopUp]);
@@ -171,62 +173,126 @@ useEffect(() => {
 };
 
 
+    // Handle discount type change in modal
+    const handleSpecialDiscountTypeChange = (e) => {
+        setSpecialDiscountType(e.target.value);
+        setSpecialDiscountInput('');
+        setSpecialDiscount(0);
+    };
+
+    // Handle discount value change in modal
+
+    const handleSpecialDiscountInputChange = (e) => {
+        const value = e.target.value;
+        setSpecialDiscountInput(value);
+        if (specialDiscountType === 'fixed') {
+            setSpecialDiscount(Number(value));
+        } else if (specialDiscountType === 'percentage') {
+            // Calculate discount for selected product
+            if (selectedProductIndex !== null) {
+                const product = productBillingHandling[selectedProductIndex];
+                let basePrice, productDiscount, productTax;
+
+                if (product.selectedVariation && product.variationValues) {
+                    const variation = product.variationValues[product.selectedVariation];
+                    basePrice = Number(variation?.productPrice) || 0;
+                    productDiscount = Number(variation?.discount) || 0;
+                    productTax = Number(variation?.orderTax) || 0;
+                } else {
+                    basePrice = Number(product.price) || 0;
+                    productDiscount = Number(product.discount) || 0;
+                    productTax = Number(product.tax) || 0;
+                }
+
+                let discountedPrice = basePrice - productDiscount;
+                let taxedPrice = discountedPrice + (basePrice * productTax / 100);
+                let percentDiscount = taxedPrice * (Number(value) / 100);
+
+                setSpecialDiscount(Number(percentDiscount.toFixed(2)));
+            } else {
+                setSpecialDiscount(0);
+            }
+        } else {
+            setSpecialDiscount(0);
+        }
+    };
+
+    // Add special discount to product
     const handleAddSpecialDiscount = () => {
         if (selectedProductIndex !== null) {
             const updatedProducts = [...productBillingHandling];
             updatedProducts[selectedProductIndex].specialDiscount = parseFloat(specialDiscount) || 0;
+            updatedProducts[selectedProductIndex].specialDiscountType = specialDiscountType;
+            updatedProducts[selectedProductIndex].specialDiscountInput = specialDiscountInput;
             setProductBillingHandling(updatedProducts);
             setSpecialDiscountPopUp(false);
             setSelectedProductIndex(null);
-
             setTimeout(() => {
                 calculateTotalPrice();
                 setSpecialDiscount('');
+                setSpecialDiscountType('');
+                setSpecialDiscountInput('');
             }, 0);
         }
     };
 
     useEffect(() => {
-                calculateTotalPrice();
-            }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
+        calculateTotalPrice();
+    }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
 
 
-/*     const handleDiscountAccess = async (e) => {
-        e.preventDefault();
-        if (!username || !password) {
-            alert('Please enter both username and password.');
-            return;
-        }
-        const data = { username: username, password: password };
-        try {
-            const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/getDiscountAccess`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
+    /*     const handleDiscountAccess = async (e) => {
+            e.preventDefault();
+            if (!username || !password) {
+                alert('Please enter both username and password.');
+                return;
             }
-            const result = await response.json();
-            const status = result.status;
-            sessionStorage.setItem('status', status);
-            if (status === 'success') {
-                setSpecialDiscountPopUp(true);
-                if (discountInputRef.current) {
-                    discountInputRef.current.focus();
+            const data = { username: username, password: password };
+            try {
+                const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/getDiscountAccess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+
                 }
-                toast.success('Access granted successfully!');
-            } else {
-                toast.error('Access denied. Please check your credentials.');
+                const result = await response.json();
+                const status = result.status;
+                sessionStorage.setItem('status', status);
+                if (status === 'success') {
+                    setSpecialDiscountPopUp(true);
+                    if (discountInputRef.current) {
+                        discountInputRef.current.focus();
+                    }
+                    toast.success('Access granted successfully!');
+                } else {
+                    toast.error('Access denied. Please check your credentials.');
+                }
+
+                }
+                const result = await response.json();
+                const status = result.status;
+                sessionStorage.setItem('status', status);
+                if (status === 'success') {
+                    setSpecialDiscountPopUp(true);
+                    if (discountInputRef.current) {
+                        discountInputRef.current.focus();
+                    }
+                    toast.success('Access granted successfully!');
+                } else {
+                    toast.error('Access denied. Please check your credentials.');
+                }
+
+                setOpenAuthModel(false);
+            } catch (error) {
+                console.error('There was a problem with your fetch operation:', error);
+                toast.error('An error occurred while processing your request.');
             }
-            setOpenAuthModel(false);
-        } catch (error) {
-            console.error('There was a problem with your fetch operation:', error);
-            toast.error('An error occurred while processing your request.');
-        }
-    }; */
+        }; */
 
     const fetchOfferData = async () => {
         try {
@@ -371,11 +437,11 @@ useEffect(() => {
     };
 
 
-     const getRowSubtotal = (product) => {
+    const getRowSubtotal = (product) => {
         const variation = product.selectedVariation
             ? product.variationValues?.[product.selectedVariation]
             : null;
-    
+
         const price = getApplicablePrice(product);
         const tax = variation?.orderTax !== undefined ? parseFloat(variation.orderTax) : parseFloat(product.tax) || 0;
         const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
@@ -383,9 +449,9 @@ useEffect(() => {
         const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
         const newPrice = price - discount - specialDiscount;
-    
+
         const productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
-    
+
         return (productTotal).toFixed(2);
     };
 
@@ -419,18 +485,18 @@ useEffect(() => {
 
     //calculating total price
     const calculateTotalPrice = () => {
-    let total = calculateBaseTotal();
-    
-    let discountAmount = 0;
-    if (discountType === 'fixed') {
-        discountAmount = parseFloat(discount) || 0;
-    } else if (discountType === 'percentage') {
-        discountAmount = (total * (parseFloat(discount) || 0) / 100);
-    }
-    
-    const taxAmount = (total * (parseFloat(tax) || 0) / 100);
-    const shippingCost = parseFloat(shipping) || 0;
-    const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
+        let total = calculateBaseTotal();
+
+        let discountAmount = 0;
+        if (discountType === 'fixed') {
+            discountAmount = parseFloat(discount) || 0;
+        } else if (discountType === 'percentage') {
+            discountAmount = (total * (parseFloat(discount) || 0) / 100);
+        }
+
+        const taxAmount = (total * (parseFloat(tax) || 0) / 100);
+        const shippingCost = parseFloat(shipping) || 0;
+        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);
 
     let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
 
@@ -453,7 +519,7 @@ useEffect(() => {
     //     setTotalPrice(newTotal); // Ensure state updates the total price
     // }, [productBillingHandling]);
 
-    
+
 
     const calculateTaxLessTotal = () => {
         let subtotal = productBillingHandling
@@ -464,13 +530,13 @@ useEffect(() => {
                     : null;
 
                 const price = getApplicablePrice(product);
-                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;                
+                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
                 const qty = product.qty || 0;
 
                 const netPrice = (price - discount - specialDiscount) * qty;
-                const productSubtotal = netPrice ;
+                const productSubtotal = netPrice;
                 return acc + productSubtotal;
             }, 0);
         const total = subtotal;
@@ -478,18 +544,18 @@ useEffect(() => {
     };
 
     // Function to calculate the profit for a product
-     const calculateProfit = () => {
+    const calculateProfit = () => {
         let pureProfit = productBillingHandling
             .filter(product => product.ptype !== 'Base')
             .reduce((acc, product) => {
                 const variation = product.selectedVariation
-                ? product.variationValues?.[product.selectedVariation]
-                : null;
+                    ? product.variationValues?.[product.selectedVariation]
+                    : null;
 
                 const price = getApplicablePrice(product);
                 const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const productCost = variation?.productCost !== undefined ? parseFloat(variation.productCost) : parseFloat(product.productCost) || 0;
-                
+
                 const qty = product.qty || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
                 const newPrice = price - discount - specialDiscount;
@@ -500,7 +566,7 @@ useEffect(() => {
 
                 return acc + profitOfProduct;
             }, 0);
-        
+
         const totalPrice = calculateTaxLessTotal();
         let discountAmount = 0;
         if (discountType === 'fixed') {
@@ -515,7 +581,7 @@ useEffect(() => {
         return totalProfit;
     };
 
-    
+
 
     const calculateDiscountAmount = (baseTotal) => {
         let discountAmount = 0;
@@ -643,16 +709,16 @@ const calculateLoyaltyPoints = () => {
             const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
 
             setCreditDetails(prev => ({
-            ...prev,
-            interestAmount,
-            monthlyInstallment
+                ...prev,
+                interestAmount,
+                monthlyInstallment
             }));
         } else {
             // Reset interest when credit is off
             setCreditDetails(prev => ({
-            ...prev,
-            interestAmount: '0',
-            monthlyInstallment: '0'
+                ...prev,
+                interestAmount: '0',
+                monthlyInstallment: '0'
             }));
         }
     }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
@@ -668,7 +734,7 @@ const calculateLoyaltyPoints = () => {
 
                 const discount = isVariation ? variationData.discount || 0 : product.discount || 0;
                 const tax = isVariation ? variationData.orderTax || 0 : product.tax || 0;
-                
+
                 const applicablePrice = getApplicablePrice(product);
                 const subTotal = (((applicablePrice - discount) * product.qty) + ((applicablePrice - discount) * product.qty * (tax) / 100)).toFixed(2);
 
@@ -855,11 +921,11 @@ const calculateLoyaltyPoints = () => {
                                                             <div className="flex flex-col">
                                                                 {hasWholesale && originalPrice > wholesalePrice && (
                                                                     <span className="text-[11px] h-[12px] text-red-500 line-through">
-                                                                         {formatWithCustomCommas(originalPrice)}
+                                                                        {formatWithCustomCommas(originalPrice)}
                                                                     </span>
                                                                 )}
                                                                 <span>
-                                                                     {formatWithCustomCommas(wholesalePrice)}
+                                                                    {formatWithCustomCommas(wholesalePrice)}
                                                                 </span>
                                                             </div>
                                                         );
@@ -869,7 +935,7 @@ const calculateLoyaltyPoints = () => {
 
                                                 {/* Total Price = price * qty */}
                                                 <td className="px-4 py-2 text-sm text-gray-600 text-left">
-                                                     {formatWithCustomCommas(getRowSubtotal(product))}
+                                                    {formatWithCustomCommas(getRowSubtotal(product))}
                                                 </td>
 
                                                 {/* Delete Button */}
@@ -991,16 +1057,15 @@ const calculateLoyaltyPoints = () => {
                 <div className='flex w-full gap-2 px-1.5 py-1 mt-0'>
                     {permissionData.assign_offer && (
                         <div className="flex gap-4 w-[100%]'">
-                        <button
-                            onClick={(e) => setOpenOffersModel(true)}
-                            className={`flex w-[160px] items-center text-white px-4 py-2 rounded-md hover:opacity-90 ${
-                                selectedOffer ? 'bg-red-600' : 'bg-[#35AF87]'
-                            }`}
-                        >
-                        <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
-                            Add Offers
-                        </button>
-                    </div>
+                            <button
+                                onClick={(e) => setOpenOffersModel(true)}
+                                className={`flex w-[160px] items-center text-white px-4 py-2 rounded-md hover:opacity-90 ${selectedOffer ? 'bg-red-600' : 'bg-[#35AF87]'
+                                    }`}
+                            >
+                                <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
+                                Add Offers
+                            </button>
+                        </div>
                     )}
                     <div className="relative w-[32%]">
                         <input
@@ -1015,7 +1080,7 @@ const calculateLoyaltyPoints = () => {
                         </span>
                     </div>
 
-                    <div className="relative w-[32.1%]">
+                    <div className="relative w-[36%]">
                         <input
                             onChange={handleShippng}
                             value={shipping}
@@ -1036,16 +1101,31 @@ const calculateLoyaltyPoints = () => {
                                 Add Discount
                             </h2>
                             <div className="relative mb-4">
-                                <label className="block text-left text-sm font-medium text-gray-700">Discount Amount : </label>
+                                <label className="block text-left text-sm font-medium text-gray-700">Discount Type :</label>
+                                <select
+                                    value={specialDiscountType}
+                                    onChange={handleSpecialDiscountTypeChange}
+                                    className="w-full border border-gray-300 p-3 pl-5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87] mb-2"
+                                    required
+                                >
+                                    <option value="">Select Discount Type</option>
+                                    <option value="fixed">Fixed</option>
+                                    <option value="percentage">Percentage</option>
+                                </select>
+                                <label className="block text-left text-sm font-medium text-gray-700">Discount Amount :</label>
                                 <input
                                     type="number"
-                                    placeholder="Discount"
-                                    value={specialDiscount}
-                                    onChange={(e) => setSpecialDiscount(e.target.value)}
-                                    ref={discountInputRef} // Set ref
+                                    placeholder={specialDiscountType === 'percentage' ? 'Discount (%)' : 'Discount'}
+                                    value={specialDiscountInput}
+                                    onChange={handleSpecialDiscountInputChange}
+                                    ref={discountInputRef}
                                     className="w-full border border-gray-300 p-3 pl-5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                     required
+                                    disabled={!specialDiscountType}
                                 />
+                                {specialDiscountType === 'percentage' && (
+                                    <p className="text-xs text-gray-500 mt-1">Calculated Discount: {specialDiscount}</p>
+                                )}
                             </div>
                             <div className="flex justify-between">
                                 <button
@@ -1066,7 +1146,7 @@ const calculateLoyaltyPoints = () => {
                     </div>
                 )}
 
-{/*                 {openAuthModel && (
+                {/*                 {openAuthModel && (
                     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-xs z-[1000]">
                         <div className="bg-white w-[350px] sm:w-[460px] p-6 rounded-2xl shadow-2xl">
                             <h2 className="text-lg font-semibold text-gray-700 text-center mb-6">
@@ -1227,8 +1307,9 @@ const calculateLoyaltyPoints = () => {
         console.log('[posBillCalculation] Passing to PayingSection - claimedPoints:', claimedPoints, 
                   'isPointsClaimed:', isPointsClaimed);
     }}
+                        setFetchRegData={setFetchRegData}
                     />
-                )} 
+                )}
             </div>
 
             {/*PRODUCT HOLDING POP UP*/}
@@ -1269,7 +1350,7 @@ const calculateLoyaltyPoints = () => {
                                                 <td className="px-4 py-2 border text-left">{currency} {formatWithCustomCommas(getRowSubtotal(product))}</td>
                                             </tr>
                                         );
-                                    })}  
+                                    })}
                                 </tbody>
                             </table>
 
