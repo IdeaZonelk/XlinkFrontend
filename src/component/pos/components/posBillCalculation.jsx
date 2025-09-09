@@ -19,7 +19,7 @@ import { UserContext } from '../../../context/UserContext';
 import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
-const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerName, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
+const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerName, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError, setFetchRegData }) => {
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
