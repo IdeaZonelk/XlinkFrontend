@@ -19,7 +19,7 @@ import { UserContext } from '../../../context/UserContext';
 import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
-const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, setSelectedCustomer, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
+const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerName, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError }) => {
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
@@ -41,6 +41,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [password, setPassword] = useState('');
     const [specialDiscountPopUp, setSpecialDiscountPopUp] = useState(false);
     const [specialDiscount, setSpecialDiscount] = useState(0);
+    const [specialDiscountType, setSpecialDiscountType] = useState('');
+    const [specialDiscountInput, setSpecialDiscountInput] = useState('');
     const [responseMessage, setResponseMessage] = useState('');
     const [selectedProductIndex, setSelectedProductIndex] = useState(null);
     const [offersData, setOffers] = useState([]);
@@ -48,56 +50,75 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     const [selectedOffer, setSelectedOffer] = useState('');
     const [offerPercentage, setOfferPercentage] = useState(0);
     const [progress, setProgress] = useState(false);
+    // Add this near your other state declarations
+const [claimedPoints, setClaimedPoints] = useState(0);
+const [isPointsClaimed, setIsPointsClaimed] = useState(false);
     const adminPasswordRef = useRef(null);
+    // const [selectedCustomerData, setSelectedCustomerData] = useState(null);
     const discountInputRef = useRef(null);
     const [useCreditPayment, setUseCreditPayment] = useState(false);
     const [creditDetails, setCreditDetails] = useState({
-    interestRate: '',
-    months: '',
-    interestAmount: '',
-    monthlyInstallment: '',
+        interestRate: '',
+        months: '',
+        interestAmount: '',
+        monthlyInstallment: '',
     });
 
+    // Add these useEffect hooks near the top of the BillingSection component
+useEffect(() => {
+    console.log('BillingSection - selectedCustomer prop:', selectedCustomer);
+    console.log('BillingSection - selectedCustomerName prop:', selectedCustomerName);
+    console.log('BillingSection - selectedCustomerData prop:', selectedCustomerData);
+}, [selectedCustomer, selectedCustomerName, selectedCustomerData]);
 
-           const getApplicablePrice = (product) => {
-                const qty = product.qty || 0;
+// Add this to log when the component mounts
+useEffect(() => {
+    console.log('BillingSection mounted with customer data:', {
+        id: selectedCustomer,
+        name: selectedCustomerName,
+        data: selectedCustomerData
+    });
+}, []);
 
-                if (product.selectedVariation) {
-                    const variation = product.variationValues?.[product.selectedVariation];
+    const getApplicablePrice = (product) => {
+        const qty = product.qty || 0;
 
-                    // ✅ NEW: fallback if variationValues is empty (held product case)
-                    if (!variation && product.wholesaleEnabled) {
-                        const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
-                        const wholesalePrice = parseFloat(product.wholesalePrice || 0);
-                        if (meetsMinQty && wholesalePrice > 0) return wholesalePrice;
-                        return parseFloat(product.price || 0); // fallback
-                    }
+        if (product.selectedVariation) {
+            const variation = product.variationValues?.[product.selectedVariation];
 
-                    if (variation) {
-                        const hasWholesale = variation.wholesaleEnabled === true;
-                        const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
-                        const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
+            // ✅ NEW: fallback if variationValues is empty (held product case)
+            if (!variation && product.wholesaleEnabled) {
+                const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+                const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+                if (meetsMinQty && wholesalePrice > 0) return wholesalePrice;
+                return parseFloat(product.price || 0); // fallback
+            }
 
-                        if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
-                            return wholesalePrice;
-                        }
+            if (variation) {
+                const hasWholesale = variation.wholesaleEnabled === true;
+                const meetsMinQty = qty >= (variation.wholesaleMinQty || 0);
+                const wholesalePrice = parseFloat(variation.wholesalePrice || 0);
 
-                        return parseFloat(variation.productPrice || 0);
-                    }
-
-                    return parseFloat(product.price || 0);
-                } else {
-                    const hasWholesale = product.wholesaleEnabled === true;
-                    const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
-                    const wholesalePrice = parseFloat(product.wholesalePrice || 0);
-
-                    if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
-                        return wholesalePrice;
-                    }
-
-                    return parseFloat(product.price || 0);
+                if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                    return wholesalePrice;
                 }
-            };
+
+                return parseFloat(variation.productPrice || 0);
+            }
+
+            return parseFloat(product.price || 0);
+        } else {
+            const hasWholesale = product.wholesaleEnabled === true;
+            const meetsMinQty = qty >= (product.wholesaleMinQty || 0);
+            const wholesalePrice = parseFloat(product.wholesalePrice || 0);
+
+            if (hasWholesale && meetsMinQty && wholesalePrice > 0) {
+                return wholesalePrice;
+            }
+
+            return parseFloat(product.price || 0);
+        }
+    };
 
 
 
@@ -121,67 +142,157 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     useEffect(() => {
         if (specialDiscountPopUp) {
             setTimeout(() => {
-                adminPasswordRef.current?.focus();
+                discountInputRef.current?.focus();
             }, 100);
         }
     }, [specialDiscountPopUp]);
 
+    const handleClaimPoints = () => {
+         console.log('handleClaimPoints - selectedCustomerData:', selectedCustomerData);
+          console.log('handleClaimPoints - redeemedPoints:', selectedCustomerData?.redeemedPoints);
+    if (!selectedCustomerData || !selectedCustomerData.redeemedPoints) {
+        toast.error('No points available to claim');
+        return;
+    }
+
+    if (isPointsClaimed) {
+        toast.info('Points already claimed');
+        return;
+    }
+ console.log('[posBillCalculation] handleClaimPoints - Current selectedCustomerData.redeemedPoints:', selectedCustomerData?.redeemedPoints);
+    console.log('[posBillCalculation] handleClaimPoints - Current calculatedLoyaltyPoints:', calculateLoyaltyPoints());
+    const pointsToClaim = selectedCustomerData.redeemedPoints;
+    const pointsValue = pointsToClaim; // 1 point = 1 currency unit
+    console.log('[posBillCalculation] handleClaimPoints - Points to claim:', pointsToClaim);
+    
+    setClaimedPoints(pointsToClaim);
+    setIsPointsClaimed(true);
+    console.log('[posBillCalculation] handleClaimPoints - claimedPoints set to:', pointsToClaim);
+    
+    toast.success(`Successfully claimed ${pointsToClaim} points (${currency}${pointsValue})`);
+};
+
+
+    // Handle discount type change in modal
+    const handleSpecialDiscountTypeChange = (e) => {
+        setSpecialDiscountType(e.target.value);
+        setSpecialDiscountInput('');
+        setSpecialDiscount(0);
+    };
+
+    // Handle discount value change in modal
+
+    const handleSpecialDiscountInputChange = (e) => {
+        const value = e.target.value;
+        setSpecialDiscountInput(value);
+        if (specialDiscountType === 'fixed') {
+            setSpecialDiscount(Number(value));
+        } else if (specialDiscountType === 'percentage') {
+            // Calculate discount for selected product
+            if (selectedProductIndex !== null) {
+                const product = productBillingHandling[selectedProductIndex];
+                let basePrice, productDiscount, productTax;
+
+                if (product.selectedVariation && product.variationValues) {
+                    const variation = product.variationValues[product.selectedVariation];
+                    basePrice = Number(variation?.productPrice) || 0;
+                    productDiscount = Number(variation?.discount) || 0;
+                    productTax = Number(variation?.orderTax) || 0;
+                } else {
+                    basePrice = Number(product.price) || 0;
+                    productDiscount = Number(product.discount) || 0;
+                    productTax = Number(product.tax) || 0;
+                }
+
+                let discountedPrice = basePrice - productDiscount;
+                let taxedPrice = discountedPrice + (basePrice * productTax / 100);
+                let percentDiscount = taxedPrice * (Number(value) / 100);
+
+                setSpecialDiscount(Number(percentDiscount.toFixed(2)));
+            } else {
+                setSpecialDiscount(0);
+            }
+        } else {
+            setSpecialDiscount(0);
+        }
+    };
+
+    // Add special discount to product
     const handleAddSpecialDiscount = () => {
         if (selectedProductIndex !== null) {
             const updatedProducts = [...productBillingHandling];
             updatedProducts[selectedProductIndex].specialDiscount = parseFloat(specialDiscount) || 0;
+            updatedProducts[selectedProductIndex].specialDiscountType = specialDiscountType;
+            updatedProducts[selectedProductIndex].specialDiscountInput = specialDiscountInput;
             setProductBillingHandling(updatedProducts);
             setSpecialDiscountPopUp(false);
             setSelectedProductIndex(null);
-
             setTimeout(() => {
                 calculateTotalPrice();
                 setSpecialDiscount('');
+                setSpecialDiscountType('');
+                setSpecialDiscountInput('');
             }, 0);
         }
     };
 
     useEffect(() => {
-                calculateTotalPrice();
-            }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
+        calculateTotalPrice();
+    }, [productBillingHandling, creditDetails, useCreditPayment, discount, tax, shipping, offerPercentage]);
 
 
-/*     const handleDiscountAccess = async (e) => {
-        e.preventDefault();
-        if (!username || !password) {
-            alert('Please enter both username and password.');
-            return;
-        }
-        const data = { username: username, password: password };
-        try {
-            const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/getDiscountAccess`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
+    /*     const handleDiscountAccess = async (e) => {
+            e.preventDefault();
+            if (!username || !password) {
+                alert('Please enter both username and password.');
+                return;
             }
-            const result = await response.json();
-            const status = result.status;
-            sessionStorage.setItem('status', status);
-            if (status === 'success') {
-                setSpecialDiscountPopUp(true);
-                if (discountInputRef.current) {
-                    discountInputRef.current.focus();
+            const data = { username: username, password: password };
+            try {
+                const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/getDiscountAccess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+
                 }
-                toast.success('Access granted successfully!');
-            } else {
-                toast.error('Access denied. Please check your credentials.');
+                const result = await response.json();
+                const status = result.status;
+                sessionStorage.setItem('status', status);
+                if (status === 'success') {
+                    setSpecialDiscountPopUp(true);
+                    if (discountInputRef.current) {
+                        discountInputRef.current.focus();
+                    }
+                    toast.success('Access granted successfully!');
+                } else {
+                    toast.error('Access denied. Please check your credentials.');
+                }
+
+                }
+                const result = await response.json();
+                const status = result.status;
+                sessionStorage.setItem('status', status);
+                if (status === 'success') {
+                    setSpecialDiscountPopUp(true);
+                    if (discountInputRef.current) {
+                        discountInputRef.current.focus();
+                    }
+                    toast.success('Access granted successfully!');
+                } else {
+                    toast.error('Access denied. Please check your credentials.');
+                }
+
+                setOpenAuthModel(false);
+            } catch (error) {
+                console.error('There was a problem with your fetch operation:', error);
+                toast.error('An error occurred while processing your request.');
             }
-            setOpenAuthModel(false);
-        } catch (error) {
-            console.error('There was a problem with your fetch operation:', error);
-            toast.error('An error occurred while processing your request.');
-        }
-    }; */
+        }; */
 
     const fetchOfferData = async () => {
         try {
@@ -326,11 +437,11 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
 
-     const getRowSubtotal = (product) => {
+    const getRowSubtotal = (product) => {
         const variation = product.selectedVariation
             ? product.variationValues?.[product.selectedVariation]
             : null;
-    
+
         const price = getApplicablePrice(product);
         const tax = variation?.orderTax !== undefined ? parseFloat(variation.orderTax) : parseFloat(product.tax) || 0;
         const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
@@ -338,9 +449,9 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
         const newPrice = price - discount - specialDiscount;
-    
+
         const productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
-    
+
         return (productTotal).toFixed(2);
     };
 
@@ -375,31 +486,40 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     //calculating total price
     const calculateTotalPrice = () => {
         let total = calculateBaseTotal();
-    
+
         let discountAmount = 0;
         if (discountType === 'fixed') {
             discountAmount = parseFloat(discount) || 0;
         } else if (discountType === 'percentage') {
             discountAmount = (total * (parseFloat(discount) || 0) / 100);
         }
-    
+
         const taxAmount = (total * (parseFloat(tax) || 0) / 100);
         const shippingCost = parseFloat(shipping) || 0;
-        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);    
+        const offerDiscountAmount = total * (parseFloat(offerPercentage || 0) / 100);
 
-        let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
+    let interestAmount = useCreditPayment ? parseFloat(creditDetails.interestAmount || 0) : 0;
 
-        total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
+    // Apply discounts first
+    total = total - discountAmount - offerDiscountAmount + taxAmount + shippingCost + interestAmount;
     
-        return isNaN(total) ? "0.00" : total.toFixed(2);
-    };
+    // Then subtract claimed points (1 point = 1 currency unit)
+    if (isPointsClaimed) {
+        total = total - claimedPoints;
+    }
+    
+    // Ensure total doesn't go below 0
+    total = Math.max(0, total);
+    
+    return isNaN(total) ? "0.00" : total.toFixed(2);
+};
 
     // useEffect(() => {
     //     const newTotal = calculateTotalPrice();
     //     setTotalPrice(newTotal); // Ensure state updates the total price
     // }, [productBillingHandling]);
 
-    
+
 
     const calculateTaxLessTotal = () => {
         let subtotal = productBillingHandling
@@ -410,13 +530,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     : null;
 
                 const price = getApplicablePrice(product);
-                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;                
+                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
                 const qty = product.qty || 0;
 
                 const netPrice = (price - discount - specialDiscount) * qty;
-                const productSubtotal = netPrice ;
+                const productSubtotal = netPrice;
                 return acc + productSubtotal;
             }, 0);
         const total = subtotal;
@@ -424,18 +544,18 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     };
 
     // Function to calculate the profit for a product
-     const calculateProfit = () => {
+    const calculateProfit = () => {
         let pureProfit = productBillingHandling
             .filter(product => product.ptype !== 'Base')
             .reduce((acc, product) => {
                 const variation = product.selectedVariation
-                ? product.variationValues?.[product.selectedVariation]
-                : null;
+                    ? product.variationValues?.[product.selectedVariation]
+                    : null;
 
                 const price = getApplicablePrice(product);
                 const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const productCost = variation?.productCost !== undefined ? parseFloat(variation.productCost) : parseFloat(product.productCost) || 0;
-                
+
                 const qty = product.qty || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
                 const newPrice = price - discount - specialDiscount;
@@ -446,7 +566,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                 return acc + profitOfProduct;
             }, 0);
-        
+
         const totalPrice = calculateTaxLessTotal();
         let discountAmount = 0;
         if (discountType === 'fixed') {
@@ -461,7 +581,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         return totalProfit;
     };
 
-    
+
 
     const calculateDiscountAmount = (baseTotal) => {
         let discountAmount = 0;
@@ -505,9 +625,13 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         setDiscount('');
         setShipping('');
         setTax('');
-        setSelectedCustomer('')
+        setSelectedCustomer('');
+        setSelectedCustomerName('');
+        setSelectedCustomerData(null);
         setSelectedOffer('');
         setOfferPercentage(0);
+        setClaimedPoints(0);
+    setIsPointsClaimed(false);
         sessionStorage.removeItem('status');
     };
 
@@ -522,6 +646,22 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         const audio = new Audio(delSound);
         audio.play().catch((error) => console.error('Audio play failed:', error));
     };
+
+
+// const calculateLoyaltyPoints = () => {
+//     const total = parseFloat(calculateTotalPrice()) || 0;
+//     const loyaltyPoints = total * 0.01;
+//     // Truncate to 2 decimal places without rounding
+//     const truncated = Math.trunc(loyaltyPoints * 100) / 100;
+//     return isNaN(truncated) ? 0 : truncated.toFixed(2);
+// };
+
+const calculateLoyaltyPoints = () => {
+    const total = parseFloat(calculateTotalPrice()) || 0;
+    const loyaltyPoints = total * 0.01;
+    // Return with 2 decimal places
+    return isNaN(loyaltyPoints) ? "0.00" : loyaltyPoints.toFixed(2);
+};
 
     const handleDiscountType = (e) => {
         setDiscountType(e.target.value)
@@ -569,16 +709,16 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             const monthlyInstallment = ((+total + +interestAmount) / months).toFixed(2);
 
             setCreditDetails(prev => ({
-            ...prev,
-            interestAmount,
-            monthlyInstallment
+                ...prev,
+                interestAmount,
+                monthlyInstallment
             }));
         } else {
             // Reset interest when credit is off
             setCreditDetails(prev => ({
-            ...prev,
-            interestAmount: '0',
-            monthlyInstallment: '0'
+                ...prev,
+                interestAmount: '0',
+                monthlyInstallment: '0'
             }));
         }
     }, [creditDetails.interestRate, creditDetails.months, useCreditPayment, productBillingHandling]);
@@ -594,7 +734,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                 const discount = isVariation ? variationData.discount || 0 : product.discount || 0;
                 const tax = isVariation ? variationData.orderTax || 0 : product.tax || 0;
-                
+
                 const applicablePrice = getApplicablePrice(product);
                 const subTotal = (((applicablePrice - discount) * product.qty) + ((applicablePrice - discount) * product.qty * (tax) / 100)).toFixed(2);
 
@@ -665,7 +805,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         <div>
             <div className='flex justify-between'>
                 <h2 className="text-lg font-semibold text-sm mb-4 text-gray-500"> {new Date().toLocaleDateString('en-GB')} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h2>
-                <h2 className="text-lg font-semibold mb-4 text-gray-500">{selectedCustomer}</h2>
+                <h2 className="text-lg font-semibold mb-4 text-gray-500">{selectedCustomerName}</h2>
             </div>
 
             <div style={{ minHeight: '260px' }}>
@@ -781,11 +921,11 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                             <div className="flex flex-col">
                                                                 {hasWholesale && originalPrice > wholesalePrice && (
                                                                     <span className="text-[11px] h-[12px] text-red-500 line-through">
-                                                                         {formatWithCustomCommas(originalPrice)}
+                                                                        {formatWithCustomCommas(originalPrice)}
                                                                     </span>
                                                                 )}
                                                                 <span>
-                                                                     {formatWithCustomCommas(wholesalePrice)}
+                                                                    {formatWithCustomCommas(wholesalePrice)}
                                                                 </span>
                                                             </div>
                                                         );
@@ -795,7 +935,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                                                 {/* Total Price = price * qty */}
                                                 <td className="px-4 py-2 text-sm text-gray-600 text-left">
-                                                     {formatWithCustomCommas(getRowSubtotal(product))}
+                                                    {formatWithCustomCommas(getRowSubtotal(product))}
                                                 </td>
 
                                                 {/* Delete Button */}
@@ -819,7 +959,8 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </table>
                 </div>
             </div >
-            <div className="mt-8">
+            
+            <div className="mt-0">
                 <div className="px-4 py-2 text-left text-gray-500 text-base text-xl text-right">
                     <h1>Total Items: {totalItems}</h1>
                 </div>
@@ -829,51 +970,102 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             </div>
 
             {/* Container for Discount, Shipping, and Tax Inputs */}
-            <div className='fixed w-full justify-between mt-4 relative bottom-0 w-[32.5%]'>
-                <div className="flex gap-2 px-[9px] justify-between py-1 mt-0 w-[100%]">
-                    {permissionData.assign_offer && (
-                        <div className="flex md:w-1/2 gap-2  mt-4 w-full">
-                            <select
-                                onChange={handleDiscountType}
-                                className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
-                            >
-                                <option value=''>Discount type</option>
-                                <option value='fixed'>Fixed</option>
-                                <option value='percentage'>Percentage</option>
-                            </select>
-                        </div>
-                    )}
-                    {permissionData.assign_offer && (
-                        <div className="flex md:w-1/2  mt-4 w-full">
-                            <div className="relative w-full">
-                                <input
-                                    onChange={handleDiscount}
-                                    value={discount}
-                                    type="text"
-                                    placeholder="Discount"
-                                    className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-2 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
-                                />
-                                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500">
-                                    {discountSymbole}
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <div className='fixed w-full justify-between mt-0 relative bottom-0 w-[32.5%]'>
+
+<div className="flex gap-2 px-[9px] justify-between py-1 mb-1 w-[100%]">
+    {/* Loyalty Points (1%) */}
+    <div className="flex flex-col md:w-1/2 w-full">
+        <label className="text-gray-700 text-sm font-medium mb-1">
+            Loyalty Points (1%)
+        </label>
+        <input
+            type="text"
+            value={calculateLoyaltyPoints()}
+            readOnly
+            className="w-full bg-gray-100 rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+        />
+        <span className="text-xs text-gray-500 mt-1">
+            Redeemed Points: {calculateLoyaltyPoints()}
+        </span>
+    </div>
+{/* Total Points */}
+<div className="flex flex-col md:w-1/2 w-full">
+    <label className="text-gray-700 text-sm font-medium mb-1">
+        Total Points
+    </label>
+    <div className="relative">
+        <input
+            type="text"
+            value={isPointsClaimed ? 
+                `${(parseFloat(selectedCustomerData?.redeemedPoints || 0) - parseFloat(claimedPoints || 0)).toFixed(2)}` : 
+                (parseFloat(selectedCustomerData?.redeemedPoints || 0)).toFixed(2)}
+            readOnly
+            className={`w-full ${isPointsClaimed ? 'bg-green-50' : 'bg-gray-100'} rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm`}
+        />
+        {selectedCustomerData?.redeemedPoints > 0 && !isPointsClaimed && (
+            <button
+                onClick={handleClaimPoints}
+                className="absolute right-2 top-2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+            >
+                Claim
+            </button>
+        )}
+        {isPointsClaimed && (
+            <span className="absolute right-2 top-2 text-xs text-green-600">
+                ✓ Claimed
+            </span>
+        )}
+    </div>
+    <span className="text-xs text-gray-500 mt-1">
+        {isPointsClaimed ? 
+            `${parseFloat(claimedPoints || 0).toFixed(2)} points deducted from total` : 
+            'Customer\'s total loyalty points'}
+    </span>
+</div>
+</div>
+<div className="flex gap-2 px-[9px] justify-between py-1 mb-2 w-[100%]">
+    {permissionData.assign_offer && (
+        <div className="flex md:w-1/2 gap-2 w-full">
+            <select
+                onChange={handleDiscountType}
+                className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+            >
+                <option value=''>Discount type</option>
+                <option value='fixed'>Fixed</option>
+                <option value='percentage'>Percentage</option>
+            </select>
+        </div>
+    )}
+    {permissionData.assign_offer && (
+        <div className="flex md:w-1/2 w-full">
+            <div className="relative w-full">
+                <input
+                    onChange={handleDiscount}
+                    value={discount}
+                    type="text"
+                    placeholder="Discount"
+                    className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-2 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                />
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-500">
+                    {discountSymbole}
+                </span>
+            </div>
+        </div>
+    )}
+</div>
 
                 <div className='flex w-full gap-2 px-1.5 py-1 mt-0'>
                     {permissionData.assign_offer && (
                         <div className="flex gap-4 w-[100%]'">
-                        <button
-                            onClick={(e) => setOpenOffersModel(true)}
-                            className={`flex w-[160px] items-center text-white px-4 py-2 rounded-md hover:opacity-90 ${
-                                selectedOffer ? 'bg-red-600' : 'bg-[#35AF87]'
-                            }`}
-                        >
-                        <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
-                            Add Offers
-                        </button>
-                    </div>
+                            <button
+                                onClick={(e) => setOpenOffersModel(true)}
+                                className={`flex w-[160px] items-center text-white px-4 py-2 rounded-md hover:opacity-90 ${selectedOffer ? 'bg-red-600' : 'bg-[#35AF87]'
+                                    }`}
+                            >
+                                <img className='w-5 h-5 mr-2' src={GiftIcon} alt='GiftIcon' />
+                                Add Offers
+                            </button>
+                        </div>
                     )}
                     <div className="relative w-[32%]">
                         <input
@@ -881,20 +1073,20 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                             value={tax}
                             type="text"
                             placeholder="Tax"
-                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                         />
                         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
                             %
                         </span>
                     </div>
 
-                    <div className="relative w-[32.1%]">
+                    <div className="relative w-[36%]">
                         <input
                             onChange={handleShippng}
                             value={shipping}
                             type="text"
                             placeholder="Shipping"
-                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-3 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
+                            className="w-full bg-white bg-opacity-[1%] rounded-md border border-gray-300 py-2 px-3 pr-10 text-gray-900 shadow-sm focus:ring-gray-400 focus:border-gray-400 sm:text-sm"
                         />
                         <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
                             {currency}
@@ -909,16 +1101,31 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                 Add Discount
                             </h2>
                             <div className="relative mb-4">
-                                <label className="block text-left text-sm font-medium text-gray-700">Discount Amount : </label>
+                                <label className="block text-left text-sm font-medium text-gray-700">Discount Type :</label>
+                                <select
+                                    value={specialDiscountType}
+                                    onChange={handleSpecialDiscountTypeChange}
+                                    className="w-full border border-gray-300 p-3 pl-5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87] mb-2"
+                                    required
+                                >
+                                    <option value="">Select Discount Type</option>
+                                    <option value="fixed">Fixed</option>
+                                    <option value="percentage">Percentage</option>
+                                </select>
+                                <label className="block text-left text-sm font-medium text-gray-700">Discount Amount :</label>
                                 <input
                                     type="number"
-                                    placeholder="Discount"
-                                    value={specialDiscount}
-                                    onChange={(e) => setSpecialDiscount(e.target.value)}
-                                    ref={discountInputRef} // Set ref
+                                    placeholder={specialDiscountType === 'percentage' ? 'Discount (%)' : 'Discount'}
+                                    value={specialDiscountInput}
+                                    onChange={handleSpecialDiscountInputChange}
+                                    ref={discountInputRef}
                                     className="w-full border border-gray-300 p-3 pl-5 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                     required
+                                    disabled={!specialDiscountType}
                                 />
+                                {specialDiscountType === 'percentage' && (
+                                    <p className="text-xs text-gray-500 mt-1">Calculated Discount: {specialDiscount}</p>
+                                )}
                             </div>
                             <div className="flex justify-between">
                                 <button
@@ -939,7 +1146,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     </div>
                 )}
 
-{/*                 {openAuthModel && (
+                {/*                 {openAuthModel && (
                     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-xs z-[1000]">
                         <div className="bg-white w-[350px] sm:w-[460px] p-6 rounded-2xl shadow-2xl">
                             <h2 className="text-lg font-semibold text-gray-700 text-center mb-6">
@@ -1078,6 +1285,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         setSearchedProductData={setSearchedProductData}
                         setProductData={setProductData}
                         selectedCustomer={selectedCustomer || 'Unknown'}
+                         selectedCustomerName={selectedCustomerName}
                         discountType={discountType}
                         warehouse={warehouse}
                         responseMessage={responseMessage}
@@ -1092,8 +1300,16 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                         setUseCreditPayment = {setUseCreditPayment}
                         creditDetails = {creditDetails}
                         setCreditDetails = {setCreditDetails}
+                         claimedPoints={claimedPoints}
+        isPointsClaimed={isPointsClaimed}
+        redeemedPointsFromSale={calculateLoyaltyPoints()}
+        logPoints={() => {
+        console.log('[posBillCalculation] Passing to PayingSection - claimedPoints:', claimedPoints, 
+                  'isPointsClaimed:', isPointsClaimed);
+    }}
+                        setFetchRegData={setFetchRegData}
                     />
-                )} 
+                )}
             </div>
 
             {/*PRODUCT HOLDING POP UP*/}
@@ -1134,7 +1350,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                                                 <td className="px-4 py-2 border text-left">{currency} {formatWithCustomCommas(getRowSubtotal(product))}</td>
                                             </tr>
                                         );
-                                    })}  
+                                    })}
                                 </tbody>
                             </table>
 

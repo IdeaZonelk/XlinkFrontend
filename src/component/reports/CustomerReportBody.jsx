@@ -87,7 +87,7 @@ function CustomerReportBody() {
         }
     };
 
-    const tableColumns = ["Customer", "Mobile", "Number of Sales", "Sale Amount", "Paid"];
+    const tableColumns = ["Customer", "Loyalty Ref Num", "Loyalty Points", "Mobile", "Number of Sales", "Sale Amount", "Paid"];
     const title = "Customer Sales Report";
     const summaryTitle = "Report Summary";
     return (
@@ -97,6 +97,8 @@ function CustomerReportBody() {
                     onClick={() => {
                         const formattedCustomerData = combinedProductData.map((sale) => ({
                             name: sale.name || "N/A",
+                            redeemedPoints: sale.redeemedPoints || 0,
+                            loyaltyReferenceNumber: sale.loyaltyReferenceNumber || "N/A",
                             mobile: sale.mobile || "N/A",
                             numberOfSales: Array.isArray(sale.sales) ? sale.sales.length : 0,
                             saleAmount: Array.isArray(sale.sales)
@@ -120,8 +122,8 @@ function CustomerReportBody() {
                         handleExportPdf({
                             data: formattedCustomerData,
                             currency,
-                            tableColumns: ["Customer", "Mobile", "Number of Sales", `Sale Amount(${currency})`, `Paid(${currency})`],
-                            dataKeys: ["name", "mobile", "numberOfSales", "saleAmount", "paid"],
+                            tableColumns: ["Customer", "Total Loyalty Points", "Loyalty Ref Num", "Number of Sales", `Sale Amount(${currency})`, `Paid(${currency})`],
+                            dataKeys: ["name", "redeemedPoints", "loyaltyReferenceNumber", "numberOfSales", "saleAmount", "paid"],
                             title: "Customer Sales Report",
                             summaryTitle: "Report Summary",
                             additionalData: {
@@ -134,7 +136,6 @@ function CustomerReportBody() {
                 >
                     {"Export As PDF"}
                 </button>
-
 
             </div>
             <div ref={ref} className='mt-16'>
@@ -166,6 +167,8 @@ function CustomerReportBody() {
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Loyalty Points</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loyalty Ref Num</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total amount</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Amount</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
@@ -184,6 +187,8 @@ function CustomerReportBody() {
                                                 <p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">{sale.name}</p>
                                             </td>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{sale.mobile}</td>
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{sale.redeemedPoints}</td>
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{sale.loyaltyReferenceNumber || 'N/A'}</td>
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
                                                 {numberOfSales} {/* Display number of sales */}
                                             </td>

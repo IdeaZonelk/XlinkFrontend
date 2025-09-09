@@ -635,7 +635,7 @@ function ViewSaleBody() {
                                     <tr key={sale._id} className={`hover:bg-gray-100 ${sale.hasCreditDue ? 'bg-red-100 text-red-700' : 'bg-white'}`}>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.refferenceId}</p></td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.invoiceNumber}</p></td>
-                                        <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.customer}</p></td>
+                                        <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{sale.customerName || 'unknown'}</p></td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{sale.warehouse}</td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{new Date(sale.date).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{sale.orderStatus}</p></td>
@@ -754,7 +754,7 @@ function ViewSaleBody() {
                                                     >
                                                         {/* Header */}
                                                         <div className="mb-6 flex justify-between items-center border-b pb-4">
-                                                            <h2 className="text-2xl font-bold text-gray-700">Sale Details for {sale.customer}</h2>
+                                                            <h2 className="text-2xl font-bold text-gray-700">Sale Details for {sale.customerName || "Unknown"}</h2>
                                                         </div>
 
                                                         {/* Sale Info Section */}
@@ -765,7 +765,7 @@ function ViewSaleBody() {
                                                                     <i className="fas fa-user mr-2 text-gray-600 "></i>
                                                                     Customer Info
                                                                 </h3>
-                                                                <p className="mb-1 text-left"><i className="fas fa-user ml-2 mr-2 text-gray-400 text-left"></i><span className="font-medium">Customer:</span> {sale.customer}</p>
+                                                                <p className="mb-1 text-left"><i className="fas fa-user ml-2 mr-2 text-gray-400 text-left"></i><span className="font-medium">Customer:</span> {sale.customerName || "Unknown"}</p>
 
                                                                 {filteredSaleData
                                                                     .filter((customer) => customer.id === sale.customerId) // Ensure it matches the relevant customer

@@ -41,6 +41,7 @@ function CreateProductBody() {
   const [purchase, setPurchaseUnit] = useState("");
   const [status, setStatus] = useState("");
   const [quantityLimit, setQL] = useState("");
+  const [warranty, setWarranty] = useState("");
   const [variation, setVariation] = useState("");
   const [variationType, setVariationTypes] = useState([]);
   const [selectedVariationTypes, setSelectedVariationTypes] = useState([]);
@@ -89,20 +90,20 @@ function CreateProductBody() {
   const [mobile, setMobile] = useState("");
 
   // Category shortcut states
-const [categoryLogo, setCategoryLogo] = useState(null);
-const [categoryLogoPreview, setCategoryLogoPreview] = useState(null);
+  const [categoryLogo, setCategoryLogo] = useState(null);
+  const [categoryLogoPreview, setCategoryLogoPreview] = useState(null);
 
-// Brand shortcut states
-const [brandLogo, setBrandLogo] = useState(null);
-const [brandLogoPreview, setBrandLogoPreview] = useState(null);
+  // Brand shortcut states
+  const [brandLogo, setBrandLogo] = useState(null);
+  const [brandLogoPreview, setBrandLogoPreview] = useState(null);
 
-const categoryRef = useRef(null);
-const brandRef = useRef(null);
-const supplierRef = useRef(null);
+  const categoryRef = useRef(null);
+  const brandRef = useRef(null);
+  const supplierRef = useRef(null);
 
-// AllSaleDetails and variationAllSaleDetails state
-const [allSaleDetails, setAllSaleDetails] = useState({});
-const [variationAllSaleDetails, setVariationAllSaleDetails] = useState({});
+  // AllSaleDetails and variationAllSaleDetails state
+  const [allSaleDetails, setAllSaleDetails] = useState({});
+  const [variationAllSaleDetails, setVariationAllSaleDetails] = useState({});
 
   useEffect(() => {
     console.log(warehouseVariationValues)
@@ -137,49 +138,49 @@ const [variationAllSaleDetails, setVariationAllSaleDetails] = useState({});
     );
   }, []);
 
-useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (categoryRef.current && !categoryRef.current.contains(e.target)) {
-      setCategoryData([]);
-    }
-    if (brandRef.current && !brandRef.current.contains(e.target)) {
-      setBrandData([]);
-    }
-    if (supplierRef.current && !supplierRef.current.contains(e.target)) {
-      setSuplierData([]);
-    }
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+        setCategoryData([]);
+      }
+      if (brandRef.current && !brandRef.current.contains(e.target)) {
+        setBrandData([]);
+      }
+      if (supplierRef.current && !supplierRef.current.contains(e.target)) {
+        setSuplierData([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+
+
+  const handleAllSaleChange = (warehouse, field, value) => {
+    setAllSaleDetails(prev => ({
+      ...prev,
+      [warehouse]: {
+        ...prev[warehouse],
+        [field]: value
+      }
+    }));
   };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
 
 
-
-    const handleAllSaleChange = (warehouse, field, value) => {
-      setAllSaleDetails(prev => ({
-        ...prev,
-        [warehouse]: {
-          ...prev[warehouse],
+  const handleVariationAllSaleChange = (warehouse, type, field, value) => {
+    setVariationAllSaleDetails(prev => ({
+      ...prev,
+      [warehouse]: {
+        ...prev[warehouse],
+        [type]: {
+          ...(prev[warehouse]?.[type] || {}),
           [field]: value
         }
-      }));
-    };
-
-
-    const handleVariationAllSaleChange = (warehouse, type, field, value) => {
-      setVariationAllSaleDetails(prev => ({
-        ...prev,
-        [warehouse]: {
-          ...prev[warehouse],
-          [type]: {
-            ...(prev[warehouse]?.[type] || {}),
-            [field]: value
-          }
-        }
-      }));
-    };
+      }
+    }));
+  };
 
 
   const fetchCategories = () => {
@@ -285,73 +286,73 @@ useEffect(() => {
   };
 
   const handleImageChange = async (e) => {
-  const file = e.target.files[0];
+    const file = e.target.files[0];
 
-  // Accept only JPG or PNG
-  const validTypes = ["image/jpeg", "image/png"];
-  const validExtensions = [".jpg", ".jpeg", ".png"];
-  const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    // Accept only JPG or PNG
+    const validTypes = ["image/jpeg", "image/png"];
+    const validExtensions = [".jpg", ".jpeg", ".png"];
+    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
 
-  if (!validTypes.includes(file.type) || !validExtensions.includes(fileExtension)) {
-    setError("Only JPG and PNG files are allowed. Please upload a valid image.");
-    alert("Only JPG and PNG files are allowed. Please upload a valid image.");
-    inputRef.current.value = "";
-    return;
-  }
+    if (!validTypes.includes(file.type) || !validExtensions.includes(fileExtension)) {
+      setError("Only JPG and PNG files are allowed. Please upload a valid image.");
+      alert("Only JPG and PNG files are allowed. Please upload a valid image.");
+      inputRef.current.value = "";
+      return;
+    }
 
-  const maxFileSizeMB = 4;
-  if (file.size / 1024 / 1024 > maxFileSizeMB) {
-    alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-    inputRef.current.value = "";
-    return;
-  }
+    const maxFileSizeMB = 4;
+    if (file.size / 1024 / 1024 > maxFileSizeMB) {
+      alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+      inputRef.current.value = "";
+      return;
+    }
 
-  const options = {
-    maxSizeMB: 0.02,
-    maxWidthOrHeight: 800,
-    useWebWorker: true,
-  };
+    const options = {
+      maxSizeMB: 0.02,
+      maxWidthOrHeight: 800,
+      useWebWorker: true,
+    };
 
-  try {
-    // Check if the image is approximately square
-    const image = await imageCompression.getDataUrlFromFile(file);
-    const img = new Image();
-    img.src = image;
+    try {
+      // Check if the image is approximately square
+      const image = await imageCompression.getDataUrlFromFile(file);
+      const img = new Image();
+      img.src = image;
 
-    await new Promise((resolve, reject) => {
-      img.onload = () => {
-        const width = img.width;
-        const height = img.height;
-        const tolerance = 100;
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          const width = img.width;
+          const height = img.height;
+          const tolerance = 100;
 
-        if (Math.abs(width - height) > tolerance) {
-          alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+          if (Math.abs(width - height) > tolerance) {
+            alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+            inputRef.current.value = "";
+            reject();
+            return;
+          } else {
+            resolve();
+          }
+        };
+        img.onerror = () => {
           inputRef.current.value = "";
           reject();
           return;
-        } else {
-          resolve();
-        }
-      };
-      img.onerror = () => {
-        inputRef.current.value = "";
-        reject();
-        return;
-      };
-    });
+        };
+      });
 
-    // Compress and convert to JPG
-    const compressedBlob = await imageCompression(file, options);
-    const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-      type: "image/jpeg",
-    });
+      // Compress and convert to JPG
+      const compressedBlob = await imageCompression(file, options);
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+        type: "image/jpeg",
+      });
 
-    setImage(compressedFile);
-    setError("");
-  } catch (error) {
-    console.error("Compression Error:", error);
-  }
-};
+      setImage(compressedFile);
+      setError("");
+    } catch (error) {
+      console.error("Compression Error:", error);
+    }
+  };
 
 
   // Handle sale unit from base units
@@ -483,18 +484,18 @@ useEffect(() => {
 
 
   const handleWarehouseValueChange = (warehouseName, field, value) => {
-  setWarehouseValues(prev => ({
-    ...prev,
-    [warehouseName]: {
-      ...prev[warehouseName],
-      [field]: field === 'wholesaleEnabled'
-        ? Boolean(value)
-        : field === 'wholesaleMinQty' || field === 'wholesalePrice' || field === 'productCost' || field === 'productQty' || field === 'productPrice' || field === 'orderTax' || field === 'stockAlert' || field === 'discount'
-        ? Number(value) || 0 
-        : value 
-    }
-  }));
-};
+    setWarehouseValues(prev => ({
+      ...prev,
+      [warehouseName]: {
+        ...prev[warehouseName],
+        [field]: field === 'wholesaleEnabled'
+          ? Boolean(value)
+          : field === 'wholesaleMinQty' || field === 'wholesalePrice' || field === 'productCost' || field === 'productQty' || field === 'productPrice' || field === 'orderTax' || field === 'stockAlert' || field === 'discount'
+            ? Number(value) || 0
+            : value
+      }
+    }));
+  };
 
 
   //Save button enabile and disable checking
@@ -506,8 +507,8 @@ useEffect(() => {
     ptype &&
     unit &&
     saleUnit &&
-    purchase &&
-    barcode;
+    purchase;
+  // barcode
 
   //Handle submit for save product
   const handleSubmit = async (event) => {
@@ -518,65 +519,65 @@ useEffect(() => {
 
 
     if (ptype === "Single") {
-    for (const warehouseName of selectedWarehouse) {
-      const data = warehouseValues[warehouseName];
-      if (data?.wholesaleEnabled) {
-        const qty = parseFloat(data.wholesaleMinQty);
-        const price = parseFloat(data.wholesalePrice);
+      for (const warehouseName of selectedWarehouse) {
+        const data = warehouseValues[warehouseName];
+        if (data?.wholesaleEnabled) {
+          const qty = parseFloat(data.wholesaleMinQty);
+          const price = parseFloat(data.wholesalePrice);
 
-        if (isNaN(qty) || qty < 1) {
-          toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${warehouseName}"`);
-          setProgress(false);
-          return;
-        }
+          if (isNaN(qty) || qty < 1) {
+            toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${warehouseName}"`);
+            setProgress(false);
+            return;
+          }
 
-        if (isNaN(price) || price <= 0) {
-          toast.error(`Please enter a valid Wholesale Price (> 0) for "${warehouseName}"`);
-          setProgress(false);
-          return;
-        }
-      }
-    }
-  }
-
-  if (ptype === "Variation") {
-  for (const warehouseName of selectedWarehouse) {
-    const warehouseData = warehouseVariationValues[warehouseName];
-    if (!warehouseData) continue;
-
-    for (const variationType of selectedVariationTypes) {
-      const variationData = warehouseData[variationType];
-      if (variationData?.wholesaleEnabled) {
-        const qty = parseFloat(variationData.wholesaleMinQty);
-        const price = parseFloat(variationData.wholesalePrice);
-
-        if (isNaN(qty) || qty < 1) {
-          toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${variationType}" in "${warehouseName}"`);
-          setProgress(false);
-          return;
-        }
-
-        if (isNaN(price) || price <= 0) {
-          toast.error(`Please enter a valid Wholesale Price (> 0) for "${variationType}" in "${warehouseName}"`);
-          setProgress(false);
-          return;
+          if (isNaN(price) || price <= 0) {
+            toast.error(`Please enter a valid Wholesale Price (> 0) for "${warehouseName}"`);
+            setProgress(false);
+            return;
+          }
         }
       }
     }
-  }
-}
+
+    if (ptype === "Variation") {
+      for (const warehouseName of selectedWarehouse) {
+        const warehouseData = warehouseVariationValues[warehouseName];
+        if (!warehouseData) continue;
+
+        for (const variationType of selectedVariationTypes) {
+          const variationData = warehouseData[variationType];
+          if (variationData?.wholesaleEnabled) {
+            const qty = parseFloat(variationData.wholesaleMinQty);
+            const price = parseFloat(variationData.wholesalePrice);
+
+            if (isNaN(qty) || qty < 1) {
+              toast.error(`Please enter a valid Wholesale Quantity (≥ 1) for "${variationType}" in "${warehouseName}"`);
+              setProgress(false);
+              return;
+            }
+
+            if (isNaN(price) || price <= 0) {
+              toast.error(`Please enter a valid Wholesale Price (> 0) for "${variationType}" in "${warehouseName}"`);
+              setProgress(false);
+              return;
+            }
+          }
+        }
+      }
+    }
 
 
     const formattedWarehouses =
-  ptype === "Single"
-    ? Object.entries(warehouseValues).reduce((acc, [warehouseName, values]) => {
-        acc[warehouseName] = values;
-        return acc;
-      }, {})
-    : Object.entries(warehouseVariationValues).reduce((acc, [warehouseName, variations]) => {
-        acc[warehouseName] = variations;
-        return acc;
-      }, {});
+      ptype === "Single"
+        ? Object.entries(warehouseValues).reduce((acc, [warehouseName, values]) => {
+          acc[warehouseName] = values;
+          return acc;
+        }, {})
+        : Object.entries(warehouseVariationValues).reduce((acc, [warehouseName, variations]) => {
+          acc[warehouseName] = variations;
+          return acc;
+        }, {});
 
     try {
       // Ensure warehouseValues is an object
@@ -596,6 +597,7 @@ useEffect(() => {
       formData.append("note", note);
       formData.append("purchase", purchase);
       formData.append("quantityLimit", quantityLimit);
+      formData.append("warranty", warranty);
       formData.append("barcode", barcode);
       formData.append("variation", variation);
       formData.append("warehouse", JSON.stringify(formattedWarehouses));
@@ -658,6 +660,7 @@ useEffect(() => {
     setSaleUnit("");
     setPurchaseUnit("");
     setQL(""); // Quantity Limitation
+    setWarranty(""); // Warranty Duration
     setType("");
     setNote("");
     setImage([]);
@@ -679,7 +682,7 @@ useEffect(() => {
       inputRef.current.value = "";
     }
   };
-  
+
 
   const handleClearCatergoryModel = () => {
     setCatergory('');
@@ -715,7 +718,7 @@ useEffect(() => {
     setResponseMessage('');
   };
 
-const handleCategoryLogoChange = async (e) => {
+  const handleCategoryLogoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) {
       setError("No file selected.");
@@ -726,7 +729,7 @@ const handleCategoryLogoChange = async (e) => {
     const allowedTypes = ["image/jpeg", "image/png"];
     const allowedExtensions = [".jpg", ".jpeg", ".png"];
     const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-  
+
     // Check file type (strictly allow only JPG files)
     if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
       setError("Only JPG/PNG files are allowed. Please upload a valid JPG file.");
@@ -734,7 +737,7 @@ const handleCategoryLogoChange = async (e) => {
       inputRef.current.value = ""; // Clear the input field
       return;
     }
-  
+
     // Check file size (max 4MB)
     const maxFileSizeMB = 4;
     if (file.size / 1024 / 1024 > maxFileSizeMB) {
@@ -743,103 +746,25 @@ const handleCategoryLogoChange = async (e) => {
       inputRef.current.value = ""; // Clear the input field
       return;
     }
-  
+
     // Compression 
     const options = {
       maxSizeMB: 0.02, // Target size (20KB in MB)
       maxWidthOrHeight: 800,
       useWebWorker: true,
     };
-  
+
     try {
       const image = await imageCompression.getDataUrlFromFile(file);
       const img = new Image();
       img.src = image;
-  
+
       await new Promise((resolve, reject) => {
         img.onload = () => {
           const width = img.width;
           const height = img.height;
           const tolerance = 100; // Allow 100px variance
-  
-          if (Math.abs(width - height) > tolerance) {
-            setError("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-            alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
-            inputRef.current.value = ""; 
-            reject();
-          } else {
-            resolve();
-          }
-        };
-        img.onerror = () => {
-          setError("Error loading image. Please try again.");
-          inputRef.current.value = "";
-          reject();
-        };
-      });
-  
-      const originalPreviewUrl = URL.createObjectURL(file);
 
-      setLogoPreview(originalPreviewUrl);
-
-      setCategoryLogoPreview(originalPreviewUrl);   // 👉 setCategoryLogoPreview
-
-      const compressedBlob = await imageCompression(file, options);
-      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-        type: "image/jpeg",
-      });
-  
-      setCategoryLogo(compressedFile);   // 👉 setCategoryLogo
-      setError("");
-    } catch (error) {
-      console.error("Compression Error:", error);
-      setError("Error during image processing. Please try again.");
-    }
-  };
-  
-
-  const handleBrandLogoChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      setError("No file selected.");
-      return;
-    }
-  
-    // Check file type (strictly allow only JPG files)
-    if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
-      setError("Only JPG files are allowed. Please upload a valid JPG file.");
-      alert("Only JPG files are allowed. Please upload a valid JPG file.");
-      inputRef.current.value = ""; // Clear the input field
-      return;
-    }
-  
-    // Check file size (max 4MB)
-    const maxFileSizeMB = 4;
-    if (file.size / 1024 / 1024 > maxFileSizeMB) {
-      setError(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-      alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
-      inputRef.current.value = ""; // Clear the input field
-      return;
-    }
-  
-    // Compression options
-    const options = {
-      maxSizeMB: 0.02, // Target size (20KB in MB)
-      maxWidthOrHeight: 800,
-      useWebWorker: true,
-    };
-  
-    try {
-      const image = await imageCompression.getDataUrlFromFile(file);
-      const img = new Image();
-      img.src = image;
-  
-      await new Promise((resolve, reject) => {
-        img.onload = () => {
-          const width = img.width;
-          const height = img.height;
-          const tolerance = 100; // Allow 100px variance
-  
           if (Math.abs(width - height) > tolerance) {
             setError("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
             alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
@@ -855,15 +780,93 @@ const handleCategoryLogoChange = async (e) => {
           reject();
         };
       });
-  
+
       const originalPreviewUrl = URL.createObjectURL(file);
-      setBrandLogoPreview(originalPreviewUrl);   // 👉 Set brand logo preview here
-  
+
+      setLogoPreview(originalPreviewUrl);
+
+      setCategoryLogoPreview(originalPreviewUrl);   // 👉 setCategoryLogoPreview
+
       const compressedBlob = await imageCompression(file, options);
       const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
         type: "image/jpeg",
       });
-  
+
+      setCategoryLogo(compressedFile);   // 👉 setCategoryLogo
+      setError("");
+    } catch (error) {
+      console.error("Compression Error:", error);
+      setError("Error during image processing. Please try again.");
+    }
+  };
+
+
+  const handleBrandLogoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setError("No file selected.");
+      return;
+    }
+
+    // Check file type (strictly allow only JPG files)
+    if (file.type !== "image/jpeg" || !file.name.toLowerCase().endsWith(".jpg")) {
+      setError("Only JPG files are allowed. Please upload a valid JPG file.");
+      alert("Only JPG files are allowed. Please upload a valid JPG file.");
+      inputRef.current.value = ""; // Clear the input field
+      return;
+    }
+
+    // Check file size (max 4MB)
+    const maxFileSizeMB = 4;
+    if (file.size / 1024 / 1024 > maxFileSizeMB) {
+      setError(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+      alert(`File size exceeds ${maxFileSizeMB} MB. Please upload a smaller file.`);
+      inputRef.current.value = ""; // Clear the input field
+      return;
+    }
+
+    // Compression options
+    const options = {
+      maxSizeMB: 0.02, // Target size (20KB in MB)
+      maxWidthOrHeight: 800,
+      useWebWorker: true,
+    };
+
+    try {
+      const image = await imageCompression.getDataUrlFromFile(file);
+      const img = new Image();
+      img.src = image;
+
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          const width = img.width;
+          const height = img.height;
+          const tolerance = 100; // Allow 100px variance
+
+          if (Math.abs(width - height) > tolerance) {
+            setError("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+            alert("Image must be approximately square (1:1 ratio within 100px tolerance). Please upload an appropriate image.");
+            inputRef.current.value = "";
+            reject();
+          } else {
+            resolve();
+          }
+        };
+        img.onerror = () => {
+          setError("Error loading image. Please try again.");
+          inputRef.current.value = "";
+          reject();
+        };
+      });
+
+      const originalPreviewUrl = URL.createObjectURL(file);
+      setBrandLogoPreview(originalPreviewUrl);   // 👉 Set brand logo preview here
+
+      const compressedBlob = await imageCompression(file, options);
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+        type: "image/jpeg",
+      });
+
       setBrandLogo(compressedFile);              // 👉 Set brand logo file here
       setError("");
     } catch (error) {
@@ -871,7 +874,7 @@ const handleCategoryLogoChange = async (e) => {
       setError("Error during image processing. Please try again.");
     }
   };
-  
+
 
   return (
     <div className='background-white absolute top-[80px] left-[18%] w-[82%] min-h-full p-5'>
@@ -1254,13 +1257,13 @@ const handleCategoryLogoChange = async (e) => {
                 <div className="flex-1 w-full mb-4 lg:mb-0">
                   <div className="mt-5">
                     <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                      Barcode type <span className='text-red-500'>*</span>
+                      Barcode type
                     </label>
                     <div className="mt-2">
                       <select
                         id="barcode"
                         name="barcode"
-                        required
+
                         value={barcode}
                         onChange={(e) => setBarcode(e.target.value)}
                         className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
@@ -1353,6 +1356,62 @@ const handleCategoryLogoChange = async (e) => {
                     </div>
                   </div>
                 </div> */}
+
+                {/* Warranty Duration */}
+                <div className="flex-1 w-full mb-4 lg:mb-0">
+                  <div className="mt-5">
+                    <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
+                      Warranty Duration
+                    </label>
+                    <div className="mt-2">
+                      {warranty === 'custom' || (!['', 'No Warranty', '3 Months', '6 Months', '1 Year', '2 Years', '3 Years', '5 Years'].includes(warranty) && warranty !== '') ? (
+                        <input
+                          id="warranty-custom"
+                          name="warranty-custom"
+                          type="text"
+                          value={warranty === 'custom' ? '' : warranty}
+                          onChange={(e) => setWarranty(e.target.value)}
+                          onBlur={(e) => {
+                            if (e.target.value === '') {
+                              setWarranty('');
+                            }
+                          }}
+                          placeholder="Enter custom warranty duration"
+                          autoFocus
+                          className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-blue-500 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:outline-none sm:text-sm sm:leading-6"
+                        />
+                      ) : (
+                        <select
+                          id="warranty-select"
+                          name="warranty-select"
+                          value={warranty}
+                          onChange={(e) => {
+                              if (e.target.value === 'custom') {
+                                setWarranty('custom');
+                              } else if (e.target.value === 'No Warranty') {
+                                setWarranty('');
+                              } else {
+                                setWarranty(e.target.value);
+                              }
+                          }}
+                          className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                        >
+                          <option value="">Select warranty duration</option>
+                          <option value="No Warranty">No Warranty</option>
+                          <option value="3 Months">3 Months</option>
+                          <option value="6 Months">6 Months</option>
+                          <option value="1 Year">1 Year</option>
+                          <option value="2 Years">2 Years</option>
+                          <option value="3 Years">3 Years</option>
+                          <option value="5 Years">5 Years</option>
+                          <option value="custom">Custom...</option>
+                        </select>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+
 
                 {/* Sale Unit */}
                 <div className="flex-1 w-full mb-4 lg:mb-0">
@@ -1607,7 +1666,7 @@ const handleCategoryLogoChange = async (e) => {
                             />
                           </div>
                           <label className="block mt-5 text-sm font-medium leading-6 text-gray-900 text-left">
-                            Stock Alert 
+                            Stock Alert
                           </label>
                           <input
                             type="number"
@@ -1782,77 +1841,77 @@ const handleCategoryLogoChange = async (e) => {
                       </p>
 
                       {/* === Retail All Sale Price Section === */}
-                        <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-4">
+                      <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-4">
                             Has Wholesale Price?
+                          </label>
+                          <div className="flex items-center space-x-6">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name={`wholesaleOption_${warehouseName}`}
+                                value="yes"
+                                checked={warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true}
+                                onChange={() => handleVariationValueChange(warehouseName, type, 'wholesaleEnabled', true)}
+                                className="mr-2"
+                              />
+                              <span>Yes</span>
                             </label>
-                            <div className="flex items-center space-x-6">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name={`wholesaleOption_${warehouseName}`}
-                                  value="yes"
-                                  checked={warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true}
-                                  onChange={() => handleVariationValueChange(warehouseName, type, 'wholesaleEnabled', true)}
-                                  className="mr-2"
-                                />
-                                <span>Yes</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name={`wholesaleOption_${warehouseName}`}
-                                  value="no"
-                                  checked={warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled !== true}
-                                  onChange={() => handleVariationValueChange(warehouseName, type, 'wholesaleEnabled', false)}
-                                  className="mr-2"
-                                />
-                                <span>No</span>
-                              </label>
-                            </div>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name={`wholesaleOption_${warehouseName}`}
+                                value="no"
+                                checked={warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled !== true}
+                                onChange={() => handleVariationValueChange(warehouseName, type, 'wholesaleEnabled', false)}
+                                className="mr-2"
+                              />
+                              <span>No</span>
+                            </label>
                           </div>
-                          
+                        </div>
 
-                          {warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true &&  (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                               Min Wholesale Quantity
-                              </label>
+
+                        {warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Min Wholesale Quantity
+                            </label>
+                            <input
+                              type="number"
+                              className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                              placeholder="Min Qty"
+                              value={warehouseVariationValues[warehouseName]?.[type]?.wholesaleMinQty || 0}
+                              onChange={(e) =>
+                                handleVariationValueChange(warehouseName, type, 'wholesaleMinQty', e.target.value)
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Product Wholesale Price
+                            </label>
+                            <div className="relative">
                               <input
                                 type="number"
                                 className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
-                                placeholder="Min Qty"
-                                value={warehouseVariationValues[warehouseName]?.[type]?.wholesaleMinQty || 0}
+                                placeholder="Discounted Price"
+                                value={warehouseVariationValues[warehouseName]?.[type]?.wholesalePrice || 0}
                                 onChange={(e) =>
-                                  handleVariationValueChange(warehouseName, type, 'wholesaleMinQty', e.target.value)
+                                  handleVariationValueChange(warehouseName, type, 'wholesalePrice', e.target.value)
                                 }
                               />
+                              <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
+                                {currency}
+                              </span>
                             </div>
-                          )}
-
-                          {warehouseVariationValues[warehouseName]?.[type]?.wholesaleEnabled === true &&  (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                 Product Wholesale Price
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="number"
-                                    className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
-                                    placeholder="Discounted Price"
-                                    value={warehouseVariationValues[warehouseName]?.[type]?.wholesalePrice || 0}
-                                    onChange={(e) =>
-                                      handleVariationValueChange(warehouseName, type, 'wholesalePrice', e.target.value)
-                                    }
-                                  />
-                                  <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
-                                  {currency}
-                                  </span>
-                                </div>
-                              </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1900,7 +1959,7 @@ const handleCategoryLogoChange = async (e) => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Stock Alert 
+                              Stock Alert
                             </label>
                             <input
                               type="number"
@@ -2001,78 +2060,78 @@ const handleCategoryLogoChange = async (e) => {
                       </div>
 
                       {/* === Retail All Sale Price Section === */}
-                        <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-4">
+                      <div className="mt-8 border-t pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-4">
                             Has Wholesale Price?
+                          </label>
+                          <div className="flex items-center space-x-6">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name={`wholesaleOption_${warehouseName}`}
+                                value="yes"
+                                checked={warehouseValues[warehouseName]?.wholesaleEnabled === true}
+                                onChange={() => handleWarehouseValueChange(warehouseName, 'wholesaleEnabled', true)}
+                                className="mr-2"
+                              />
+                              <span>Yes</span>
                             </label>
-                            <div className="flex items-center space-x-6">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name={`wholesaleOption_${warehouseName}`}
-                                  value="yes"
-                                  checked={warehouseValues[warehouseName]?.wholesaleEnabled === true}
-                                  onChange={() => handleWarehouseValueChange(warehouseName, 'wholesaleEnabled', true)}
-                                  className="mr-2"
-                                />
-                                <span>Yes</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name={`wholesaleOption_${warehouseName}`}
-                                  value="no"
-                                  checked={warehouseValues[warehouseName]?.wholesaleEnabled !== true}
-                                  onChange={() => handleWarehouseValueChange(warehouseName, 'wholesaleEnabled', false)}
-                                  className="mr-2"
-                                />
-                                <span>No</span>
-                              </label>
-                            </div>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name={`wholesaleOption_${warehouseName}`}
+                                value="no"
+                                checked={warehouseValues[warehouseName]?.wholesaleEnabled !== true}
+                                onChange={() => handleWarehouseValueChange(warehouseName, 'wholesaleEnabled', false)}
+                                className="mr-2"
+                              />
+                              <span>No</span>
+                            </label>
                           </div>
-                          
+                        </div>
 
-                          {warehouseValues[warehouseName]?.wholesaleEnabled === true &&  (
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                               Min Wholesale Quantity
-                              </label>
+
+                        {warehouseValues[warehouseName]?.wholesaleEnabled === true && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Min Wholesale Quantity
+                            </label>
+                            <input
+                              type="number"
+                              className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
+                              placeholder="Min Qty"
+                              value={warehouseValues[warehouseName]?.wholesaleMinQty || 0}
+                              onChange={(e) =>
+                                handleWarehouseValueChange(warehouseName, 'wholesaleMinQty', e.target.value)
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {warehouseValues[warehouseName]?.wholesaleEnabled === true && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Product Wholesale Price
+                            </label>
+                            <div className="relative">
                               <input
                                 type="number"
                                 className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
-                                placeholder="Min Qty"
-                                value={warehouseValues[warehouseName]?.wholesaleMinQty || 0}
+                                placeholder="Discounted Price"
+                                value={warehouseValues[warehouseName]?.wholesalePrice || 0}
                                 onChange={(e) =>
-                                  handleWarehouseValueChange(warehouseName, 'wholesaleMinQty', e.target.value)
+                                  handleWarehouseValueChange(warehouseName, 'wholesalePrice', e.target.value)
                                 }
                               />
+                              <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
+                                {currency}
+                              </span>
                             </div>
-                          )}
-
-                          {warehouseValues[warehouseName]?.wholesaleEnabled === true &&  (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                 Product Wholesale Price
-                                </label>
-                                <div className="relative">
-                                  <input
-                                    type="number"
-                                    className="block w-[100%] rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400  focus:outline-none sm:text-sm"
-                                    placeholder="Discounted Price"
-                                    value={warehouseValues[warehouseName]?.wholesalePrice || 0}
-                                    onChange={(e) =>
-                                      handleWarehouseValueChange(warehouseName, 'wholesalePrice', e.target.value)
-                                    }
-                                  />
-                                  <span className="m-[1px] absolute top-0 bottom-0 right-0 flex items-center px-2 bg-gray-100 text-gray-500 rounded-r-[5px]">
-                                  {currency}
-                                  </span>
-                                </div>
-                              </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
+                    </div>
                   ))
                 ) : (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg">

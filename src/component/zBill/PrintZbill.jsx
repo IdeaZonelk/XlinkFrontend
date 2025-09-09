@@ -9,120 +9,179 @@
  * Contact info@ideazone.lk for more information.
  */
 
-// PrintZbill.js
 import React, { forwardRef } from 'react';
-import { decryptData } from '../../component/utill/encryptionUtils';
 
-const PrintZbill = forwardRef(({ companyDetails,zReadingData,registerData,currency,formatCurrency }, ref) => {
+const PrintZbill = forwardRef(({ companyDetails, zReadingData, registerData, currency, formatCurrency }, ref) => {
+
+  const groupRegistersByCashier = (registers) => {
+    return registers.reduce((acc, register) => {
+      const key = `${register.cashierName} - ${register.cashRegisterID}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(register);
+      return acc;
+    }, {});
+  };
+
+  const groupedRegisters = groupRegistersByCashier(zReadingData?.registers || []);
 
   return (
-    <div ref={ref} className="p-2 pb-4 pt-2 bg-white text-gray-800 border border-gray-300 w-[80mm]">
-      <div className="print-container">
-        {/* Company Logo */}
+    <div ref={ref} className="p-2 pb-4 pt-2 bg-white text-gray-800 w-[80mm] font-sans">
+      {/* Company Header - Compact */}
+      <div className="text-center mb-2 border-b border-gray-300 pb-2">
         {companyDetails.logo && (
-          <img 
-            className="w-8 h-8 mx-auto" 
-            src={companyDetails.logo} 
-            alt="company logo" 
+          <img
+            src={companyDetails.logo}
+            className="w-10 h-10 mx-auto mb-1"
+            alt="logo"
           />
         )}
+        <h1 className="text-lg font-bold">{companyDetails.name}</h1>
+        <p className="text-xs text-gray-600">Z Reading Report</p>
+      </div>
 
-        {/* Company Details */}
-        <h1 className="text-lg font-bold pb-1 text-center">
-          {companyDetails.name || 'Company Name'}
-        </h1>
-        <p className="text-center text-xs">
-          {companyDetails.mobile || 'Phone: N/A'}
-        </p>
-        <p className="text-center text-xs">
-          {companyDetails.email || 'Email: N/A'}
-        </p>
-
-        {/* Z Reading Data */}
-        <p className="w-full mt-1">--------------------------------</p>
-        <div className="mt-4 pt-2">
-          <div className="flex justify-between text-sm">
-            <span className='font-bold'>Date:</span>
-            <span>{new Date(zReadingData?.createdAt).toLocaleDateString()}</span>
-          </div>
-          
-          <div className="flex justify-between text-sm">
-            <span className='font-bold'>Open Time:</span>
-            <span>{registerData?.openTime?.split(', ')[1] || 'N/A'}</span>
-          </div>
-
-          <div className="flex justify-between text-sm">
-            <span className='font-bold'>Close Time: </span>
-            <span> {new Date(zReadingData?.createdAt).toLocaleTimeString()}</span>
-          </div>
-
-          <div className="flex justify-between text-sm">
-            <span className='font-bold'>Cash Hand In:</span>
-            <span>
-              {currency} {formatCurrency(registerData?.cashHandIn || 0)}
-            </span>
-          </div>
-
-          <p className="w-full mt-1">--------------------------------</p>
-          {/* Transaction Breakdown */}
-          <div className="mt-3">
-            <h3 className="font-semibold text-sm">Transactions:</h3>
-            <div className="flex justify-between text-sm">
-              <span>Cash Payments:</span>
-              <span>
-                {currency} {formatCurrency(zReadingData?.cashPaymentAmount || 0)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Card Payments:</span>
-              <span>
-                {currency} {formatCurrency(zReadingData?.cardPaymentAmount || 0)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Bank Transfers:</span>
-              <span>
-                {currency} {formatCurrency(zReadingData?.bankTransferPaymentAmount || 0)}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <h3 className="font-semibold text-sm">Discounts</h3>
-            <div className="flex justify-between text-sm">
-              <span>Total Discounts:</span>
-              <span>
-                {currency} {formatCurrency(zReadingData?.totalDiscountAmount || 0)}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <h3 className="font-semibold text-sm">Cash Variance</h3>
-            <div className="flex justify-between text-sm">
-              <span>Cash Variance:</span>
-              <span>
-                {currency} {formatCurrency(zReadingData?.cashVariance || 0)}
-              </span>
-            </div>
-          </div>
-
-          {/* Total */}
-          <p className="w-full mt-1">=========================</p>
-          <div className="mt-3 pt-2">
-            <div className="flex justify-between font-semibold">
-              <span>Grand Total:</span>
-              <span>
-                {currency} {formatCurrency(
-                  (registerData?.cashHandIn || 0) +
-                  (zReadingData?.cashPaymentAmount || 0) +
-                  (zReadingData?.cardPaymentAmount || 0) +
-                  (zReadingData?.bankTransferPaymentAmount || 0)
-                )}
-              </span>
-            </div>
-          </div>
+      {/* Summary Section */}
+      <div className="mb-3">
+        <div className="flex justify-between text-sm py-1 border-b border-gray-200">
+          <span className="font-semibold flex items-center">Date:</span>
+          <span>{new Date(zReadingData?.createdAt).toLocaleDateString()}</span>
         </div>
+      </div>
+
+      {/* Payment Summary */}
+      <div className="my-3 p-2 rounded">
+        <h3 className="text-sm font-bold mb-1 flex items-center">
+          Payment Summary
+        </h3>
+
+        <div className="flex justify-between text-xs py-1">
+          <span className="flex items-center">Cash Hand In:</span>
+          <span className="font-medium">{currency} {formatCurrency(zReadingData?.totalCashHandIn || 0)}</span>
+        </div>
+
+        <div className="flex justify-between text-xs py-1">
+          <span className="flex items-center">Cash Payments:</span>
+          <span className="font-medium">{currency} {formatCurrency(zReadingData?.totalCash || 0)}</span>
+        </div>
+
+        <div className="flex justify-between text-xs py-1">
+          <span className="flex items-center">Card Payments:</span>
+          <span className="font-medium">{currency} {formatCurrency(zReadingData?.totalCard || 0)}</span>
+        </div>
+
+        <div className="flex justify-between text-xs py-1">
+          <span className="flex items-center">Bank Transfers:</span>
+          <span className="font-medium">{currency} {formatCurrency(zReadingData?.totalBank || 0)}</span>
+        </div>
+
+        <div className="flex justify-between text-xs py-1">
+          <span className="flex items-center">Discounts:</span>
+          <span className="font-medium">{currency} {formatCurrency(zReadingData?.totalDiscount || 0)}</span>
+        </div>
+
+        <div className="flex justify-between text-xs py-1">
+          <span className="flex items-center">Cash Variance:</span>
+          <span className={`font-medium ${zReadingData?.totalVariance <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {currency} {formatCurrency(zReadingData?.totalVariance || 0)}
+          </span>
+        </div>
+      </div>
+
+      {/* Grand Total */}
+      <div className="my-3 p-2 text-black rounded text-center">
+        <p className="text-xs uppercase font-semibold">Grand Total</p>
+        <p className="text-xl font-bold">
+          {currency} {formatCurrency(zReadingData?.totalGrandTotal || 0)}
+        </p>
+      </div>
+
+      {/* Per-Cashier Breakdown */}
+      <div className="mt-4">
+        <h3 className="text-sm font-bold mb-1 border-b border-gray-300 pb-1">
+          Breakdown by Cashier
+        </h3>
+
+        {Object.entries(groupedRegisters).map(([key, regs], index) => {
+          const subTotals = regs.reduce(
+            (totals, r) => {
+              totals.cash += r.cashPaymentAmount || 0;
+              totals.card += r.cardPaymentAmount || 0;
+              totals.bank += r.bankTransferPaymentAmount || 0;
+              totals.discount += r.totalDiscountAmount || 0;
+              totals.totalProfitAmount += r.totalProfitAmount || 0;
+              totals.variance += r.cashVariance || 0;
+              totals.cashHandIn += r.cashHandIn || 0;
+              return totals;
+            },
+            { cash: 0, card: 0, bank: 0, discount: 0, totalProfitAmount: 0, variance: 0, cashHandIn: 0 }
+          );
+
+          return (
+            <div key={index} className="mt-2 border border-gray-300 rounded p-1 text-xs">
+              <p className="font-semibold mb-1">{key}</p>
+
+              <div className="mb-2">
+                {regs.map((r, i) => (
+                  <div key={i} className="mb-1 border-b border-dashed border-gray-200 pb-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Opened:</span>
+                      <span>
+                        {new Date(r.openedTime).toLocaleString([], {
+                          hour12: false,
+                          year: 'numeric',
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Closed:</span>
+                      <span>
+                        {new Date(r.closedTime).toLocaleString([],{
+                          hour12: false,
+                          year: 'numeric',
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-between"><span>Cash:</span><span>{currency} {formatCurrency(subTotals.cash)}</span></div>
+              <div className="flex justify-between"><span>Card:</span><span>{currency} {formatCurrency(subTotals.card)}</span></div>
+              <div className="flex justify-between"><span>Bank:</span><span>{currency} {formatCurrency(subTotals.bank)}</span></div>
+              <div className="flex justify-between"><span>Discount:</span><span>{currency} {formatCurrency(subTotals.discount)}</span></div>
+              <div className="flex justify-between"><span>Profit:</span><span>{currency} {formatCurrency(subTotals.totalProfitAmount)}</span></div>
+              <div className="flex justify-between">
+                <span>Variance:</span>
+                <span className={subTotals.variance <= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {currency} {formatCurrency(subTotals.variance)}
+                </span>
+              </div>
+              <div className="flex justify-between"><span>Cash Hand In:</span><span>{currency} {formatCurrency(subTotals.cashHandIn)}</span></div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Cashier Info */}
+      {zReadingData?.registers?.[0]?.cashierName && (
+        <div className="text-xs mt-2 flex items-center justify-center">
+          Cashier: {zReadingData.registers[0].cashierName}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="mt-4 pt-2 text-center text-xs text-gray-600 border-t border-gray-300">
+        <p>{companyDetails.mobile} • {companyDetails.email}</p>
+        <p>Printed: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
       </div>
     </div>
   );

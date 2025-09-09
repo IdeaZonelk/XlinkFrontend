@@ -9,6 +9,7 @@
  * Contact info@ideazone.lk for more information.
  */
 
+
 import { useState, useEffect, useRef, useContext } from 'react';
 import ProductFilters from './ProductFilters';
 import CryptoJS from 'crypto-js';
@@ -75,6 +76,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [heldProducts, setHeldProducts] = useState([])
     const [isExitingPopupOpen, setIsExitingPopupOpen] = useState(false);
     const [isPopUpRegisterReport, setIsPopUpRegisterReport] = useState(false);
+    const [selectedCustomerData, setSelectedCustomerData] = useState(null);
     const [registerData, setRegisterData] = useState({
         openTime: '',
         username: '',
@@ -113,6 +115,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [searchedProductDataByName, setSearchedProductDataByName] = useState([]);
     const selectedWarehouseAccess = permissionData?.warehousePermissions?.[warehouse]?.access ?? false;
     const { currency } = useCurrency();
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
     //COMBINE ALL DATA FETCHING TYPE INTO ONE STATE
     const combinedProductData = searchedProductData.length > 0
@@ -465,14 +468,39 @@ const handleFindUser = async (e) => {
     }
 
     setCustomerSearchError('');
+
     try {
         const searchType = determineSearchType(value);
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
             params: { keyword: value, searchType }
         });
+
         let customers = response.data.customers || [];
+
+        // Handle search filtering
+        if (searchType === 'name' && keyword.trim()) {
+            if (keyword.trim().length === 1) {
+                customers = customers.filter(c =>
+                    c.name && c.name.toLowerCase() === keyword.trim().toLowerCase()
+                );
+            } else {
+                customers = customers.filter(c =>
+                    c.name && c.name.toLowerCase().includes(keyword.trim().toLowerCase())
+                );
+            }
+        } else if (searchType === 'loyaltyReferenceNumber' && keyword.trim()) {
+            customers = customers.filter(c =>
+                c.loyaltyReferenceNumber &&
+                c.loyaltyReferenceNumber.toString().includes(keyword.trim())
+            );
+        }
+
         setSearchCustomerResults(customers);
-        notFoundToastShown.current = false; // Reset if found
+
+        // Show error toast if nothing found
+        if (customers.length === 0 && keyword.trim().length > 1) {
+            toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
+        }
     } catch (error) {
         if (!notFoundToastShown.current) {
             toast.error(error.response?.data?.message || 'Customer not found', { autoClose: 2000 });
@@ -483,6 +511,18 @@ const handleFindUser = async (e) => {
     }
 };
 
+// Updated determineSearchType
+const determineSearchType = (keyword) => {
+    if (/^\d+$/.test(keyword)) {
+        // If numeric, decide whether it's mobile or loyaltyReferenceNumber
+        // For example, mobiles are usually 10 digits
+        return keyword.length === 10 ? 'mobile' : 'loyaltyReferenceNumber';
+    } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) {
+        return 'username'; // email
+    } else {
+        return 'name';
+    }
+};
 
 const determineSearchType = (keyword) => {
     if (/^\d+$/.test(keyword)) return 'mobile';
@@ -491,10 +531,6 @@ const determineSearchType = (keyword) => {
 };
 
 
-
-
-
-    
 
     const handleWalkInCustomerSubmit = async (e) => {
     e.preventDefault();
@@ -966,8 +1002,12 @@ const determineSearchType = (keyword) => {
                                             key={index}
                                             className="p-2 cursor-pointer hover:bg-gray-100"
                                             onClick={() => {
-                                                setSelectedCustomer(customer.name);
-                                                setKeyword('');
+                                                 console.log('Selected customer:', customer); 
+                                                setSelectedCustomer(customer._id);
+                        setSelectedCustomerData(customer); 
+                        setSelectedCustomerName(customer.name);
+                        setKeyword("");
+                        setSearchCustomerResults([]);
                                             }}
                                         >
                                             {customer.name}
@@ -1622,6 +1662,7 @@ const determineSearchType = (keyword) => {
             {/* Produc billing section in right */}
             <div className="flex justify-between mt-2 w-full h-screen ">
                 <div className="w-[35%] h-screen rounded-[15px] bg-white p-2">
+                    
                     <div>
                         <BillingSection
                             productBillingHandling={productBillingHandling}
@@ -1629,7 +1670,11 @@ const determineSearchType = (keyword) => {
                             handleDeleteHoldProduct={handleDeleteHoldProduct}
                             setProductData={setProductData}
                             selectedCustomer={selectedCustomer}
-                            setSelectedCustomer={setSelectedCustomer}
+    selectedCustomerName={selectedCustomerName}
+    selectedCustomerData={selectedCustomerData}
+    setSelectedCustomer={setSelectedCustomer}
+    setSelectedCustomerName={setSelectedCustomerName}
+    setSelectedCustomerData={setSelectedCustomerData}
                             warehouse={warehouse}
                             setReloadStatus={setReloadStatus}
                             setHeldProductReloading={setHeldProductReloading}
@@ -1638,6 +1683,9 @@ const determineSearchType = (keyword) => {
                             setSearchedProductData={setSearchedProductData}
                             setError={setError}
                         />
+                        console.log("selectedCustomerData",selectedCustomerData);
+                        console.log("selectedCustomer",selectedCustomer);
+                        console.log("selectedCustomerName",selectedCustomerName);
                     </div>
                 </div>
 

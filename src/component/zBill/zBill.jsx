@@ -23,9 +23,8 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import ReactToPrint from "react-to-print";
 import PrintZbill from './PrintZbill';
-import { useReactToPrint } from 'react-to-print';
 import { UserContext } from '../../context/UserContext';
-import { FaCalendarAlt, FaClock, FaUser, FaMoneyBillWave, FaCashRegister, FaCreditCard, FaUniversity, FaTag, FaBalanceScale } from 'react-icons/fa';
+import { X, Clock, CreditCard, Banknote, TrendingDown, Calculator, User, Phone, Mail, Calendar, Timer, TimerOff, HandCoins } from 'lucide-react';
 import Fillter from '../../img/filter.png';
 
 const ZBill = () => {
@@ -52,7 +51,6 @@ const ZBill = () => {
     const [date, setDate] = useState('');
     const { userData } = useContext(UserContext);
     const printRefs = useRef({})
-    //const { toPDF, targetRef } = usePDF({ filename: `${saleData.customer || 'invoice'}.pdf` });
     const combinedProductData = searchedCustomerSale ? searchedCustomerSale : saleData;
 
     useEffect(() => {
@@ -76,12 +74,58 @@ const ZBill = () => {
         try {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/zreading`, {
                 params: {
-                    'page[number]': page, 
-                    'page[size]': size,   
+                    'page[number]': page,
+                    'page[size]': size,
                 },
             });
-            setSaleData(response.data.data);
-            setSearchedCustomerSale(response.data.data);
+            const rawData = response.data.data;
+
+            const aggregated = rawData.map(z => {
+                let totalCash = 0;
+                let totalCard = 0;
+                let totalBank = 0;
+                let totalDiscount = 0;
+                let totalProfitAmount = 0;
+                let totalVariance = 0;
+                let totalCashHandIn = 0;
+                let totalGrandTotal = 0;
+                let openedTimes = z.registers.map(r => new Date(r.openedTime));
+                let closedTimes = z.registers.map(r => new Date(r.closedTime));
+                let earliestOpen = new Date(Math.min(...openedTimes));
+                let latestClose = new Date(Math.max(...closedTimes));
+
+                z.registers.forEach(r => {
+                    totalCash += r.cashPaymentAmount || 0;
+                    totalCard += r.cardPaymentAmount || 0;
+                    totalBank += r.bankTransferPaymentAmount || 0;
+                    totalDiscount += r.totalDiscountAmount || 0;
+                    totalProfitAmount += r.totalProfitAmount || 0;
+                    totalVariance += r.cashVariance || 0;
+                    totalCashHandIn += r.cashHandIn || 0;
+                    totalGrandTotal += (r.cashPaymentAmount || 0) +
+                        (r.cardPaymentAmount || 0) +
+                        (r.bankTransferPaymentAmount || 0);
+                });
+
+                return {
+                    _id: z._id,
+                    createdAt: z.createdAt,
+                    registers: z.registers,
+                    totalCash,
+                    totalCard,
+                    totalBank,
+                    totalDiscount,
+                    totalProfitAmount,
+                    totalVariance,
+                    totalCashHandIn,
+                    totalGrandTotal,
+                    openedTime: earliestOpen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    closedTime: latestClose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                };
+            });
+
+            setSaleData(aggregated);
+            setSearchedCustomerSale(aggregated);
             setTotalPages(response.data.totalPages || 0);
             setKeyword('');
             setError('');
@@ -90,13 +134,20 @@ const ZBill = () => {
             setError('No adjustments found.');
             setSaleData([]);
             setSearchedCustomerSale([]);
-            setLoading(false);
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch all customers
+    const groupRegistersByCashierRegister = (registers) => {
+        return registers.reduce((acc, register) => {
+            const key = `${register.cashierName} - ${register.cashRegisterID}`;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(register);
+            return acc;
+        }, {});
+    };
+
     useEffect(() => {
         if (keyword.trim() === '') {
             fetchZData();
@@ -145,33 +196,35 @@ const ZBill = () => {
     }, []);
 
     useEffect(() => {
-        const fetchZDataByDate = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/getZreadingByDate`, {
-                    params: {
-                        'page[size]': size,
-                        'page[number]': page,
-                        date: date,
-                    },
-                });
-                setSaleData(response.data.data);
-                setSearchedCustomerSale(response.data.data);
-                setTotalPages(response.data.totalPages || 0);
-                setKeyword('');
-                setError('');
-            } catch (error) {
-                console.error('Fetch sale data error:', error);
-                setError('No adjustments found.');
-                setSaleData([]);
-                setSearchedCustomerSale([]);
-                setLoading(false);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchZDataByDate();
-    }, [date]);
+        if (date) {
+            const fetchZDataByDate = async () => {
+                setLoading(true);
+                try {
+                    const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/getZreadingByDate`, {
+                        params: {
+                            'page[size]': size,
+                            'page[number]': page,
+                            date: date,
+                        },
+                    });
+                    setSaleData(response.data.data);
+                    setSearchedCustomerSale(response.data.data);
+                    setTotalPages(response.data.totalPages || 0);
+                    setKeyword('');
+                    setError('');
+                } catch (error) {
+                    console.error('Fetch sale data error:', error);
+                    setError('No adjustments found.');
+                    setSaleData([]);
+                    setSearchedCustomerSale([]);
+                    setLoading(false);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchZDataByDate();
+        }
+    }, [date, page, size]);
 
     const handleDelete = async (_id) => {
         try {
@@ -199,10 +252,6 @@ const ZBill = () => {
         }
     };
 
-    const handlePrint = useReactToPrint({
-        content: () => printRefs.current,
-    });
-
     return (
         <div className='relative background-white absolute top-[80px] left-[18%] w-[82%] h-[100vh] p-5'>
             <div className='flex justify-between mb-4'>
@@ -226,7 +275,7 @@ const ZBill = () => {
                         </p>
                     )}
                 </div>
-            ) : combinedProductData.length > 0 ? (
+            ) : saleData.length > 0 ? (
                 <div className="overflow-x-auto scroll-container">
                     <table className="min-w-full bg-white border border-gray-200">
                         <thead className="bg-gray-50">
@@ -246,19 +295,75 @@ const ZBill = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {combinedProductData.map((zReading) => (
-                                <tr key={zReading._id}>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap">{new Date(zReading.createdAt).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap">{zReading.registerData.openTime.split(', ')[1]}</td>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap">  {new Date(zReading.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap">{zReading.registerData.username}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>{currency} {formatWithCustomCommas(zReading.registerData.cashHandIn)}</p></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{currency} {formatWithCustomCommas(zReading.cardPaymentAmount)}</p></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{currency} {formatWithCustomCommas(zReading.cashPaymentAmount)}</p></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{currency} {formatWithCustomCommas(zReading.bankTransferPaymentAmount)}</p></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{currency} {formatWithCustomCommas(zReading.cashVariance)}</p></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{currency} {formatWithCustomCommas(zReading.totalDiscountAmount)}</p></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{currency} {formatWithCustomCommas(zReading.registerData.cashHandIn + zReading.cardPaymentAmount + zReading.cashPaymentAmount + zReading.bankTransferPaymentAmount)}</p></td>
+                            {saleData.map((zReading, index) => (
+                                <tr key={index}>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap">
+                                        {zReading.registers && zReading.registers.length === 1
+                                            ? new Date(zReading.registers[0].openedTime).toLocaleDateString([], {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit'
+                                            })
+                                            : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap">
+                                        {zReading.registers && zReading.registers.length === 1
+                                            ? new Date(zReading.registers[0].openedTime).toLocaleTimeString([], {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                                hour12: false
+                                            })
+                                            : '-'}
+                                    </td>
+
+                                    <td className="px-6 py-4 text-left whitespace-nowrap">
+                                        {zReading.registers && zReading.registers.length === 1
+                                            ? new Date(zReading.registers[0].closedTime)
+                                                .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit',hour12: false })
+                                            : '-'}
+                                    </td>
+
+                                    <td className="px-6 py-4 text-left whitespace-nowrap">
+                                        {zReading.registers?.length === 1
+                                            ? zReading.registers[0].cashierName
+                                            : "Multiple"}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalCashHandIn)}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalCard)}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalCash)}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalBank)}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalVariance)}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalDiscount)}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>
+                                            {currency} {formatWithCustomCommas(zReading.totalGrandTotal)}
+                                        </p>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className='flex justify-end'>
                                             {permissionData.view_zbills && (
@@ -284,110 +389,251 @@ const ZBill = () => {
 
                                     {/* View Sale popup ref={targetRef}*/}
                                     {openCashDetails === zReading._id && (
-                                        <div ref={popupRef} className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center" data-aos="fade-down">
-                                            <div className="overflow-y-auto scroll-container bg-white w-[1300px] max-h-[90vh] overflow-auto rounded-md shadow-lg mt-40 mb-10">
-                                                <div className="flex justify-between gap-2 bg-[#35AF87] h-20 p-4 pt-2 items-center ">
-                                                    <div className='flex items-center'>
-                                                        <img src={logo} className='w-16 h-16' alt='logo' />
-                                                        <h1 className='text-lg font-semibold text-white'>{companyName}</h1>
-                                                    </div>
-                                                    <div className='gap-4 items-center text-right'>
-                                                        <h1 className='text-sm text-white'><strong>Mobile</strong> {companyMobile}</h1>
-                                                        <h1 className='text-sm text-white'><strong>Email</strong> {email}</h1>
-                                                    </div>
-                                                </div>
-                                                <div className='p-8'>
-                                                    {/* Inputs Data */}
-                                                    <div className='flex justify-between'>
+                                        <div ref={popupRef} className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center backdrop-blur-sm">
+                                            <div className="overflow-y-auto scroll-container bg-white w-[1300px] max-h-[90vh] overflow-auto rounded-xl shadow-2xl mt-40 mb-10">
+                                                {/* Enhanced Header */}
+                                                <div className="relative bg-gradient-to-r from-[#35AF87] to-[#2d9670] h-20 p-4 pt-3 items-center flex justify-between shadow-lg">
+                                                    <div className='flex items-center space-x-4'>
+                                                        <div className="relative">
+                                                            <img src={logo} className='w-16 h-16 rounded-full border-2 border-white shadow-md' alt='logo' />
+                                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+                                                        </div>
                                                         <div>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaCalendarAlt className="inline-block mr-2" />
-                                                                <strong>Date</strong> {new Date(zReading.createdAt).toLocaleDateString()}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaClock className="inline-block mr-2" />
-                                                                <strong>Open Time</strong> {zReading.registerData.openTime.split(', ')[1]}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaClock className="inline-block mr-2" />
-                                                                <strong>Close Time</strong>{new Date(zReading.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaUser className="inline-block mr-2" />
-                                                                <strong>Username</strong> {zReading.registerData.username}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaMoneyBillWave className="inline-block mr-2" />
-                                                                <strong>Cash Hand In</strong> {currency} {formatWithCustomCommas(zReading.registerData.cashHandIn)}
-                                                            </h1>
-                                                        </div>
-                                                        <div className='ml-20'>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaCashRegister className="inline-block mr-2" />
-                                                                <strong>Cash Payment</strong> {currency} {formatWithCustomCommas(zReading.cardPaymentAmount)}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaCreditCard className="inline-block mr-2" />
-                                                                <strong>Card Payment</strong> {currency} {formatWithCustomCommas(zReading.cashPaymentAmount)}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaUniversity className="inline-block mr-2" />
-                                                                <strong>Bank Transfer</strong> {currency} {formatWithCustomCommas(zReading.bankTransferPaymentAmount)}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaTag className="inline-block mr-2" />
-                                                                <strong>Discount</strong> {currency} {formatWithCustomCommas(zReading.totalDiscountAmount)}
-                                                            </h1>
-                                                            <h1 className='text-left mb-1 text-gray-500'>
-                                                                <FaBalanceScale className="inline-block mr-2" />
-                                                                <strong>Cash Variance</strong> {currency} {formatWithCustomCommas(zReading.totalDiscountAmount)}
-                                                            </h1>
-                                                        </div>
-                                                        <div className='ml-20'>
-                                                            <h1 className='text-left text-3xl text-color font-bold'>Total  {currency} {formatWithCustomCommas(zReading.registerData.cashHandIn + zReading.cardPaymentAmount + zReading.cashPaymentAmount + zReading.bankTransferPaymentAmount)}</h1>
+                                                            <h1 className='text-xl font-bold text-white tracking-wide'>{companyName}</h1>
+                                                            <p className='text-sm text-left text-green-100 opacity-90'>Cash Register Report</p>
                                                         </div>
                                                     </div>
-                                                    <div className="mt-6">
-                                                        <h2 className="text-lg font-medium text-left text-gray-900">Notes</h2>
-                                                        <table className="min-w-full divide-y divide-gray-200 mt-4">
-                                                            <thead className="bg-gray-50">
-                                                                <tr>
-                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note / Coin</th>
-                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                                {zReading.inputs.map(input => (
-                                                                    <tr key={input._id}>
-                                                                        <td className="px-6 py-4 text-left whitespace-nowrap">{input.denomination}</td>
-                                                                        <td className="px-6 py-4 text-left whitespace-nowrap">{input.quantity}</td>
-                                                                        <td className="px-6 py-4 text-left whitespace-nowrap">{currency} {formatWithCustomCommas(input.amount)}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
+                                                    <div className='flex items-center space-x-6 text-right'>
+                                                        <div className="flex items-center space-x-2 text-white">
+                                                            <Phone className="w-4 h-4" />
+                                                            <span className='text-sm font-medium'>{companyMobile}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2 text-white">
+                                                            <Mail className="w-4 h-4" />
+                                                            <span className='text-sm font-medium'>{email}</span>
+                                                        </div>
                                                     </div>
+                                                    <button
+                                                        onClick={() => setCashDetails(null)}
+                                                        className="absolute top-1 right-1 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-all duration-200"
+                                                    >
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                </div>
 
-                                                    {/* Footer  */}
-                                                    <div className="mt-8 flex justify-end">
-                                                        {openCashDetails === zReading._id && (
-                                                            <ReactToPrint
-                                                                trigger={() => (
-                                                                    <button className="submit px-6 py-3 mr-2 text-white rounded-md shadow-md transition">
-                                                                       <i className="fas fa-print mr-2 text-white"></i>
-                                                                        Print Z Bill
-                                                                    </button>
-                                                                )}
-                                                                content={() => printRefs.current[zReading._id]}
-                                                            />
-                                                        )}
-                                                        <button
-                                                            onClick={() => setCashDetails(null)}
-                                                            className="px-6 py-3 bg-gray-500 text-white rounded-md shadow-md hover:bg-gray-600 transition">
-                                                            Close
-                                                        </button>
-                                                    </div>
+                                                {/* Enhanced Content */}
+                                                <div className="p-8 bg-gray-50">
+                                                    {Object.entries(groupRegistersByCashierRegister(zReading.registers)).map(([key, registers], index) => {
+                                                        const [cashierName] = key.split(' - ');
+                                                        return (
+                                                            <div key={index} className="mb-12 last:mb-0">
+                                                                {/* Cashier Header */}
+                                                                <div className="flex items-center space-x-3 mb-6 p-4 bg-white rounded-lg shadow-sm border-l-4 border-[#35AF87]">
+                                                                    <div className="w-10 h-10 bg-[#35AF87] rounded-full flex items-center justify-center">
+                                                                        <User className="w-5 h-5 text-white" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h2 className="text-xl text-left font-bold text-gray-700">
+                                                                            Cashier: {cashierName}
+                                                                        </h2>
+                                                                        <p className="text-sm text-gray-600">Register Operations Summary</p>
+                                                                    </div>
+                                                                </div>
+
+                                                                {registers.map((register) => (
+                                                                    <div key={register._id} className="bg-white rounded-xl p-6 mb-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                                                                        {/* Register Info Grid */}
+                                                                        <div className="grid grid-cols-3 gap-8 mb-6">
+                                                                            {/* Left Column - Time & Date Info */}
+                                                                            <div className="space-y-4">
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <Calendar className="w-5 h-5 text-blue-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 text-left uppercase tracking-wide">Open Date</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left"> {zReading.registers && zReading.registers.length === 1
+                                                                                            ? new Date(zReading.registers[0].openedTime).toLocaleDateString([], {
+                                                                                                year: 'numeric',
+                                                                                                month: '2-digit',
+                                                                                                day: '2-digit'
+                                                                                            })
+                                                                                            : '-'}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <Timer className="w-5 h-5 text-green-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Open Time</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">
+                                                                                            {new Date(register.openedTime).toLocaleTimeString([], {
+                                                                                                hour: '2-digit',
+                                                                                                minute: '2-digit',
+                                                                                                second: '2-digit',
+                                                                                                hour12: false,
+                                                                                            })}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <Calendar className="w-5 h-5 text-blue-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Close Date</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">
+                                                                                            {new Date(register.closedTime).toLocaleDateString()}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <TimerOff className="w-5 h-5 text-red-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Close Time</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{new Date(register.closedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <HandCoins className="w-5 h-5 text-blue-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Cash Hand In</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{currency} {formatWithCustomCommas(register.cashHandIn)}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Middle Column - Payment Methods */}
+                                                                            <div className="space-y-4">
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <Banknote className="w-5 h-5 text-emerald-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Cash Payment</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{currency} {formatWithCustomCommas(register.cashPaymentAmount)}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <CreditCard className="w-5 h-5 text-indigo-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Card Payment</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{currency} {formatWithCustomCommas(register.cardPaymentAmount)}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <Calculator className="w-5 h-5 text-purple-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Bank Transfer</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{currency} {formatWithCustomCommas(register.bankTransferPaymentAmount)}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <TrendingDown className="w-5 h-5 text-red-600" />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Discount</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{currency} {formatWithCustomCommas(register.totalDiscountAmount)}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
+                                                                                    <Clock className={`w-5 h-5 ${register.cashVariance <= 0 ? 'text-green-600' : 'text-red-400'}`} />
+                                                                                    <div>
+                                                                                        <p className="text-xs text-gray-400 uppercase tracking-wide text-left">Cash Variance</p>
+                                                                                        <p className={`font-semibold text-left ${register.cashVariance <= 0 ? 'text-green-600' : 'text-red-400'}`}>
+                                                                                            {currency} {formatWithCustomCommas(register.cashVariance)}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Right Column - Total */}
+                                                                            <div className="flex items-start justify-center">
+                                                                                <div>
+                                                                                    <div className=' bg-[#35AF87] h-[2px] w-full'></div>
+                                                                                    <div className="text-center mx-[2px] p-6 bg-[#35AF87] rounded-b-xl shadow-xl text-white">
+                                                                                        <p className="text-sm uppercase tracking-wide opacity-90 mb-2">Total when close The POS by {cashierName}</p>
+                                                                                        <p className="text-3xl font-bold">
+                                                                                            {currency} {formatWithCustomCommas(
+                                                                                                register.cashPaymentAmount +
+                                                                                                register.cardPaymentAmount +
+                                                                                                register.bankTransferPaymentAmount
+                                                                                            )}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div className='mt-6 px-2 text-left text-gray-600'>
+                                                                                        <p><br />Note : The Total value shown Above, Doesn't include the Cash Hand In</p>
+                                                                                    </div>
+
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Enhanced Denominations Table */}
+                                                                        <div className="mt-8">
+                                                                            <div className="flex items-center space-x-2 mb-4">
+                                                                                <Banknote className="w-5 h-5 text-[#35AF87]" />
+                                                                                <h3 className="text-lg font-semibold text-gray-700">Denominations</h3>
+                                                                            </div>
+                                                                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                                                                <table className="min-w-full divide-y divide-gray-200">
+                                                                                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                                                                        <tr>
+                                                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                                                Note / Coin
+                                                                                            </th>
+                                                                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                                                Quantity
+                                                                                            </th>
+                                                                                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                                                Amount
+                                                                                            </th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody className="bg-white divide-y divide-gray-200">
+                                                                                        {register.inputs.map((input, idx) => (
+                                                                                            <tr key={input._id} className={`hover:bg-gray-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                                                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                                                    <div className="flex items-center space-x-3">
+                                                                                                        <div className="w-9 h-9 bg-[#35AF87] rounded-full flex items-center justify-center text-white p-1 text-xs">
+                                                                                                            {input.denomination}
+                                                                                                        </div>
+                                                                                                        <span className="text-sm font-medium text-gray-900">{currency}{' '}{input.denomination}</span>
+                                                                                                    </div>
+                                                                                                </td>
+                                                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                                                                                        {input.quantity}
+                                                                                                    </span>
+                                                                                                </td>
+                                                                                                <td className="px-6 py-4 text-right whitespace-nowrap text-sm font-semibold text-gray-900">
+                                                                                                    {currency} {formatWithCustomCommas(input.amount)}
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Enhanced Footer */}
+                                                <div className="flex justify-end gap-4 p-6 bg-gray-50 border-t border-gray-200">
+                                                    {openCashDetails === zReading._id && (
+                                                        <ReactToPrint
+                                                            trigger={() => (
+                                                                <button className="submit px-6 py-3 mr-2 text-white rounded-md shadow-md transition">
+                                                                    <i className="fas fa-print mr-2 text-white"></i>
+                                                                    Print Z Bill
+                                                                </button>
+                                                            )}
+                                                            content={() => printRefs.current[zReading._id]}
+                                                        />
+                                                    )}
+                                                    <button
+                                                        onClick={() => setCashDetails(null)}
+                                                        className="flex items-center space-x-2 px-8 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200 hover:shadow-lg"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                        <span>Close</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                             <div style={{ display: 'none' }}>
@@ -410,6 +656,7 @@ const ZBill = () => {
                                 </tr>
                             ))}
                         </tbody>
+
                     </table>
                 </div>
             ) : (
