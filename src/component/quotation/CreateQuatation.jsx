@@ -118,29 +118,40 @@ function CreateQuatationBody() {
 
 
     const calculateTotal = () => {
-        const productTotal = selectedProduct.reduce((total, product) => {
-            const productPrice = Number(getApplicablePrice(product));
-            const productQty = product.barcodeQty || 1;
-            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-            const discount = Number(getDiscount(product, product.selectedVariation));
-            const discountedPrice = productPrice - discount
+    const productTotal = selectedProduct.reduce((total, product) => {
+        const productPrice = Number(getApplicablePrice(product));
+        const productQty = product.barcodeQty || 1;
+        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+        const discount = Number(getDiscount(product, product.selectedVariation));
+        const discountedPrice = productPrice - discount;
 
-            const subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
-            return total + subTotal;
-        }, 0);
-        let discountValue = 0;
-        if (discountType === 'fixed') {
-            discountValue = Number(discount);
-        } else if (discountType === 'percentage') {
-            discountValue = (productTotal * Number(discount)) / 100;
+        const taxType =
+            product.ptype === 'Variation'
+                ? product.variationValues?.[product.selectedVariation]?.taxType
+                : product.taxType;
+
+        let subTotal;
+        if (taxType === 'Inclusive') {
+            subTotal = discountedPrice * productQty;
+        } else {
+            subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
         }
+        return total + subTotal;
+    }, 0);
 
-        const shippingValue = Number(shipping);
-        const globalTaxRate = Number(tax) / 100;
-        const globalTax = productTotal * globalTaxRate;
-        const grandTotal = productTotal - discountValue + shippingValue + globalTax;
-        return grandTotal;
-    };
+    let discountValue = 0;
+    if (discountType === 'fixed') {
+        discountValue = Number(discount);
+    } else if (discountType === 'percentage') {
+        discountValue = (productTotal * Number(discount)) / 100;
+    }
+
+    const shippingValue = Number(shipping);
+    const globalTaxRate = Number(tax) / 100;
+    const globalTax = productTotal * globalTaxRate;
+    const grandTotal = productTotal - discountValue + shippingValue + globalTax;
+    return grandTotal;
+};
 
     const calculateTaxLessTotal = () => {
         let subtotal = selectedProduct.reduce((total, product) => {
@@ -678,20 +689,37 @@ function CreateQuatationBody() {
                                                     : `${getTax(product, product.selectedVariation)}%`}
                                             </td>
 
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency}  {
-                                                    (() => {
-                                                        const price = getApplicablePrice(product);
-                                                        const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
-                                                        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-                                                        const discount = getDiscount(product, product.selectedVariation);
-                                                        const discountedPrice = price - discount
+                                          <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+    {currency}  {
+        (() => {
+            const price = getApplicablePrice(product);
+            console.log('Price:', price);
+            const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
+            console.log('Quantity:', quantity);
+            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+            console.log('Tax Rate:', taxRate);
+            const discount = getDiscount(product, product.selectedVariation);
+            console.log('Discount:', discount);
+            const discountedPrice = price - discount;
+            console.log('Discounted Price:', discountedPrice);
 
-                                                        const subtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
-                                                        return formatWithCustomCommas(subtotal);
-                                                    })()
-                                                }
-                                            </td>
+            // Check taxType
+              const taxType =
+                product.ptype === 'Variation'
+                    ? product.variationValues?.[product.selectedVariation]?.taxType
+                    : product.taxType;
+
+            if (taxType === 'Inclusive') {
+                const subtotal = discountedPrice * quantity;
+                return formatWithCustomCommas(subtotal);
+            } else {
+                const taxPerProduct = price * taxRate;
+                const subtotal = (discountedPrice * quantity) + (taxPerProduct * quantity);
+                return formatWithCustomCommas(subtotal);
+            }
+        })()
+    }
+</td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {product.ptype === 'Variation' && product.variationValues ? (
@@ -831,9 +859,9 @@ function CreateQuatationBody() {
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {formatWithCustomCommas(calculateTotal())}
                     </div>
-                    <div className="mt-4 text-right text-lg font-semibold">
+                    {/* <div className="mt-4 text-right text-lg font-semibold">
                         Profit: {currency} {formatWithCustomCommas(calculateProfit())}
-                    </div>
+                    </div> */}
                     <div className="container mx-auto text-left">
                         <div className='mt-10 flex justify-start'>
                             <button onClick={() => handleSaveQuatation(

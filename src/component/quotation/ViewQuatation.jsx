@@ -515,9 +515,11 @@ function ViewQuatationBody() {
                                                                     {/* <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product ID</th> */}
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product name</th>
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Variation Type</th>
+                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product tax</th>
+                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product Discount</th>
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product price</th>
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Qty</th>
-                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product tax</th>
+                                                                    
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Sub total</th>
                                                                 </tr>
                                                             </thead>
@@ -543,9 +545,11 @@ function ViewQuatationBody() {
                                                                             </div>
                                                                         </td>
                                                                         <td className="py-2 text-left px-4 border-b">{product.variationValue ? product.variationValue : 'No Variations'}</td>
+                                                                        <td className="py-2 px-4 border-b text-left">{product.taxRate * 100} %</td>
+                                                                        <td className="text-left py-2 px-4 border-b">{product.discount ? product.discount : '0'} {product.discountType === 'percentage' ? '%' : currency}</td>
                                                                         <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(getApplicablePrice(product))}</td>
                                                                         <td className="text-left py-2 px-4 border-b">{product.quantity}</td>
-                                                                        <td className="py-2 px-4 border-b text-left">{product.taxRate * 100} %</td>
+                                                                        
                                                                         <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.subtotal)}</td>
                                                                     </tr>
                                                                 ))}
