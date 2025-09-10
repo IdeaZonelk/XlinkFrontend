@@ -272,9 +272,9 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 useCreditPayment,
                 creditDetails,
                 claimedPoints,
-                redeemedPointsFromSale,
                 cashierUsername,
                 cashRegisterID,
+                redeemedPointsFromSale,
                 setFetchRegData
 
             );
