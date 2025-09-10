@@ -226,7 +226,7 @@ export const handleQtyChange = (index, selectedVariation, setSelectedProduct, ch
                     let updatedQty;
                     if (isInputChange) {
                         // If it's an input change, update directly with the value
-                        updatedQty = Math.max(1, Math.min(change, variation.productQty)); // Ensure it's within stock limits
+                        updatedQty = Math.max(1, change);
                     } else {
                         // Increment or decrement
                         updatedQty = Math.max(1, currentQty + change); // Ensure it doesn't go below 1
@@ -255,7 +255,7 @@ export const handleQtyChange = (index, selectedVariation, setSelectedProduct, ch
                     let updatedQty;
                     if (isInputChange) {
                         // If it's an input change, update directly with the value
-                        updatedQty = Math.max(1, Math.min(change, product.productQty)); // Ensure it's within stock limits
+                        updatedQty = Math.max(1, change);
                     } else {
                         // Increment or decrement
                         updatedQty = Math.max(1, currentQty + change); // Ensure it doesn't go below 1
