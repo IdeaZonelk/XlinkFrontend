@@ -601,9 +601,10 @@ function ViewPurchaseBody() {
                                                                     {/* <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product ID</th> */}
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product name</th>
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Variation Type</th>
-                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product price</th>
-                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Qty</th>
-                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product tax</th>
+                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product Cost</th>
+                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Original Purchase Qty</th>
+                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Current Qty</th>
+                                                                    <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Return Qty</th>
                                                                     <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Sub total</th>
                                                                 </tr>
                                                             </thead>
@@ -614,9 +615,12 @@ function ViewPurchaseBody() {
                                                                         <td className="py-2 text-left px-4 border-b">{product.name}</td>
                                                                         <td className="py-2 text-left px-4 border-b">{product.variationValue ? product.variationValue : 'No Variations'}</td>
                                                                         <td className="py-2 text-left px-4 border-b">{currency} {formatWithCustomCommas(product.price)}</td>
-                                                                        <td className="py-2 text-left px-4 border-b">{product.quantity}</td>
-                                                                        <td className="py-2 px-4 border-b text-left">{product.taxRate * 100} %</td>
-                                                                        <td className="py-2 text-left px-4 border-b">{currency} {formatWithCustomCommas(product.subtotal)}</td>
+                                                                        <td className="py-2 text-center px-4 border-b">{product.originalPurchaseQty}</td>
+                                                                        <td className="py-2 text-center px-4 border-b">{product.quantity}</td>
+                                                                        <td className="py-2 text-center px-4 border-b">{product.returnQty}</td>
+                                                                      <td className="py-2 text-left px-4 border-b">
+    {currency} {formatWithCustomCommas((Number(product.quantity) * Number(product.price)).toFixed(2))}
+</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -635,10 +639,14 @@ function ViewPurchaseBody() {
                                                                     <td className="py-2  text-left px-4 border-b">Shipping</td>
                                                                     <td className="py-2 text-left px-4 border-b">{currency} {formatWithCustomCommas(purchased.shipping ? purchased.shipping : '0.00')}</td>
                                                                 </tr>
-                                                                <tr>
-                                                                    <td className="py-2  text-left px-4 border-b">Discount</td>
-                                                                    <td className="py-2 text-left px-4 border-b">{currency} {formatWithCustomCommas(purchased.discount ? purchased.discount : '0.00')}</td>
-                                                                </tr>
+                                                              <tr>
+    <td className="py-2  text-left px-4 border-b">Discount</td>
+    <td className="py-2 text-left px-4 border-b">
+        {purchased.discountType === 'percentage'
+            ? `${formatWithCustomCommas(purchased.discount ? purchased.discount : '0.00')} %`
+            : `${currency} ${formatWithCustomCommas(purchased.discount ? purchased.discount : '0.00')}`}
+    </td>
+</tr>
                                                                 <tr>
                                                                     <td className="py-2 text-left px-4 border-b">Total</td>
                                                                     <td className="py-2  text-left px-4 border-b">{currency} {formatWithCustomCommas(purchased.grandTotal ? purchased.grandTotal : '0.00')}</td>

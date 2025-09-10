@@ -33,6 +33,11 @@ function CreatePurchaseReturnBody() {
     const [saleReturProductData, setPurchaseReturProductData] = useState([])
     const { id } = useParams();
     const navigate = useNavigate();
+    const [returnDetails, setReturnDetails] = useState({
+    returnAmount: 0,
+    returnTax: 0,
+    returnDiscount: 0
+});
 
     useEffect(() => {
         if (saleReturProductData.length > 0) {
@@ -66,7 +71,8 @@ function CreatePurchaseReturnBody() {
                 }));
                 const initializedProductsQty = fetchedProductsQty.map(pq => ({
                     ...pq,
-                    quantity: pq.quantity || Object.keys(pq.quantity)[0]
+                    quantity: pq.quantity || Object.keys(pq.quantity)[0],
+                    returnQty: pq.quantity 
                 }));
                 setPurchaseReturProductData(initializedProductsQty);
                 setSelectedProduct(initializedProducts);
@@ -81,7 +87,116 @@ function CreatePurchaseReturnBody() {
             findSaleById();
         }
     }, [id]);
-   
+
+    const handleReturnQtyChange = (index, value) => {
+    setPurchaseReturProductData(prev =>
+        prev.map((product, i) => {
+            if (i === index) {
+                let newQty = Number(value);
+                // Prevent increasing above purchased qty or going below 0
+                if (newQty > product.quantity) newQty = product.quantity;
+                if (newQty < 0) newQty = 0;
+                // Update subtotal for this product
+                const subtotal = (newQty * product.price).toFixed(2);
+                return { ...product, returnQty: newQty, subtotal };
+            }
+            return product;
+        })
+    );
+};
+
+const calculateTotal = () => {
+    return saleReturProductData.reduce((sum, product) => {
+        return sum + (Number(product.returnQty) * Number(product.price));
+    }, 0).toFixed(2);
+};
+
+// const calculateReturnAmount = () => {
+//     const productsTotal = saleReturProductData.reduce((sum, product) => {
+//         return sum + (Number(product.returnQty) * Number(product.price));
+//     }, 0);
+    
+//     if (productsTotal <= 0) return 0;
+    
+//     // Get original purchase values
+//     const originalProductsTotal = saleProduct.productsData.reduce((sum, product) => {
+//         return sum + (Number(product.quantity) * Number(product.price));
+//     }, 0);
+    
+//     // Calculate proportional factor
+//     const proportion = productsTotal / originalProductsTotal;
+    
+//     // Apply the same proportion to tax, discount, and shipping
+//     // const returnShipping = proportion * (Number(saleProduct.shipping) || 0);
+    
+//     // Calculate tax proportionally (if tax is percentage-based)
+//     let returnTax = 0;
+//     if (saleProduct.tax) {
+//         // If tax is a percentage value
+//         returnTax = productsTotal * (Number(saleProduct.tax) / 100);
+//     }
+    
+//     const returnDiscount = proportion * (Number(saleProduct.discount) || 0);
+    
+//     // Calculate final return amount
+//     let returnAmount = productsTotal + returnTax;
+    
+//     // Apply discount based on original discount type
+//     if (saleProduct.discountType === 'fixed') {
+//         returnAmount -= returnDiscount;
+//     } else if (saleProduct.discountType === 'percentage') {
+//         returnAmount -= (productsTotal * (returnDiscount / 100));
+//     }
+    
+//     return returnAmount.toFixed(2);
+// };
+
+useEffect(() => {
+    const calculatedReturn = calculateReturnAmount();
+    setReturnDetails(calculatedReturn);
+}, [saleReturProductData, saleProduct]);
+
+const calculateReturnAmount = () => {
+    const productsTotal = saleReturProductData.reduce((sum, product) => {
+        return sum + (Number(product.returnQty) * Number(product.price));
+    }, 0);
+    
+    if (productsTotal <= 0) return { returnAmount: 0, returnTax: 0, returnDiscount: 0 };
+    console.log('Products Total:', productsTotal);
+    
+    // Get original purchase values
+    const originalProductsTotal = saleProduct.productsData.reduce((sum, product) => {
+        return sum + (Number(product.quantity) * Number(product.price));
+    }, 0);
+    console.log('Original Products Total:', originalProductsTotal);
+    // Calculate proportional factor
+    const proportion = productsTotal / originalProductsTotal;
+    console.log('Proportion:', proportion);
+
+    // Calculate tax proportionally (if tax is percentage-based)
+    let returnTax = 0;
+    if (saleProduct.tax) {
+        // If tax is a percentage value
+        returnTax = productsTotal * (Number(saleProduct.tax) / 100);
+    }
+    console.log('Return Tax:', returnTax);
+    // Apply discount based on original discount type
+    let returnDiscount = 0;
+    if (saleProduct.discountType === 'fixed') {
+        returnDiscount = proportion * (Number(saleProduct.discount) || 0);
+    } else if (saleProduct.discountType === 'percentage') {
+        returnDiscount = productsTotal * (Number(saleProduct.discount) / 100);
+    }
+    console.log('Return Discount:', returnDiscount);
+    // Calculate final return amount
+    let returnAmount = productsTotal + returnTax - returnDiscount;
+    console.log('Return Amount before formatting:', returnAmount);
+    return {
+        returnAmount: returnAmount.toFixed(2),
+        returnTax: returnTax.toFixed(2),
+        returnDiscount: returnDiscount.toFixed(2)
+    };
+};
     const handleReasonChange = (e) => {
         const selectedReason = e.target.value;
         setReason(selectedReason);
@@ -163,8 +278,9 @@ function CreatePurchaseReturnBody() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Qty</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Qty</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return Qty</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th> */}
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sub Total</th>
                                 </tr>
                             </thead>
@@ -183,10 +299,21 @@ function CreatePurchaseReturnBody() {
                                             <td className="px-6 py-4  text-left whitespace-nowrap text-sm text-gray-500">
                                                 <div className="flex items-center">
                                                     <span className="mx-2">
-                                                        {saleReturProductData[index]?.quantity || 1} {/* Display the current quantity */}
+                                                        {saleReturProductData[index]?.quantity || 0} {/* Display the current quantity */}
                                                     </span>
                                                 </div>
                                             </td>
+                                                  {/* Return Qty Field */}
+            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                <input
+                    type="number"
+                    min={0}
+                    max={product.quantity}
+                    value={product.returnQty}
+                    onChange={e => handleReturnQtyChange(index, e.target.value)}
+                    className="w-16 border rounded px-2 py-1 text-center"
+                />
+            </td>
 
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
@@ -194,9 +321,9 @@ function CreatePurchaseReturnBody() {
                                             </td>
 
                                             {/* Product Tax */}
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.taxRate * 100} %  {/* Show a default if no tax is available */}
-                                            </td>
+                                            {/* <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                {product.taxRate * 100} % 
+                                            </td> */}
 
                                             {/* Subtotal */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
@@ -248,14 +375,39 @@ function CreatePurchaseReturnBody() {
                             Paid Amount  :  {currency} {formatWithCustomCommas(saleProduct.paidAmount)}
                         </div>
                         <div className="mt-4 text-right text-lg font-semibold">
-                            Total  :  {currency} {formatWithCustomCommas(saleProduct.grandTotal)}
+                            Products Total  :  {currency} {formatWithCustomCommas(calculateTotal())}
                         </div>
+                        <div className="mt-4 text-right text-lg font-semibold">
+        Return Amount  :  {currency} {formatWithCustomCommas(returnDetails.returnAmount)}
+        <div className="text-sm text-gray-500 font-normal mt-1">
+            (without shipping)
+        </div>
+    </div>
                     </div>
 
-                    <button onClick={() => handleReturnPurchase(
-                        saleProduct.grandTotal, saleProduct.paidAmount, note ,saleProduct.warehouse, saleProduct.supplier, saleReturProductData, saleProduct.date, saleProduct._id, setError, setResponseMessage, setProgress, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
-                        Return The Sale
-                    </button>
+                <button onClick={() => {
+    const calculatedReturn = calculateReturnAmount();
+    setReturnDetails(calculatedReturn);
+    handleReturnPurchase(
+        calculatedReturn.returnAmount, 
+        calculatedReturn.returnTax,
+        calculatedReturn.returnDiscount,
+        calculateTotal(), 
+        saleProduct.paidAmount, 
+        note,
+        saleProduct.warehouse, 
+        saleProduct.supplier, 
+        saleReturProductData, 
+        saleProduct.date, 
+        saleProduct._id, 
+        setError, 
+        setResponseMessage, 
+        setProgress, 
+        navigate
+    );
+}} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
+    Return The Sale
+</button>
                 </div>
                 {/* Error and Response Messages */}
                 <div className="mt-5">
