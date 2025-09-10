@@ -370,7 +370,6 @@ export const getDiscount = (product, selectedVariation) => {
 
 
 export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, paymentStatus, paymentType, amounts, shipping, discountType, discount, tax, selectedWarehouses, selectedCustomer, selectedCustomerName,selectedProduct, date, preFix, offerPercentage, setInvoiceNumber, setResponseMessage, setError, setProgress, setInvoiceData, note, cashBalance, handlePrintAndClose, shouldPrint = false,   discountValue , useCreditPayment, creditDetails, claimedPoints=0, cashierID, RegisterID, setFetchRegData, redeemedPointsFromSale=0) => {
-      console.log('[saleController] handleSave received claimedPoints:', claimedPoints);
     setResponseMessage('');
     const invoiceNumber = generateBillNumber();
     setInvoiceNumber(invoiceNumber);

@@ -21,7 +21,7 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
-const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal,handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, selectedCustomerName, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer , useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, setFetchRegData, claimedPoints, isPointsClaimed, redeemedPointsFromSale, logPoints }) => {
+const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, selectedCustomerName, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer, useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, setFetchRegData, claimedPoints, isPointsClaimed, redeemedPointsFromSale, logPoints }) => {
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -54,17 +54,17 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     const kotRef = useRef(null);
 
     useEffect(() => {
-    console.log('[payingSection] Received customer data:', {
-        selectedCustomer: selectedCustomer,
-        selectedCustomerName: selectedCustomerName,
-        claimedPoints: claimedPoints,
-        isPointsClaimed: isPointsClaimed
-    });
-}, [selectedCustomer, selectedCustomerName, claimedPoints, isPointsClaimed]);
+        console.log('[payingSection] Received customer data:', {
+            selectedCustomer: selectedCustomer,
+            selectedCustomerName: selectedCustomerName,
+            claimedPoints: claimedPoints,
+            isPointsClaimed: isPointsClaimed
+        });
+    }, [selectedCustomer, selectedCustomerName, claimedPoints, isPointsClaimed]);
 
-     useEffect(() => {
-        console.log('[payingSection] Component mounted/received new props - claimedPoints:', claimedPoints, 
-                   'isPointsClaimed:', isPointsClaimed);
+    useEffect(() => {
+        console.log('[payingSection] Component mounted/received new props - claimedPoints:', claimedPoints,
+            'isPointsClaimed:', isPointsClaimed);
         if (logPoints) logPoints();
     }, [claimedPoints, isPointsClaimed, logPoints]);
     useEffect(() => {
@@ -197,7 +197,6 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
 
 
     const updateProductQuantities = async (productDetails, shouldPrint = false, claimedPoints) => {
-         console.log('[payingSection] updateProductQuantities - claimedPoints:', claimedPoints);
         try {
             setSelectedOffer('');
             const reStructuredProductDetails = productDetails.map(product => {
@@ -272,12 +271,12 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 useCreditPayment,
                 creditDetails,
                 claimedPoints,
-                redeemedPointsFromSale,
                 cashierUsername,
                 cashRegisterID,
-                setFetchRegData
-
+                setFetchRegData,
+                redeemedPointsFromSale
             );
+
             console.log("type of setProgress", setProgress);
             console.log("selected customer name: ", selectedCustomerName)
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
@@ -288,14 +287,14 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     };
 
     const handleSubmitPayment = async (shouldPrint) => {
-           console.log('[payingSection] handleSubmitPayment - customer data:', {
-        customerId: selectedCustomer,
-        customerName: selectedCustomerName,
-        claimedPoints: claimedPoints,
-        isPointsClaimed: isPointsClaimed
-    });
-        console.log('[payingSection] handleSubmitPayment - claimedPoints:', claimedPoints, 
-               'isPointsClaimed:', isPointsClaimed);
+        console.log('[payingSection] handleSubmitPayment - customer data:', {
+            customerId: selectedCustomer,
+            customerName: selectedCustomerName,
+            claimedPoints: claimedPoints,
+            isPointsClaimed: isPointsClaimed
+        });
+        console.log('[payingSection] handleSubmitPayment - claimedPoints:', claimedPoints,
+            'isPointsClaimed:', isPointsClaimed);
         if (!validatePaymentStatus()) return;
 
         const normalizedPaymentStatus = paymentStatus?.toLowerCase();
