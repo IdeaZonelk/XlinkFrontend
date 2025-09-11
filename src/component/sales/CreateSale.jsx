@@ -1306,6 +1306,9 @@ function CreateSaleBody() {
                     useCreditPayment,
                     creditDetails,
                     isPointsClaimed ? claimedPoints : 0,
+                    sessionStorage.getItem('cashierUsername'), // cashierID (same as POS cashierUsername) - becomes cashRegisterKey
+                    sessionStorage.getItem('cashRegisterID'), 
+                    () => {}, // setFetchRegData (placeholder function)
                     calculateRedeemedPoints()
                   );
                 }}
