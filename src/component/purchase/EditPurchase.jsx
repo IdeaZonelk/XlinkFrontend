@@ -84,9 +84,14 @@ function EditPurchaseBody() {
             return acc + productSubtotal;
         }, 0);
 
-        const discountAmount = discountType === 'percentage'
-            ? subtotal * (purchaseProduct.discount / 100)
-            : purchaseProduct.discount || 0;
+     const discountValue = parseFloat(purchaseProduct.discount) || 0;
+const discountAmount = purchaseProduct.discountType === 'percentage'
+    ? subtotal * (discountValue / 100)
+    : discountValue;
+            console.log("subtotal: ",subtotal);
+            console.log("discountType: ",discountType);
+            console.log("discount: ",purchaseProduct.discount);
+            console.log("discountAmount",discountAmount);
 
         const shipping = parseFloat(purchaseProduct.shipping) || 0;
         const overallTaxRate = purchaseProduct.tax ? parseFloat(purchaseProduct.tax) / 100 : 0;
