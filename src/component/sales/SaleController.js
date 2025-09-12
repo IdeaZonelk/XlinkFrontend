@@ -454,27 +454,69 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
     const defaultWarehouse = sessionStorage.getItem('defaultWarehouse') || 'Unknown';
 
     // **Define productsData FIRST**
-    const productsData = selectedProduct.map(product => {
-        const currentID = product._id;
-        const ptype = product.ptype;
-        const variationValue = product.selectedVariation;
-        const quantity = product.barcodeQty || 1;
-        const wholesaleEnabled = product.wholesaleEnabled || false;
-        const wholesaleMinQty = product.wholesaleMinQty || 0;
-        const wholesalePrice = product.wholesalePrice || 0;
-        const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
-        const applicablePrice = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
-        const price = product.price || getPriceRange(product, product.selectedVariation);
-        const productCost = parseFloat(product.productCost) || parseFloat(getProductCost(product, product.selectedVariation)) || 0;
-        const discount = product.discount || getDiscount(product, product.selectedVariation);
-        const specialDiscount = product.specialDiscount || 0;
-        const stockQty = product.productQty - quantity;
-        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-        const subtotal = ((applicablePrice - discount - specialDiscount) * quantity) + ((applicablePrice) * quantity * taxRate);
-        const productProfit = (((applicablePrice - discount - specialDiscount) * quantity) - (productCost * quantity)) || 0;
-        console.log("productCost", productCost, "quantity", quantity, "applicablePrice", applicablePrice, "discount", discount, "specialDiscount", specialDiscount);
-        console.log("subtotal", subtotal, "productProfit", productProfit);
-        const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
+const productsData = selectedProduct.map(product => {
+    const currentID = product._id;
+    const ptype = product.ptype;
+    const variationValue = product.selectedVariation;
+    const quantity = product.barcodeQty || 1;
+    const wholesaleEnabled = product.wholesaleEnabled || false;
+    const wholesaleMinQty = product.wholesaleMinQty || 0;
+    const wholesalePrice = product.wholesalePrice || 0;
+    const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
+    const applicablePrice = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
+    const price = product.price || getPriceRange(product, product.selectedVariation);
+    const productCost = parseFloat(product.productCost) || parseFloat(getProductCost(product, product.selectedVariation)) || 0;
+    
+    // Get discount - check if variation exists first
+    const discount = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.discount !== undefined
+        ? parseFloat(product.variationValues[product.selectedVariation].discount)
+        : parseFloat(product.discount) || 0;
+    
+    const specialDiscount = product.specialDiscount || 0;
+    const stockQty = product.productQty - quantity;
+    
+    // Get taxType - check if variation exists first
+    const taxType = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.taxType !== undefined
+        ? product.variationValues[product.selectedVariation].taxType
+        : product.taxType || 'exclusive';
+    
+    // Get tax rate - check if variation exists first
+    const taxRate = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.orderTax !== undefined
+        ? parseFloat(product.variationValues[product.selectedVariation].orderTax) / 100
+        : (parseFloat(product.orderTax) || 0) / 100;
+    
+    console.log("price", applicablePrice);
+    console.log("tax", taxRate ); // Convert back to percentage for logging
+    console.log("taxType", taxType);
+    console.log("discount", discount);
+    console.log("qty", quantity);
+    
+    const newPrice = applicablePrice - discount - specialDiscount;
+    console.log("newPrice", newPrice);
+
+    // Calculate subtotal based on tax type - EXACTLY like getRowSubtotal
+   // Calculate subtotal based on tax type - EXACTLY like getRowSubtotal
+let subtotal;
+if (taxType && taxType.toLowerCase() === 'inclusive') {
+    // Tax is already included in the price, don't add additional tax
+    subtotal = newPrice * quantity;
+} else {
+    // Tax is exclusive, add tax to the price
+    const baseAmount = newPrice * quantity;
+    const taxAmount = price * taxRate;
+    
+    // Round the tax amount to 2 decimal places to avoid floating point issues
+    const roundedTaxAmount = Math.round(taxAmount * 100) / 100;
+    
+    subtotal = baseAmount + roundedTaxAmount;
+}
+console.log("subtotal", subtotal);
+    
+    // Calculate product profit
+    const productProfit = (newPrice - productCost) * quantity;
+    console.log("productProfit", productProfit);
+
+    const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
 
         return {
             currentID,
@@ -488,6 +530,7 @@ export const handleSave = async (grandTotal, baseTotal, profit, orderStatus, pay
             specialDiscount,
             quantity,
             stockQty,
+            taxType,
             taxRate,
             subtotal,
             productProfit,
