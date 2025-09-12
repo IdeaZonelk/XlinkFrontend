@@ -136,6 +136,13 @@ function EditSaleBody() {
         return product.productCost || 0;
     };
 
+    const getTaxType = (product) => {
+    if (product.ptype === "Variation" && product.selectedVariation && product.variationValues) {
+        return product.variationValues[product.selectedVariation]?.taxType || product.taxType;
+    }
+    return product.taxType;
+};
+
     const getTax = (product, selectedVariation) => {
         if (product.ptype === 'Variation' && product.variationValues && selectedVariation) {
             return product.variationValues[selectedVariation]?.orderTax / 100 || product.orderTax / 100 || 0;
@@ -187,21 +194,26 @@ function EditSaleBody() {
         }
     };
 
-   const calculateBaseTotal = () => {
-        return saleReturProductData.reduce((acc, product) => {
-            const price = getApplicablePrice(product);
-            const quantity = product.quantity || 1;
-            const taxRate = product.taxRate || getTax(product, product.selectedVariation);
-            const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
-            const specialDiscount = product.specialDiscount || 0;
-            const discountedPrice = price - discount - specialDiscount;
+const calculateBaseTotal = () => {
+    return saleReturProductData.reduce((acc, product) => {
+        const price = getApplicablePrice(product);
+        const quantity = product.quantity || 1;
+        const taxRate = product.taxRate || getTax(product, product.selectedVariation);
+        const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
+        const specialDiscount = product.specialDiscount || 0;
+        const discountedPrice = price - discount - specialDiscount;
 
-            const taxableAmount = price * quantity;
-            const taxAmount = taxableAmount * taxRate;
+        const taxType = getTaxType(product);
 
-            return acc + (discountedPrice * quantity) + taxAmount;
-        }, 0);
-    }
+        let subTotal;
+        if (taxType === "Inclusive") {
+            subTotal = discountedPrice * quantity;
+        } else {
+            subTotal = (discountedPrice * quantity) + (price * quantity * taxRate);
+        }
+        return acc + subTotal;
+    }, 0);
+};
 
     // Update the calculateTotal function
     const calculateTotalWithoutInterest = () => {
@@ -906,9 +918,28 @@ function EditSaleBody() {
                                             </td>
 
                                             {/* Subtotal */}
-                                            <td className="px-6 text-left py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {formatWithCustomCommas(product.subtotal)}
-                                            </td>
+                                           <td className="px-6 text-left py-4 whitespace-nowrap text-sm text-gray-500">
+    {currency} {
+        (() => {
+            const price = getApplicablePrice(product);
+            const quantity = product.quantity || 1;
+            const taxRate = product.taxRate || getTax(product, product.selectedVariation);
+            const discount = product.discount || getDiscount(product, product.selectedVariation) || 0;
+            const specialDiscount = product.specialDiscount || 0;
+            const discountedPrice = price - discount - specialDiscount;
+
+            const taxType = getTaxType(product);
+
+            let subtotal;
+            if (taxType === "Inclusive") {
+                subtotal = discountedPrice * quantity;
+            } else {
+                subtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
+            }
+            return formatWithCustomCommas(subtotal);
+        })()
+    }
+</td>
 
                                             {/* Variation Type */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">

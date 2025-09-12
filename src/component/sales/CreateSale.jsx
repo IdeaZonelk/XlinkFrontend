@@ -151,51 +151,69 @@ function CreateSaleBody() {
         }
     };
 
-    const calculateBaseTotal = () => {
-        return selectedProduct.reduce((total, product) => {
-            const productPrice = Number(getApplicablePrice(product));
-            const productQty = product.barcodeQty || 1;
-            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-            const discount = Number(getDiscount(product, product.selectedVariation));
-            const discountedPrice = productPrice - discount;
-            const subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
-            return total + subTotal;
-        }, 0);
-    };
+const calculateBaseTotal = () => {
+    return selectedProduct.reduce((total, product) => {
+        const productPrice = Number(getApplicablePrice(product));
+        const productQty = product.barcodeQty || 1;
+        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+        const discount = Number(getDiscount(product, product.selectedVariation));
+        const discountedPrice = productPrice - discount;
 
-    const totalWithoutInterest = () => {
-        const productTotal = selectedProduct.reduce((total, product) => {
-            const productPrice = Number(getApplicablePrice(product));
-            const productQty = product.barcodeQty || 1;
-            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-            const discount = Number(getDiscount(product, product.selectedVariation));
-            const discountedPrice = productPrice - discount
+        // Get correct taxType for variations or single products
+        const taxType = product.ptype === "Variation"
+            ? product.variationValues?.[product.selectedVariation]?.taxType
+            : product.taxType;
 
-            const subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
-            return total + subTotal;
-
-        }, 0);
-
-        let discountValue = 0;
-        if (discountType === 'fixed') {
-            discountValue = Number(discount);
-        } else if (discountType === 'percentage') {
-            discountValue = (productTotal * Number(discount)) / 100;
+        let subTotal;
+        if (taxType === "Inclusive") {
+            subTotal = discountedPrice * productQty;
+        } else {
+            subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
         }
+        return total + subTotal;
+    }, 0);
+};
 
-        // Shipping cost remains the same
-        const shippingValue = Number(shipping);
+   const totalWithoutInterest = () => {
+    const productTotal = selectedProduct.reduce((total, product) => {
+        const productPrice = Number(getApplicablePrice(product));
+        const productQty = product.barcodeQty || 1;
+        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+        const discount = Number(getDiscount(product, product.selectedVariation));
+        const discountedPrice = productPrice - discount;
 
-        // Calculate global tax for the total bill
-        const globalTaxRate = Number(tax) / 100; // Convert to decimal
-        const globalTax = productTotal * globalTaxRate; // Tax on total product amount
+        const taxType = product.ptype === "Variation"
+            ? product.variationValues?.[product.selectedVariation]?.taxType
+            : product.taxType;
 
-        // Grand total = productTotal - discount + shipping + globalTax
-        const grandTotal = productTotal - discountValue + shippingValue + globalTax;
-        
-        return grandTotal;
-    };
+        let subTotal;
+        if (taxType === "Inclusive") {
+            subTotal = discountedPrice * productQty;
+        } else {
+            subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
+        }
+        return total + subTotal;
+    }, 0);
 
+    let discountValue = 0;
+    if (discountType === 'fixed') {
+        discountValue = Number(discount);
+    } else if (discountType === 'percentage') {
+        discountValue = (productTotal * Number(discount)) / 100;
+    }
+
+    // Shipping cost remains the same
+    const shippingValue = Number(shipping);
+
+    // Calculate global tax for the total bill
+    const globalTaxRate = Number(tax) / 100; // Convert to decimal
+    const globalTax = productTotal * globalTaxRate; // Tax on total product amount
+
+    // Grand total = productTotal - discount + shipping + globalTax
+    const grandTotal = productTotal - discountValue + shippingValue + globalTax;
+    
+    return grandTotal;
+};
     const calculateTotal =() =>{
         const total = totalWithoutInterest();
         if (useCreditPayment) {
@@ -209,44 +227,57 @@ function CreateSaleBody() {
     const calculateTaxLessTotal = () => {
         let subtotal = selectedProduct.reduce((total, product) => {
             const productPrice = Number(getApplicablePrice(product));
+            console.log("product price", productPrice);
             const productQty = product.barcodeQty || 1;
+            console.log("product qty", productQty);
             const discount = Number(getDiscount(product, product.selectedVariation));
-
+            console.log("product discount", discount);
             const discountedPrice = productPrice - discount
-
+            console.log("discounted price", discountedPrice);
             const subTotal = (discountedPrice * productQty);
+            console.log("sub total", subTotal);
             return total + subTotal;
 
         }, 0);
         const total = subtotal;
+        console.log("subtotal", subtotal);
         return isNaN(total) ? 0 : total;
     };
 
     const calculateProfitOfSale = () => {
         const profitTotal = selectedProduct.reduce((totalProfit, product) => {
             const productPrice = Number(getApplicablePrice(product));
+            // console.log("product price", productPrice);
             const productCost = Number(getProductCost(product, product.selectedVariation));
+            // console.log("product cost", productCost);
             const productQty = product.barcodeQty || 1;
+            // console.log("product qty", productQty);
             const discount = Number(getDiscount(product, product.selectedVariation));
+            // console.log("product discount", discount);
             const discountedPrice = productPrice - discount;
+            // console.log("discounted price", discountedPrice);
 
             const totalProductCost = (productCost * productQty)
+            // console.log("total product cost", totalProductCost);
             const subTotal = (discountedPrice * productQty);
+            // console.log("sub total", subTotal);
             const profitOfProduct = subTotal - totalProductCost;
+            console.log("profit of product", profitOfProduct);
             return totalProfit + profitOfProduct;
-
         }, 0);
 
         const totalPrice = calculateTaxLessTotal();
+        console.log("total price", totalPrice);
         let discountValue = 0;
         if (discountType === 'fixed') {
             discountValue = Number(discount);
         } else if (discountType === 'percentage') {
             discountValue = (totalPrice * Number(discount)) / 100;
         }
-
+        console.log("discount value", discountValue);
         // Grand total = productTotal - discount + shipping + globalTax
         const pureProfit = profitTotal - discountValue;
+        console.log("pure profit", pureProfit);
         return pureProfit;
     };
 
@@ -652,20 +683,30 @@ function CreateSaleBody() {
                                                     : `${getTax(product, product.selectedVariation)}%`}
                                             </td>
 
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {currency}  {
-                                                    (() => {
-                                                        const price = getApplicablePrice(product);
-                                                        const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
-                                                        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-                                                        const discount = getDiscount(product, product.selectedVariation);
-                                                        const discountedPrice = price - discount
+                                   
+<td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+    {currency}  {
+        (() => {
+            const price = getApplicablePrice(product);
+            const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
+            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+            const discount = getDiscount(product, product.selectedVariation);
+            const discountedPrice = price - discount;
 
-                                                        const subtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
-                                                        return formatWithCustomCommas(subtotal);
-                                                    })()
-                                                }
-                                            </td>
+           const taxType = product.ptype === "Variation"
+                ? product.variationValues?.[product.selectedVariation]?.taxType
+                : product.taxType;
+
+            let subtotal;
+            if (taxType === "Inclusive") {
+                subtotal = discountedPrice * quantity;
+            } else {
+                subtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
+            }
+            return formatWithCustomCommas(subtotal);
+        })()
+    }
+</td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {product.ptype === 'Variation' && product.variationValues ? (
