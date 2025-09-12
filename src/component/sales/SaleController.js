@@ -431,6 +431,7 @@ export const getDiscount = (product, selectedVariation) => {
     console.log("Single product discount:", singleDiscount); // Added logging
     return !isNaN(singleDiscount) && singleDiscount > 0 ? `${singleDiscount}` : 0;
 };
+};
 
 export const handleSave = async (
   grandTotal,
