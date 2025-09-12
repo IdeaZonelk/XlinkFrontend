@@ -626,7 +626,7 @@ function CreateProductBody() {
       });
 
       toast.success("Product created successfully!", { autoClose: 2000 });
-      handleClear();
+      navigate('/viewProducts');
 
     } catch (error) {
       if (error.response) {
