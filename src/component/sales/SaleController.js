@@ -427,18 +427,9 @@ export const getDiscount = (product, selectedVariation) => {
       );
       return !isNaN(variationDiscount) ? `${variationDiscount}` : 0;
     }
-    // Otherwise, return the minimum discount of all variations
-    const discounts = Object.values(product.variationValues)
-      .map((variation) => Number(variation.discount))
-      .filter((discount) => !isNaN(discount));
-    if (discounts.length > 0) {
-      const minDiscount = Math.min(...discounts);
-      return minDiscount;
-    }
-  }
-  const singleDiscount = Number(product.discount);
-  console.log("Single product discount:", singleDiscount); // Added logging
-  return !isNaN(singleDiscount) && singleDiscount > 0 ? `${singleDiscount}` : 0;
+    const singleDiscount = Number(product.discount);
+    console.log("Single product discount:", singleDiscount); // Added logging
+    return !isNaN(singleDiscount) && singleDiscount > 0 ? `${singleDiscount}` : 0;
 };
 
 export const handleSave = async (
