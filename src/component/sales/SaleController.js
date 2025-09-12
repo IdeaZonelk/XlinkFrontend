@@ -419,18 +419,24 @@ export const handleDiscount = (e, discountType, setDiscount) => {
 };
 
 export const getDiscount = (product, selectedVariation) => {
-  if (product.variationValues) {
-    // If a variation is selected, return the discount of that variation
-    if (selectedVariation && product.variationValues[selectedVariation]) {
-      const variationDiscount = Number(
-        product.variationValues[selectedVariation].discount
-      );
-      return !isNaN(variationDiscount) ? `${variationDiscount}` : 0;
+    if (product.variationValues) {
+        // If a variation is selected, return the discount of that variation
+        if (selectedVariation && product.variationValues[selectedVariation]) {
+            const variationDiscount = Number(product.variationValues[selectedVariation].discount);
+            return !isNaN(variationDiscount) ? `${variationDiscount}` : 0;
+        }
+        // Otherwise, return the minimum discount of all variations
+        const discounts = Object.values(product.variationValues)
+            .map(variation => Number(variation.discount))
+            .filter(discount => !isNaN(discount));
+        if (discounts.length > 0) {
+            const minDiscount = Math.min(...discounts);
+            return minDiscount;
+        }
     }
     const singleDiscount = Number(product.discount);
     console.log("Single product discount:", singleDiscount); // Added logging
     return !isNaN(singleDiscount) && singleDiscount > 0 ? `${singleDiscount}` : 0;
-};
 };
 
 export const handleSave = async (
