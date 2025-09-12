@@ -381,8 +381,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewProduct"
                                                 name="manageProducts_view_product"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageProducts?.view_product || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Product</label>
                                         </div>
@@ -434,8 +434,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewBaseunit"
                                                 name="manageBaseUnits_view_baseunit"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageBaseUnits?.view_baseunit || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Baseunit</label>
                                         </div>
@@ -487,8 +487,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewVariation"
                                                 name="manageVariation_view_variation"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageVariation?.view_variation || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Variation</label>
                                         </div>
@@ -571,8 +571,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewUser"
                                                 name="manageUsers_view_user"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageUsers?.view_user || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View User</label>
                                         </div>
@@ -623,8 +623,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewQuotation"
                                                 name="manageQuotations_view_quotation"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageQuotations?.view_quotation || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Quotation</label>
                                         </div>
@@ -713,8 +713,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewWarehouse"
                                                 name="manageWarehouse_view_warehouse"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageWarehouse?.view_warehouse || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Warehouse</label>
                                         </div>
@@ -763,8 +763,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewOffer"
                                                 name="manageOffers_view_offer"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageOffers?.view_offer || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Offer</label>
                                         </div>
@@ -997,8 +997,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewSale"
                                                 name="manageSales_view_sale"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageSales?.view_sale || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Sale</label>
                                         </div>
@@ -1145,8 +1145,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewPurchase"
                                                 name="managePurchases_view_purchase"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.managePurchases?.view_purchase || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Purchase</label>
                                         </div>
@@ -1764,8 +1764,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewExpense"
                                                 name="manageExpenses_view_expense"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageExpenses?.view_expense || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Expense</label>
                                         </div>
