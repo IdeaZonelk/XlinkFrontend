@@ -240,7 +240,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     wholesaleMinQty,
                     wholesalePrice,
                     productCost,
-                    productQty
+                    productQty,
                     claimedPoints
                 };
             });
