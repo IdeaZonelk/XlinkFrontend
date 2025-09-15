@@ -288,9 +288,14 @@ const calculateReturnAmount = () => {
                                 <tbody>
                                     {saleReturProductData.map((product, index) => (
                                         <tr key={index}>
-                                            <td className="px-6 py-4 text-left  whitespace-nowrap text-sm text-gray-500">
-                                                {product.name}
-                                            </td>
+                                           <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+    {product.name}
+    {product.ptype === 'Variation' && product.variationValue && (
+        <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+            {product.variationValue}
+        </span>
+    )}
+</td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm">
                                                 <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.stockQty}</p>
