@@ -21,13 +21,15 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
-const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer, useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, setFetchRegData }) => {
+
+const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, selectedCustomerName, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer, useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, setFetchRegData, claimedPoints, isPointsClaimed, redeemedPointsFromSale, logPoints }) => {
      console.log("PayingSection received productDetails:", productDetails);
     if (productDetails && productDetails.length > 0) {
         productDetails.forEach((product, idx) => {
             console.log(`Product ${idx}: name=${product.name}, productCost=${product.productCost}`);
         });
     }
+
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -59,6 +61,20 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     const cashRegisterID = sessionStorage.getItem('cashRegisterID');
     const kotRef = useRef(null);
 
+    useEffect(() => {
+        console.log('[payingSection] Received customer data:', {
+            selectedCustomer: selectedCustomer,
+            selectedCustomerName: selectedCustomerName,
+            claimedPoints: claimedPoints,
+            isPointsClaimed: isPointsClaimed
+        });
+    }, [selectedCustomer, selectedCustomerName, claimedPoints, isPointsClaimed]);
+
+    useEffect(() => {
+        console.log('[payingSection] Component mounted/received new props - claimedPoints:', claimedPoints,
+            'isPointsClaimed:', isPointsClaimed);
+        if (logPoints) logPoints();
+    }, [claimedPoints, isPointsClaimed, logPoints]);
     useEffect(() => {
         const fetchSettings = async () => {
             try {
@@ -188,7 +204,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     }, [decryptedUser]);
 
 
-    const updateProductQuantities = async (productDetails, shouldPrint = false) => {
+    const updateProductQuantities = async (productDetails, shouldPrint = false, claimedPoints) => {
         try {
             setSelectedOffer('');
             const reStructuredProductDetails = productDetails.map(product => {
@@ -225,6 +241,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     wholesalePrice,
                     productCost,
                     productQty
+                    claimedPoints
                 };
             });
 
@@ -235,6 +252,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 }
                 return acc;
             }, {});
+            console.log('[payingSection] Calling handleSave with claimedPoints:', claimedPoints);
 
             const result = await handleSave(
                 calculateTotalPrice(),
@@ -250,6 +268,7 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 tax,
                 warehouse ? warehouse : 'Unknown',
                 selectedCustomer ? selectedCustomer : 'Unknown',
+                selectedCustomerName,
                 selectedProduct,
                 date,
                 preFix,
@@ -266,12 +285,15 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 discountValue,
                 useCreditPayment,
                 creditDetails,
+                claimedPoints,
                 cashierUsername,
                 cashRegisterID,
-                setFetchRegData
-
+                setFetchRegData,
+                redeemedPointsFromSale
             );
+
             console.log("type of setProgress", setProgress);
+            console.log("selected customer name: ", selectedCustomerName)
             await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);
             return;
         } catch (error) {
@@ -280,6 +302,14 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
     };
 
     const handleSubmitPayment = async (shouldPrint) => {
+        console.log('[payingSection] handleSubmitPayment - customer data:', {
+            customerId: selectedCustomer,
+            customerName: selectedCustomerName,
+            claimedPoints: claimedPoints,
+            isPointsClaimed: isPointsClaimed
+        });
+        console.log('[payingSection] handleSubmitPayment - claimedPoints:', claimedPoints,
+            'isPointsClaimed:', isPointsClaimed);
         if (!validatePaymentStatus()) return;
 
         const normalizedPaymentStatus = paymentStatus?.toLowerCase();
@@ -330,7 +360,9 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
         }
 
         try {
-            await updateProductQuantities(productDetails, shouldPrint);
+            console.log('[payingSection] Calling updateProductQuantities with claimedPoints:', claimedPoints);
+            await updateProductQuantities(productDetails, shouldPrint, claimedPoints);
+
             if (shouldPrint) {
                 setPrintTrigger(true);
                 await fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading, setError);

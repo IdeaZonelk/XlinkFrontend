@@ -45,56 +45,46 @@
 //     // }
 // };
 
-import axios from 'axios';
 
-// Handle search input change
-export const handleFindUser = (e, setKeyword) => {
-    setKeyword(e.target.value);
-};
+import axios from 'axios';
 
 // Determine search type based on the keyword
 export const determineSearchType = (keyword) => {
-    if (/^\d+$/.test(keyword)) { // If the keyword is numeric
+    if (/^\d+$/.test(keyword)) {
         return 'mobile';
-    } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) { // If the keyword looks like an email
+    } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) {
         return 'username';
     } else {
-        return 'name'; // Default to name if nothing else fits
+        return 'name';
     }
 };
 
-// Handle search form submission (exact name match)
-export const handleSubmit = async (e, setLoading, setSearchCustomerResults, keyword, toast) => {
-    e.preventDefault();
-    setLoading(true);
+// Real-time search handler (call this on input change)
+export const handleFindUser = async (e, setKeyword, setSearchCustomerResults, setCustomerSearchError) => {
+    const value = e.target.value;
+    setKeyword(value);
+
+    if (value.trim() === "") {
+        setSearchCustomerResults([]);
+        setCustomerSearchError('');
+        return;
+    }
+
+    setCustomerSearchError('');
     try {
-        const trimmedKeyword = keyword.trim();
-        if (!trimmedKeyword) {
-            setSearchCustomerResults([]);
-            toast.error('Please enter a customer name.', { autoClose: 2000 });
-            setLoading(false);
-            return;
-        }
-        const searchType = determineSearchType(trimmedKeyword);
+        const searchType = determineSearchType(value);
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
-            params: { keyword: trimmedKeyword, searchType }
+            params: { keyword: value, searchType }
         });
         let customers = response.data.customers || [];
-        if (searchType === 'name') {
-            // Only exact match (case-insensitive)
-            customers = customers.filter(c =>
-                c.name && c.name.toLowerCase() === trimmedKeyword.toLowerCase()
-            );
-        }
         setSearchCustomerResults(customers);
         if (customers.length === 0) {
-            toast.error(`Customer not found for "${trimmedKeyword}"`, { autoClose: 2000 });
+            setCustomerSearchError(`Customer not found for "${value}"`);
         }
     } catch (error) {
-        toast.error('Error searching customer.', { autoClose: 2000 });
+        setCustomerSearchError('Error searching customer.');
         setSearchCustomerResults([]);
-    } finally {
-        setLoading(false);
     }
 };
+
 

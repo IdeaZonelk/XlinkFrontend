@@ -68,6 +68,10 @@ function CreateQuatationBody() {
     const [loyaltyReferenceNumber, setLoyaltyReferenceNumber] = useState('');
     const [redeemedPoints, setRedeemedPoints] = useState('');
     const [progress, setProgress] = useState(false);
+    // Add these state variables near your other state declarations
+const [claimedPoints, setClaimedPoints] = useState('');
+const [isPointsClaimed, setIsPointsClaimed] = useState(false);
+const [selectedCustomerName, setSelectedCustomerName] = useState('');
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -532,7 +536,7 @@ function CreateQuatationBody() {
                                         {filteredCustomer.map((customer) => (
                                             <li
                                                 key={customer._id}
-                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer)}
+                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer, setClaimedPoints, setIsPointsClaimed, setSelectedCustomerName)}
                                                 className="cursor-pointer hover:bg-gray-100 px-4 py-4 text-left"
                                             >
                                                 {customer.name}

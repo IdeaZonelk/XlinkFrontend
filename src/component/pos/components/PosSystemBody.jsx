@@ -10,7 +10,7 @@
  */
 
 
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import ProductFilters from './ProductFilters';
 import CryptoJS from 'crypto-js';
 import { useCurrency } from '../../../context/CurrencyContext';
@@ -35,7 +35,7 @@ import axios from 'axios';
 import LinearProgress from '@mui/material/LinearProgress';
 import Calculator from './posCalCulator';
 import ProductVariationModal from './productVariationEdit';
-import { handleFindProductBySearch, handleProductSubmit } from '../utils/searchProduct';
+import { handleProductSubmit } from '../utils/searchProduct';
 import { getHeldProducts, handleDeleteHoldProduct } from '../utils/holdProductControll';
 import { fetchCategoryData } from '../utils/fetchByCategory';
 import { fetchBrandData } from '../utils/fetchByBrand';
@@ -49,10 +49,8 @@ import { toast } from 'react-toastify';
 import { UserContext } from '../../../context/UserContext';
 import Draggable from 'react-draggable';
 
-
 function PosSystemBody({ defaultWarehouse }) {
     const ProductIcon = 'https://cdn0.iconfinder.com/data/icons/creative-concept-1/128/PACKAGING_DESIGN-512.png';
-    // State management
     const { userData } = useContext(UserContext);
     const [filters, setFilters] = useState({ brands: [], warehouses: [], categories: [] });
     const [warehouse, setWarehouse] = useState(sessionStorage.getItem("defaultWarehouse") || "");
@@ -66,6 +64,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [selectedCategoryProducts, setSelectedCategoryProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(false);
+    const [loadingCir, setLoadingCir] = useState(false);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [productBillingHandling, setProductBillingHandling] = useState([])
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -75,6 +74,7 @@ function PosSystemBody({ defaultWarehouse }) {
     const [heldProducts, setHeldProducts] = useState([])
     const [isExitingPopupOpen, setIsExitingPopupOpen] = useState(false);
     const [isPopUpRegisterReport, setIsPopUpRegisterReport] = useState(false);
+    const [selectedCustomerData, setSelectedCustomerData] = useState(null);
     const [registerData, setRegisterData] = useState({
         openTime: '',
         username: '',
@@ -82,6 +82,11 @@ function PosSystemBody({ defaultWarehouse }) {
         cashHandIn: 0,
         totalBalance: 0
     });
+    const [totalBalance, setTotalAmount] = useState(0);
+    const [openTime, setOpenTime] = useState('');
+    const cashierUsername = sessionStorage.getItem('cashierUsername');
+    const [cashierName, setCashierName] = useState('Unknown Cashier');
+     const [cashierTotalSale, setCashierTotalSale] = useState(0);
     const [errorMessage, setErrorMessage] = useState('');
     const [error, setError] = useState('')
     const [reloadStatus, setReloadStatus] = useState(false);
@@ -94,24 +99,29 @@ function PosSystemBody({ defaultWarehouse }) {
     const [walkInCustomerLoyaltyRef, setWalkInCustomerLoyaltyRef] = useState('');
     const [walkInCustomerRedeemedPoints, setWalkInCustomerRedeemedPoints] = useState('');
     const [customerSearchError, setCustomerSearchError] = useState('');
-    const [success, setSuccess] = useState('');
     const [selectedBrand, setSelectedBrand] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [permissionData, setPermissionData] = useState([]);
-
-    const [reportWarehouse, setReportWarehouse] = useState('all');
+    const cashRegisterID = sessionStorage.getItem('cashRegisterID')
     const [cardPaymentAmount, setCardPaymentAmount] = useState(0);
     const [cashPaymentAmount, setCashPaymentAmount] = useState(0);
     const [bankTransferPaymentAmount, setBankTransferPaymentAmount] = useState(0);
-    const [tax, setTax] = useState(0)
+    const [totalSaleAmount, setTotalSale] = useState(0);
+    const [cashHandIn, setCashHandIn] = useState(0);
     const [totalDiscountAmount, setTotalDiscountAmount] = useState(0);
     const [inputs, setInputs] = useState({
         amount20: 0, amount50: 0, amount100: 0, amount500: 0, amount1000: 0, amount5000: 0, amount1: 0, amount2: 0, amount5: 0, amount10: 0,
     });
     const [ProductNameOrCode, setProductNameOrCode] = useState('')
+    const [regDataFetching, setFetchRegData] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(Date.now())
+    const startLoading = () => setLoadingCir(true);
+    const stopLoading = () => setLoadingCir(false);
+    const notFoundToastShown = useRef(false);
     const [searchedProductDataByName, setSearchedProductDataByName] = useState([]);
     const selectedWarehouseAccess = permissionData?.warehousePermissions?.[warehouse]?.access ?? false;
     const { currency } = useCurrency();
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
     //COMBINE ALL DATA FETCHING TYPE INTO ONE STATE
     const combinedProductData = searchedProductData.length > 0
@@ -152,7 +162,6 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [userData]);
 
-
     useEffect(() => {
         if (reloadStatus && !warehouse) {
             fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProgress, setError);
@@ -160,15 +169,16 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [reloadStatus]);
 
-    //FETCHING ALL DATA (DEFAULT, BRAND OR CATEGORY)
+    const refreshAllReports = useCallback(() => {
+        setRefreshKey(Date.now());
+    }, []);
+
     useEffect(() => {
         if (!warehouse) {
             fetchAllData(setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProgress, setError);
         }
     }, [warehouse]);
 
-
-    // FETCHING ALL DATA BY WAREHOUSE
     const handleWarehouseChange = (e) => {
         const selectedWarehouse = e.target.value;
         setWarehouse(selectedWarehouse);
@@ -194,8 +204,6 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [productData]);
 
-
-    // Check permissions for the selected warehouse
     const canSelectProduct = (productWarehouseName) => {
 
         if (!productWarehouseName) {
@@ -217,7 +225,6 @@ function PosSystemBody({ defaultWarehouse }) {
 
         return isSelectable;
     };
-
 
     const playSound = () => {
         const audio = new Audio(popSound);
@@ -448,172 +455,128 @@ function PosSystemBody({ defaultWarehouse }) {
         return 0;
     };
 
-
     const handleHoldOpen = () => {
         setIsHoldList(!isHoldList);
     };
 
-    // Handle search input change
-    const handleFindUser = (e) => {
-        setKeyword(e.target.value);
-    };
+    const handleFindUser = async (e) => {
+        const value = e.target.value;
+        setKeyword(value);
 
-    // Determine search type based on the keyword
-    const determineSearchType = (keyword) => {
-        if (/^\d+$/.test(keyword)) { // If the keyword is numeric
-            return 'mobile';
-        } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) { // If the keyword looks like an email
-            return 'username';
-        } else {
-            return 'name'; // Default to name if nothing else fits
+        if (value.trim() === "") {
+            setSearchCustomerResults([]);
+            setCustomerSearchError('');
+            notFoundToastShown.current = false;
+            return;
         }
-    };
 
-    
+        setCustomerSearchError('');
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    setCustomerSearchError(''); // Clear previous error
-    try {
-        const searchType = determineSearchType(keyword);
-        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
-            params: { keyword, searchType }
-        });
-        let customers = response.data.customers || [];
-        if (searchType === 'name' && keyword.trim()) {
-            if (keyword.trim().length === 1) {
+        try {
+            const searchType = determineSearchType(value);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchCustomer`, {
+                params: { keyword: value, searchType }
+            });
+
+            let customers = response.data.customers || [];
+
+            // Handle search filtering
+            if (searchType === 'name' && keyword.trim()) {
+                if (keyword.trim().length === 1) {
+                    customers = customers.filter(c =>
+                        c.name && c.name.toLowerCase() === keyword.trim().toLowerCase()
+                    );
+                } else {
+                    customers = customers.filter(c =>
+                        c.name && c.name.toLowerCase().includes(keyword.trim().toLowerCase())
+                    );
+                }
+            } else if (searchType === 'loyaltyReferenceNumber' && keyword.trim()) {
                 customers = customers.filter(c =>
-                    c.name && c.name.toLowerCase() === keyword.trim().toLowerCase()
-                );
-            } else {
-                customers = customers.filter(c =>
-                    c.name && c.name.toLowerCase().includes(keyword.trim().toLowerCase())
+                    c.loyaltyReferenceNumber &&
+                    c.loyaltyReferenceNumber.toString().includes(keyword.trim())
                 );
             }
+
+            setSearchCustomerResults(customers);
+
+            // Show error toast if nothing found
+            if (customers.length === 0 && keyword.trim().length > 1) {
+                toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
+            }
+        } catch (error) {
+            if (!notFoundToastShown.current) {
+                toast.error(error.response?.data?.message || 'Customer not found', { autoClose: 2000 });
+                setCustomerSearchError(error.response?.data?.message || 'Customer not found');
+                notFoundToastShown.current = true;
+            }
+            setSearchCustomerResults([]);
         }
-        setSearchCustomerResults(customers);
-        if (customers.length === 0) {
-            toast.error(`Customer not found for "${keyword}"`, { autoClose: 2000 });
+    };
+
+    const determineSearchType = (keyword) => {
+        if (/^\d+$/.test(keyword)) {
+            // If numeric, decide whether it's mobile or loyaltyReferenceNumber
+            // For example, mobiles are usually 10 digits
+            return keyword.length === 10 ? 'mobile' : 'loyaltyReferenceNumber';
+        } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(keyword)) {
+            return 'username'; // email
+        } else {
+            return 'name';
         }
-    } catch (error) {
-        toast.error('Error searching customer.', { autoClose: 2000 });
-        console.error('Find customer error:', error);
-    }
-};
-
-
-
-
-
-    // const handleWalkInCustomerSubmit = async (e) => {
-    //     e.preventDefault();
-
-    //     // Input validation
-    //     if (!walkInCustomerName.trim()) {
-    //         alert('Customer name is required.');
-    //         return;
-    //     }
-    //     const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
-    //     const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
-
-    //     if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
-    //         alert('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).');
-    //         return;
-    //     }
-    //     if (!walkInCustomerMobile.trim() || !/^\+94\d{9}$/.test(walkInCustomerMobile)) {
-    //         alert('Mobile is required and must follow the format +94XXXXXXXXX.');
-    //         return;
-    //     }
-
-    //     try {
-    //         const response = await axios.post(
-    //             `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
-    //             {
-    //                 name: walkInCustomerName.trim(),
-    //                 nic: walkInCustomerNic.trim(),
-    //                 mobile: walkInCustomerMobile.trim(),
-    //             }
-    //         );
-
-    //         // Handle success
-    //         toast.success(
-    //             "Customer created successfully!",
-    //             { autoClose: 2000 },
-    //             { className: "custom-toast" }
-    //         );
-    //         setSuccess(response.data.message);
-    //         setWalkInCustomerName('');
-    //         setWalkInCustomerNic('');
-    //         setWalkInCustomerMobile('');
-    //         setError('');
-    //         setIsModalOpen(false); // Close modal on success
-    //     } catch (error) {
-    //         toast.error("Customer not added",
-    //             { autoClose: 2000 },
-    //             { className: "custom-toast" });
-    //         console.error('Walk-in customer error:', error);
-
-    //         // Handle error from backend
-    //         setError(
-    //             error.response?.data?.message || 'An error occurred while creating the customer.'
-    //         );
-    //     }
-    // };
+    };
 
     const handleWalkInCustomerSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    // Input validation
-    if (!walkInCustomerName.trim()) {
-        toast.error('Customer name is required.', { autoClose: 2000 });
-        return;
-    }
-    const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
-    const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
+        // Input validation
+        if (!walkInCustomerName.trim()) {
+            toast.error('Customer name is required.', { autoClose: 2000 });
+            return;
+        }
+        const newNICRegex = /^\d{12}$/;         // New format: 12 digits only
+        const oldNICRegex = /^\d{9}[VXvx]$/;    // Old format: 9 digits + 'V' or 'X'
 
-    if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
-        toast.error('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).', { autoClose: 2000 });
-        return;
-    }
-    if (!walkInCustomerMobile.trim() || !/^0\d{9}$/.test(walkInCustomerMobile)) {
-        toast.error('Mobile is required and must start with "0" and contain exactly 10 digits.', { autoClose: 2000 });
-        return;
-    }
+        if (!newNICRegex.test(walkInCustomerNic) && !oldNICRegex.test(walkInCustomerNic)) {
+            toast.error('NIC must be either 12 digits (new format) or 9 digits followed by "V" or "X" (old format).', { autoClose: 2000 });
+            return;
+        }
+        if (!walkInCustomerMobile.trim() || !/^0\d{9}$/.test(walkInCustomerMobile)) {
+            toast.error('Mobile is required and must start with "0" and contain exactly 10 digits.', { autoClose: 2000 });
+            return;
+        }
 
-    try {
-        const response = await axios.post(
-            `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
-            {
-                name: walkInCustomerName.trim(),
-                nic: walkInCustomerNic.trim(),
-                mobile: walkInCustomerMobile.trim(),
-                loyaltyReferenceNumber: walkInCustomerLoyaltyRef?.trim() || '', // Add loyalty reference if you have this field
-                redeemedPoints: walkInCustomerRedeemedPoints ? Number(walkInCustomerRedeemedPoints) : 0 // Add redeemed points if you have this field
-            }
-        );
+        try {
+            const response = await axios.post(
+                `${process.env.REACT_APP_BASE_URL}/api/walkInCustomer`,
+                {
+                    name: walkInCustomerName.trim(),
+                    nic: walkInCustomerNic.trim(),
+                    mobile: walkInCustomerMobile.trim(),
+                    loyaltyReferenceNumber: walkInCustomerLoyaltyRef?.trim() || '', // Add loyalty reference if you have this field
+                    redeemedPoints: walkInCustomerRedeemedPoints ? Number(walkInCustomerRedeemedPoints) : 0 // Add redeemed points if you have this field
+                }
+            );
 
-        toast.success(
-            response.data.message || "Customer created successfully!",
-            { autoClose: 2000, className: "custom-toast" }
-        );
-        setWalkInCustomerName('');
-        setWalkInCustomerNic('');
-        setWalkInCustomerMobile('');
-        setWalkInCustomerLoyaltyRef && setWalkInCustomerLoyaltyRef('');
-        setWalkInCustomerRedeemedPoints && setWalkInCustomerRedeemedPoints('');
-        setError('');
-        setIsModalOpen(false); // Close modal on success
-    } catch (error) {
-        toast.error(
-            error.response?.data?.message || "Customer not added",
-            { autoClose: 2000, className: "custom-toast" }
-        );
-        setError('');
-    }
-};
-
-
-
+            toast.success(
+                response.data.message || "Customer created successfully!",
+                { autoClose: 2000, className: "custom-toast" }
+            );
+            setWalkInCustomerName('');
+            setWalkInCustomerNic('');
+            setWalkInCustomerMobile('');
+            setWalkInCustomerLoyaltyRef && setWalkInCustomerLoyaltyRef('');
+            setWalkInCustomerRedeemedPoints && setWalkInCustomerRedeemedPoints('');
+            setError('');
+            setIsModalOpen(false); // Close modal on success
+        } catch (error) {
+            toast.error(
+                error.response?.data?.message || "Customer not added",
+                { autoClose: 2000, className: "custom-toast" }
+            );
+            setError('');
+        }
+    };
 
     const handleEditHoldProduct = async (heldProduct) => {
         try {
@@ -677,26 +640,38 @@ const handleSubmit = async (e) => {
     }
 
     const handleRegisterReportOpen = async () => {
+        if (!cashierUsername) {
+            setErrorMessage('Cashier username is not set.');
+            return;
+        }
         setIsPopUpRegisterReport(true);
-        const fetchReportData = async () => {
-            try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findRegisterData`);
-                if (response.data) {
-                    setRegisterData(response.data.data);
-                    console.log(response.data)
-                } else {
-                    console.error('Unexpected response format:', response.data);
-                    setRegisterData([]);
-                }
-            } catch (err) {
-                console.error('Error fetching report data:', err);
-                setErrorMessage('Failed to fetch report data');
-            }
-        };
-        fetchReportData();
+        setErrorMessage(null);
 
-        setIsPopupOpen(false)
-    }
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findRegisterData/${cashierUsername}`);
+
+            if (response.data && response.data.data) {
+                const register = response.data.data;
+                setRegisterData([register]);
+                setCashHandIn(register.cashHandIn || 0);
+                setCashierName(register.name || 'Unknown Cashier');
+                setTotalAmount(register.totalBalance || 0);
+                setOpenTime(register.openTime || '');
+            } else {
+                console.error('Unexpected response format or empty data:', response.data);
+                setRegisterData([]);
+                setErrorMessage('No register data found for this user.');
+            }
+        } catch (err) {
+            console.error('Error fetching report data:', err);
+            setErrorMessage('Failed to fetch report data');
+            setRegisterData([]);
+        }
+        finally {
+            stopLoading();
+            refreshAllReports();
+        }
+    };
 
     const handleRegisterReportClose = () => {
         setIsPopUpRegisterReport(false)
@@ -707,27 +682,29 @@ const handleSubmit = async (e) => {
         if (!cashRegisterID) return;
 
         try {
-            // Transform inputs object to array format
             const transformedInputs = Object.entries(inputs)
                 .map(([key, value]) => ({
-                    denomination: parseInt(key.replace('amount', ''), 10), // Base 10 parsing
+                    denomination: parseInt(key.replace('amount', ''), 10),
                     quantity: value,
                     amount: parseInt(key.replace('amount', ''), 10) * value
                 }))
                 .filter(item => item.quantity > 0);
 
-
-            // Prepare transaction data
             const transactionData = {
-                cardPaymentAmount,
-                cashPaymentAmount,
-                bankTransferPaymentAmount,
-                totalDiscountAmount,
+                cashierUsername,
+                cashRegisterID,
+                cashierName: cashierName || 'Unknown Cashier',
+                openedTime: openTime,
+                cardPaymentAmount: cardPaymentAmount || 0,
+                cashPaymentAmount: cashPaymentAmount || 0,
+                bankTransferPaymentAmount: bankTransferPaymentAmount || 0,
+                totalDiscountAmount: totalDiscountAmount || 0,
+                totalAmount: totalBalance - cashHandIn,
+                grandTotal: totalSaleAmount,
+                cashHandIn: cashHandIn || 0,
                 inputs: transformedInputs,
-                registerData,
-                cashVariance: Math.max(0, cashPaymentAmount - calculateTotal())
+                cashVariance: parseFloat((Math.max(0, (cashPaymentAmount + cashHandIn) - calculateTotal()))),
             };
-            console.log(transactionData)
 
             //1. First save transaction data
             await axios.post(`${process.env.REACT_APP_BASE_URL}/api/saveZreadingBill`, transactionData, {
@@ -793,57 +770,32 @@ const handleSubmit = async (e) => {
         }
     };
 
-    useEffect(() => {
+     useEffect(() => {
         const fetchReportData = async () => {
-            setLoading(true);
+            startLoading();
             try {
-                const warehouse = reportWarehouse;
-                let url = `${process.env.REACT_APP_BASE_URL}/api/getTodayReportData/${warehouse}`;
+                let url = `${process.env.REACT_APP_BASE_URL}/api/getZReportData/${cashRegisterID}`;
                 const response = await axios.get(url);
                 const sales = response.data.data.sales;
-                const formatAmount = (amount) => {
-                    const value = amount / 1000;
-                    if (value >= 1000) {
-                        return `${(value / 1000).toFixed(2)}M`;
-                    }
-                    return `${value.toFixed(2)}K`;
-                };
 
-                const { total, totalTaxAmount } = sales.reduce((totals, sale) => {
-                    if (sale && sale.productsData) {
-                        let saleTax = 0;
-
-                        if (sale.tax && sale.grandTotal) {
-                            saleTax = (parseFloat(sale.tax) / 100) * parseFloat(sale.grandTotal);
-                        }
-                        sale.productsData.forEach(product => {
-                            const quantity = parseInt(product.quantity || 0, 10);
-                            const tax = parseFloat(product.taxRate || 0);
-                            const price = parseFloat(product.price || 0);
-
-                            const subTotal = price * quantity;
-                            totals.total += subTotal;
-                            const taxAmount = (tax * price * quantity) + saleTax;
-                            totals.totalTaxAmount += taxAmount;
-                        });
-                    }
-                    return totals;
-                }, { total: 0, totalTaxAmount: 0 });
-
-                const { grandTotal, totalDiscountAmount } = sales.reduce((totals, sale) => {
+                const { totalDiscountAmount } = sales.reduce((totals, sale) => {
                     if (sale && sale.productsData) {
                         let saleSubtotal = 0;
                         let productDiscounts = 0;
+                        if (sale.pureProfit !== undefined) {
+                            totals.totalProfitAmount += parseFloat(sale.pureProfit) || 0;
+                        }
 
                         sale.productsData.forEach(product => {
-                            const quantity = parseInt(product.quantity || 0, 10);
+                            const quantity = parseFloat(product.quantity || 0);
                             const price = parseFloat(product.price || 0);
                             const discount = parseFloat(product.discount || 0);
                             const specialDiscount = parseFloat(product.specialDiscount || 0);
+                            const taxRate = parseFloat(product.taxRate || 0);
 
-                            const subTotal = price * quantity;
-                            saleSubtotal += subTotal;
-                            productDiscounts += (discount + specialDiscount) * quantity;
+                            productDiscounts += ((discount + specialDiscount) * quantity);
+                            const netPrice = (((price - discount - specialDiscount) * quantity) + (price * quantity * taxRate));
+                            saleSubtotal += netPrice;
                         });
 
                         let saleDiscount = 0;
@@ -854,42 +806,44 @@ const handleSubmit = async (e) => {
                                 : discountValue;
                         }
                         const offerDiscount = saleSubtotal * (parseFloat(sale.offerPercentage || 0) / 100);
+
                         totals.grandTotal += saleSubtotal;
                         totals.totalDiscountAmount += productDiscounts + saleDiscount + offerDiscount;
                     }
                     return totals;
-                }, { grandTotal: 0, totalDiscountAmount: 0 });
+                }, {
+                    grandTotal: 0,
+                    totalDiscountAmount: 0,
+                    totalProfitAmount: 0
+                });
 
                 setTotalDiscountAmount(totalDiscountAmount);
-                setTax(totalTaxAmount);
             } catch (error) {
                 console.error('Error fetching report data:', error);
                 setError('Failed to fetch report data');
             }
             finally {
-                setLoading(false)
+                setLoading(false);
+                setLoadingCir(false)
             }
         };
 
         fetchReportData();
-    }, []);
+    }, [regDataFetching, refreshKey]);
 
     useEffect(() => {
         const fetchReportData = async () => {
             setLoading(true);
             try {
-                const warehouse = reportWarehouse;
-                let url = `${process.env.REACT_APP_BASE_URL}/api/getTodayReportData/${warehouse}`;
+                let url = `${process.env.REACT_APP_BASE_URL}/api/getZReportData/${cashRegisterID}`;
                 const response = await axios.get(url);
                 const sales = response.data.data.sales;
 
-                // Initialize payment type totals
                 let cardTotal = 0;
                 let cashTotal = 0;
                 let bankTransferTotal = 0;
 
                 sales.forEach(sale => {
-                    // Process each payment method in the paymentType array
                     sale.paymentType?.forEach(payment => {
                         switch (payment.type) {
                             case 'card':
@@ -908,9 +862,16 @@ const handleSubmit = async (e) => {
                     });
                 });
 
+                const totalCashBalance = sales.reduce(
+                    (sum, sale) => sum + (sale.cashBalance || 0), 0
+                );
+                cashTotal += totalCashBalance;
+
+                const cashierTotalSale = cashTotal + cardTotal + bankTransferTotal;
                 setCardPaymentAmount(cardTotal);
                 setCashPaymentAmount(cashTotal);
                 setBankTransferPaymentAmount(bankTransferTotal);
+                setCashierTotalSale(cashierTotalSale);
 
             } catch (error) {
                 console.error('Error fetching report data:', error);
@@ -921,7 +882,33 @@ const handleSubmit = async (e) => {
         };
 
         fetchReportData();
-    }, []);
+    }, [regDataFetching, refreshKey]);
+
+    useEffect(() => {
+        const fetchReportData = async () => {
+            setLoading(true);
+            try {
+                const response = await axios.get(
+                    `${process.env.REACT_APP_BASE_URL}/api/getTodayReportData/${warehouse}`
+                );
+                const posSales = response.data.data.sales.filter(sale => sale.saleType === 'POS');
+                const totalSaleAmount = posSales.reduce(
+                    (total, sale) => total + parseFloat(sale.grandTotal || 0),
+                    0
+                );
+                console.log(totalSaleAmount);
+                setTotalSale(totalSaleAmount);
+
+            } catch (error) {
+                console.error('Error fetching report data:', error);
+                setError('Failed to fetch report data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReportData();
+    }, [warehouse, registerData, refreshKey]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -960,7 +947,6 @@ const handleSubmit = async (e) => {
                 },
             });
 
-            // Directly set the product array, not nested
             setSearchedProductDataByName(response.data.products || []);
         } catch (error) {
             console.error("Error searching products:", error);
@@ -970,7 +956,6 @@ const handleSubmit = async (e) => {
         }
     };
 
-    // Debounce function to limit how often we search
     const debounce = (func, delay) => {
         let timer;
         return function (...args) {
@@ -979,15 +964,13 @@ const handleSubmit = async (e) => {
         };
     };
 
-    // Debounced version of our search function
     const debouncedSearch = debounce(handleRealTimeSearch, 300);
 
-    // Handle input change
     const handleInputNameChange = (e) => {
         const value = e.target.value;
         setProductNameOrCode(value);
         if (value.trim() === "") {
-            setSearchedProductDataByName([]); // Clear results when input is empty
+            setSearchedProductDataByName([]); 
         } else {
             debouncedSearch(value);
         }
@@ -997,13 +980,20 @@ const handleSubmit = async (e) => {
         console.log("Combined products:", combinedProductData);
     }, [searchedProductData, combinedProductData]);
 
+    const LoadingOverlay = () =>
+        loadingCir ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+                <div className="loader"></div>
+            </div>
+        ) : null;
+
     return (
         <div className="bg-[#eff3f7] absolute w-full h-screen p-2 overflow-hidden">
             {/* HEADER SECTION */}
             <div className="flex justify-between  w-full h-[80px]">
                 <div className="flex justify-between w-[34.9%] bg-white h-[80px] rounded-[15px] ">
                     <div className="w-1/2 h-[82px] flex items-center relative  pb-[2px]">
-                        <form onChange={handleSubmit} className="flex items-center relative w-full">
+                        <form className="flex items-center relative w-full">
                             <input
                                 name="keyword"
                                 type="text"
@@ -1012,14 +1002,13 @@ const handleSubmit = async (e) => {
                                 value={keyword}
                                 onChange={handleFindUser}
                             />
-                           
-                            <button type="submit" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
+                            <button type="button" className="absolute inset-y-0 left-0 pl-6 flex items-center text-gray-400">
                                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fillRule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zm0-1a7 7 0 110 14A7 7 0 019 2z" clipRule="evenodd" />
                                     <path fillRule="evenodd" d="M12.9 12.9a1 1 0 011.41 0l3 3a1 1 0 01-1.41 1.41l-3-3a1 1 0 010-1.41z" clipRule="evenodd" />
                                 </svg>
                             </button>
-                        </form> 
+                        </form>
 
                         {keyword && searchCustomerResults.length > 0 && (
                             <div className="absolute top-[90px] w-[94%] mr-2 text-left overflow-y-scroll h-[350px] left-[7px] bg-white border border-gray-300 rounded-lg shadow-md">
@@ -1029,8 +1018,12 @@ const handleSubmit = async (e) => {
                                             key={index}
                                             className="p-2 cursor-pointer hover:bg-gray-100"
                                             onClick={() => {
-                                                setSelectedCustomer(customer.name);
-                                                setKeyword('');
+                                                console.log('Selected customer:', customer);
+                                                setSelectedCustomer(customer._id);
+                                                setSelectedCustomerData(customer);
+                                                setSelectedCustomerName(customer.name);
+                                                setKeyword("");
+                                                setSearchCustomerResults([]);
                                             }}
                                         >
                                             {customer.name}
@@ -1053,12 +1046,11 @@ const handleSubmit = async (e) => {
                                 />
                             </button>
 
+
                             {/* Modal for Walk-In Customer */}
-                            {/* {isModalOpen && (
+                            {isModalOpen && (
                                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-[1000]">
-                                    <div
-                                        className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn"
-                                    >
+                                    <div className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn">
                                         <div className="flex items-center justify-center mb-6">
                                             <h2 className="text-2xl font-semibold text-gray-700 text-center">
                                                 Add Customer
@@ -1093,21 +1085,54 @@ const handleSubmit = async (e) => {
                                                     <i className="fas fa-id-card"></i>
                                                 </span>
                                             </div>
-                                            <div className="relative mb-6">
+                                            <div className="relative mb-4">
                                                 <input
                                                     type="text"
-                                                    placeholder="Enter Mobile: +94XXXXXXXXX"
+                                                    placeholder="Enter Mobile: 0XXXXXXXXX"
                                                     value={walkInCustomerMobile}
                                                     onChange={(e) => setWalkInCustomerMobile(e.target.value)}
                                                     className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     required
-                                                    pattern="^\+94\d{9}$"
-                                                    title="Enter a valid mobile number in the format +94XXXXXXXXX."
+                                                // pattern="^0\d{9}$"
+                                                // title="Enter a valid mobile number in the format 0XXXXXXXXX."
                                                 />
                                                 <span className="absolute left-3 top-3 text-gray-400">
                                                     <i className="fas fa-phone-alt"></i>
                                                 </span>
                                             </div>
+                                            {/* Loyalty Reference Number */}
+                                            {typeof walkInCustomerLoyaltyRef !== "undefined" && (
+                                                <div className="relative mb-4">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Loyalty Reference Number"
+                                                        value={walkInCustomerLoyaltyRef}
+                                                        onChange={(e) => setWalkInCustomerLoyaltyRef(e.target.value)}
+                                                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                                                        required
+                                                        title="Loyalty reference is required."
+                                                    />
+                                                    <span className="absolute left-3 top-3 text-gray-400">
+                                                        <i className="fas fa-id-card"></i>
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {/* Redeemed Points */}
+                                            {typeof walkInCustomerRedeemedPoints !== "undefined" && (
+                                                <div className="relative mb-4">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Redeemed Points"
+                                                        value={walkInCustomerRedeemedPoints}
+                                                        onChange={(e) => setWalkInCustomerRedeemedPoints(e.target.value)}
+                                                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                                                        title="Redeemed Points (optional)"
+                                                    />
+                                                    <span className="absolute left-3 top-3 text-gray-400">
+                                                        <i className="fas fa-star"></i>
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between">
                                                 <button
                                                     type="submit"
@@ -1126,115 +1151,7 @@ const handleSubmit = async (e) => {
                                         </form>
                                     </div>
                                 </div>
-                            )} */}
-                            {/* Modal for Walk-In Customer */}
-{isModalOpen && (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center backdrop-blur-sm z-[1000]">
-        <div className="bg-white w-[350px] sm:w-[400px] p-6 rounded-2xl shadow-2xl transform scale-100 opacity-0 animate-fadeIn">
-            <div className="flex items-center justify-center mb-6">
-                <h2 className="text-2xl font-semibold text-gray-700 text-center">
-                    Add Customer
-                </h2>
-            </div>
-            <form onSubmit={handleWalkInCustomerSubmit}>
-                <div className="relative mb-4">
-                    <input
-                        type="text"
-                        placeholder="Enter customer name"
-                        value={walkInCustomerName}
-                        onChange={(e) => setWalkInCustomerName(e.target.value)}
-                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                        required
-                        title="Customer name is required."
-                    />
-                    <span className="absolute left-3 top-3 text-gray-400">
-                        <i className="fas fa-user"></i>
-                    </span>
-                </div>
-                <div className="relative mb-4">
-                    <input
-                        type="text"
-                        placeholder="Enter NIC"
-                        value={walkInCustomerNic}
-                        onChange={(e) => setWalkInCustomerNic(e.target.value)}
-                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                        required
-                        title="NIC is required and must be exactly 12 characters."
-                    />
-                    <span className="absolute left-3 top-3 text-gray-400">
-                        <i className="fas fa-id-card"></i>
-                    </span>
-                </div>
-                <div className="relative mb-4">
-                    <input
-                        type="text"
-                        placeholder="Enter Mobile: 0XXXXXXXXX"
-                        value={walkInCustomerMobile}
-                        onChange={(e) => setWalkInCustomerMobile(e.target.value)}
-                        className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                        required
-                        // pattern="^0\d{9}$"
-                        // title="Enter a valid mobile number in the format 0XXXXXXXXX."
-                    />
-                    <span className="absolute left-3 top-3 text-gray-400">
-                        <i className="fas fa-phone-alt"></i>
-                    </span>
-                </div>
-                {/* Loyalty Reference Number */}
-                {typeof walkInCustomerLoyaltyRef !== "undefined" && (
-                    <div className="relative mb-4">
-                        <input
-                            type="text"
-                            placeholder="Loyalty Reference Number"
-                            value={walkInCustomerLoyaltyRef}
-                            onChange={(e) => setWalkInCustomerLoyaltyRef(e.target.value)}
-                            className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                            required
-                            title="Loyalty reference is required."
-                        />
-                        <span className="absolute left-3 top-3 text-gray-400">
-                            <i className="fas fa-id-card"></i>
-                        </span>
-                    </div>
-                )}
-                {/* Redeemed Points */}
-                {typeof walkInCustomerRedeemedPoints !== "undefined" && (
-                    <div className="relative mb-4">
-                        <input
-                            type="number"
-                            placeholder="Redeemed Points"
-                            value={walkInCustomerRedeemedPoints}
-                            onChange={(e) => setWalkInCustomerRedeemedPoints(e.target.value)}
-                            className="w-full border border-gray-300 p-3 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
-                            title="Redeemed Points (optional)"
-                        />
-                        <span className="absolute left-3 top-3 text-gray-400">
-                            <i className="fas fa-star"></i>
-                        </span>
-                    </div>
-                )}
-                <div className="flex justify-between">
-                    <button
-                        type="submit"
-                        className="submit text-white px-4 py-2 rounded-lg shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    >
-                        Create
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setIsModalOpen(false)}
-                        className="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-)}
-
-
-
+                            )}
                         </div>
 
                     </div>
@@ -1290,11 +1207,7 @@ const handleSubmit = async (e) => {
                                 </p>
                             </form>
 
-                            {/* Search by Name */}
-                            <form
-                                onSubmit={handleSubmit}
-                                className="relative w-full sm:w-auto flex-grow"
-                            >
+                            <form className="relative w-full sm:w-auto flex-grow">
                                 <input
                                     name="Productkeyword"
                                     type="text"
@@ -1310,6 +1223,8 @@ const handleSubmit = async (e) => {
                                     </svg>
                                 </p>
                             </form>
+
+
                         </div>
                     </div>
 
@@ -1437,30 +1352,50 @@ const handleSubmit = async (e) => {
                                 lg:w-[70%] lg:h-[680px] 
                                 xl:w-[64%] xl:h-[670px]
                                 2xl:w-[60%] xl:h-[650px] 
-                                p-6 rounded-md shadow-lg">
+                                p-6 rounded-md shadow-lg overflow-x-auto scroll-container">
                                     <h2 className="text-xl text-gray-800 font-semibold">Register Report</h2>
                                     {loading ? (
                                         <p>Loading</p>
                                     ) : registerData.length > 0 ? (
-                                        <div className="overflow-x-auto scroll-container pl-6 pr-6 pt-2 pb-1">
+                                        <div className="pl-6 pr-6 pt-2 pb-1">
                                             <table className="min-w-full bg-white border border-gray-200">
                                                 <thead className="bg-gray-50">
                                                     <tr>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Open Time</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">user</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cash hand in</th>
-                                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Open Time</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cash hand in</th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            Your Sale <br /><p className='text-[10px]'>(Without Cash Hand)</p>
+                                                        </th>
+                                                        <th className="align-top px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            Today Total Sale <br /><p className='text-[10px]'>(Without Cash Hand)</p>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="bg-white divide-y divide-gray-200">
                                                     {registerData.map((reg) => (
                                                         <tr key={reg._id}>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"><p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">{reg.openTime}</p></td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{reg.username || 'Unknown'}</td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{reg.name}</td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">{currency} {formatWithCustomCommas(reg.cashHandIn)}</p></td>
-                                                            <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900"> <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">{currency} {formatWithCustomCommas(reg.totalBalance)}</p></td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                                <p className="rounded-[5px] text-center p-[6px] bg-red-100 text-red-500">
+                                                                    {reg.openTime}
+                                                                </p>
+                                                            </td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">{reg.name}</td>
+                                                            <td className="px-4 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                                <p className="rounded-[5px] text-center py-[6px] bg-blue-100 text-blue-500">
+                                                                    {currency} {formatWithCustomCommas(reg.cashHandIn)}
+                                                                </p>
+                                                            </td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                                <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">
+                                                                    {currency} {formatWithCustomCommas(cashierTotalSale)}
+                                                                </p>
+                                                            </td>
+                                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                                <p className="rounded-[5px] text-center py-[6px] bg-green-100 text-green-500">
+                                                                    {currency} {formatWithCustomCommas(totalSaleAmount)}
+                                                                </p>
+                                                            </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -1478,7 +1413,7 @@ const handleSubmit = async (e) => {
                                                         value={formatWithCustomCommas(totalDiscountAmount || 0)}
                                                         className="w-full border border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
@@ -1489,7 +1424,7 @@ const handleSubmit = async (e) => {
                                                         value={formatWithCustomCommas(cashPaymentAmount || 0)}
                                                         className="w-full border border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
@@ -1500,7 +1435,7 @@ const handleSubmit = async (e) => {
                                                         value={formatWithCustomCommas(cardPaymentAmount || 0)}
                                                         className="w-full border border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                             <div className="flex-1">
@@ -1511,7 +1446,7 @@ const handleSubmit = async (e) => {
                                                         value={formatWithCustomCommas(bankTransferPaymentAmount || 0)}
                                                         className="w-full border  border-gray-300 p-3 pl-14 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                     />
-                                                    <span className="absolute rounded-l-lg left-[1px] p-3 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
+                                                    <span className="absolute rounded-l-lg left-[1px] px-3 py-4 bg-gray-100 top-1/2 transform -translate-y-1/2">{currency}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1632,14 +1567,23 @@ const handleSubmit = async (e) => {
                                                 <div className='flex flex-col justify-end relative'>
                                                     <label className="mb-2 text-left">Total Cash</label>
                                                     <div className="relative w-[170px]">
-                                                        <span className="absolute rounded-l-lg left-2 top-1/2 transform -translate-y-1/2 text-gray-500">{currency}</span>
+                                                        <span className={`absolute rounded-l-lg left-2 top-1/2 transform -translate-y-1/2 ${calculateTotal() === 0 ? 'text-red-500' : 'text-gray-500'
+                                                            }`}>
+                                                            {currency}
+                                                        </span>
                                                         <input
                                                             type="text"
                                                             value={formatWithCustomCommas(calculateTotal())}
                                                             readOnly
-                                                            className="w-full border border-gray-300 px-3 py-2 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
+                                                            className={`w-full border-2 px-3 py-2 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-1 ${calculateTotal() === 0
+                                                                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                                                : 'border-gray-300 focus:ring-[#35AF87] focus:border-[#35AF87]'
+                                                                } transition-colors duration-200`}
                                                         />
                                                     </div>
+                                                    {calculateTotal() === 0 && (
+                                                        <p className="text-red-500 text-left text-xs mt-1 font-medium">No cash detected</p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1650,7 +1594,7 @@ const handleSubmit = async (e) => {
                                                         <span className="absolute rounded-l-lg left-2 top-1/2 transform -translate-y-1/2 text-gray-500">{currency}</span>
                                                         <input
                                                             type="text"
-                                                            value={formatWithCustomCommas(Math.max(0, cashPaymentAmount - calculateTotal()))}
+                                                            value={formatWithCustomCommas(Math.max(0, (cashPaymentAmount + cashHandIn) - calculateTotal()))}
                                                             readOnly
                                                             className="w-full border border-gray-300 px-3 py-2 pl-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#35AF87]"
                                                         />
@@ -1670,19 +1614,24 @@ const handleSubmit = async (e) => {
 
                                     <div className="flex mt-2 ml-5">
                                         <button
-                                            className="px-4 py-2 mr-2 bg-gray-500 text-white rounded-md"
+                                            className="px-4 py-3 mr-2 bg-gray-500 text-white rounded-md"
                                             onClick={() => handleRegisterReportClose(setIsPopupOpen)}
                                         >
                                             Cancel
                                         </button>
+
                                         <button
-                                            className="px-4 py-2 button-bg-color text-white rounded-md"
-                                            onClick={() => {
+                                            className="px-4 py-3 button-bg-color text-white rounded-md"
+                                            onClick={async () => {
                                                 console.log('POS closed');
-                                                handlePOSClose(setIsPopupOpen, navigate);
+                                                try {
+                                                    await handlePOSClose();
+                                                } catch (error) {
+                                                    console.error('Failed to fetch Z records:', error);
+                                                }
                                             }}
                                         >
-                                            Confirm
+                                            Close the POS
                                         </button>
                                     </div>
                                 </div>
@@ -1741,6 +1690,7 @@ const handleSubmit = async (e) => {
             {/* Produc billing section in right */}
             <div className="flex justify-between mt-2 w-full h-screen ">
                 <div className="w-[35%] h-screen rounded-[15px] bg-white p-2">
+
                     <div>
                         <BillingSection
                             productBillingHandling={productBillingHandling}
@@ -1748,7 +1698,11 @@ const handleSubmit = async (e) => {
                             handleDeleteHoldProduct={handleDeleteHoldProduct}
                             setProductData={setProductData}
                             selectedCustomer={selectedCustomer}
+                            selectedCustomerName={selectedCustomerName}
+                            selectedCustomerData={selectedCustomerData}
                             setSelectedCustomer={setSelectedCustomer}
+                            setSelectedCustomerName={setSelectedCustomerName}
+                            setSelectedCustomerData={setSelectedCustomerData}
                             warehouse={warehouse}
                             setReloadStatus={setReloadStatus}
                             setHeldProductReloading={setHeldProductReloading}
@@ -1756,6 +1710,7 @@ const handleSubmit = async (e) => {
                             setSelectedBrandProducts={setSelectedBrandProducts}
                             setSearchedProductData={setSearchedProductData}
                             setError={setError}
+                            setFetchRegData={setFetchRegData}
                         />
                     </div>
                 </div>
@@ -1955,6 +1910,9 @@ const handleSubmit = async (e) => {
                             />
                         )}
                     </div>
+
+                    <LoadingOverlay />
+
 
                     {/* CALCULATOR */}
                     {showCalculator && (

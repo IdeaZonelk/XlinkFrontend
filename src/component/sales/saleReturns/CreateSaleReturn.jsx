@@ -259,7 +259,7 @@ function CreateSaleReturnBody() {
                                 <input
                                     id="customer"
                                     name="customer"
-                                    value={saleProduct.customer}
+                                    value={saleProduct.customerName || "Unknown"}
                                     required
                                     className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
                                 />
@@ -435,7 +435,7 @@ function CreateSaleReturnBody() {
                     </div>
 
                     <button onClick={() => handleReturnSale(id,
-                        saleProduct.grandTotal, saleProduct.paidAmount, calculateReturnAmount(),  saleProduct.warehouse, saleProduct.customer, selectedProduct, saleProduct.date, saleProduct.discountValue, saleProduct.shipping , saleProduct.tax , note, setError, setResponseMessage, setProgress, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
+                        saleProduct.grandTotal, saleProduct.paidAmount, calculateReturnAmount(),  saleProduct.warehouse, saleProduct.customer, saleProduct.customerName, selectedProduct, saleProduct.date, saleProduct.discountValue, saleProduct.shipping , saleProduct.tax , note, setError, setResponseMessage, setProgress, navigate)} className="mt-5 submit  w-[200px] text-white rounded py-2 px-4">
                         Return The Sale
                     </button>
                 </div>
