@@ -80,7 +80,7 @@ function EditPurchaseBody() {
             const productTaxRate = saleReturProductData[index]?.taxRate / 100 || 0;
 
             // Calculate subtotal based on the specified formula
-            const productSubtotal = (product.price * productQty) + (product.price * productQty * (productTaxRate * 100));
+            const productSubtotal = (product.price * productQty);
             return acc + productSubtotal;
         }, 0);
 
@@ -297,10 +297,12 @@ function EditPurchaseBody() {
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Qty</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Original Purchase Qty</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Qty</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return Qty</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th> */}
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation Type</th> 
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sub Total</th>
                                 </tr>
                             </thead>
@@ -314,6 +316,10 @@ function EditPurchaseBody() {
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm">
                                                 <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.stockQty}</p>
+                                            </td>
+
+                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm">
+                                                <p className='rounded-[5px] text-center p-[6px] bg-gray-100 text-gray-500'>{product.originalPurchaseQty}</p>
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -331,7 +337,7 @@ function EditPurchaseBody() {
                                                     {/* Input Field for Quantity */}
                                                     <input
                                                         type="number"
-                                                        value={saleReturProductData[index]?.quantity || 1}
+                                                        value={saleReturProductData[index]?.quantity || 0}
                                                         onChange={(e) => handleQtyChange(index, e.target.value)}
                                                         className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
                                                         min="1"
@@ -348,15 +354,19 @@ function EditPurchaseBody() {
                                                 </div>
                                             </td>
 
+                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm">
+                                                <p className='rounded-[5px] text-center p-[6px] bg-gray-100 text-gray-500'>{product.returnQty}</p>
+                                            </td>
+
                                             {/* Product Price */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {currency}{' '} {formatWithCustomCommas(product.price)}
                                             </td>
 
                                             {/* Product Tax */}
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.taxRate * 100} %  {/* Show a default if no tax is available */}
-                                            </td>
+                                            {/* <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                {product.taxRate * 100} %  
+                                            </td> */}
 
                                             {/* Variation Type */}
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
@@ -397,9 +407,9 @@ function EditPurchaseBody() {
                                     type="text"
                                     placeholder="Discount"
                                     className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm' />
-                                <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    {discountType === 'percentage' ? '%' : currency}
-                                </span>
+                               <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
+    {purchaseProduct.discountType === 'percentage' ? '%' : currency}
+</span>
                             </div>
                             <div className="relative">
                                 <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Tax :</label>

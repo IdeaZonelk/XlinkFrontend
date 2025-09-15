@@ -270,33 +270,53 @@ function ViewPurchaseReturnBody() {
     const customerReturns = combinedProductData.filter(purchase => purchase.returnType === 'customer');
     const companyReturns = combinedProductData.filter(purchase => purchase.returnType === 'company');
 
-    const renderTable = (data, title) => (
+// ... (previous imports and code remains the same)
+
+const renderTable = (data, title) => {
+    const isCompanyTab = activeTab === 'company';
+    
+    return (
         <div className="overflow-x-auto mb-8">
             <table className="min-w-full bg-white border border-gray-200">
                 <thead className="bg-gray-50">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refference</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Suplier</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warehouse</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grand Total</th>
+                        {/* Conditionally render Grand Total or Return Amount based on tab */}
+                        {isCompanyTab ? (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Amount</th>
+                        ) : (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grand Total</th>
+                        )}
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                     {data.map((purchase) => (
-                        <tr key={purchase._id}
-                        >
+                        <tr key={purchase._id}>
                             <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{purchase.refferenceId}</p></td>
                             <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900"><p className='rounded-[5px] text-center p-[6px] bg-red-100 text-red-500'>{purchase.supplier}</p></td>
                             <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">{purchase.warehouse}</td>
                             <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">{new Date(purchase.date).toLocaleDateString()}</td>
-                            <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">
-                                <p className={`rounded-[5px] text-center p-[6px] bg-green-100 text-green-500`}>
-                                    {currency}{' '} {formatWithCustomCommas(purchase.grandTotal)}
-                                </p>
-                            </td>
+                            
+                            {/* Conditionally render Grand Total or Return Amount based on tab */}
+                            {isCompanyTab ? (
+                                <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">
+                                    <p className={`rounded-[5px] text-center p-[6px] bg-green-100 text-green-500`}>
+                                        {currency}{' '} {formatWithCustomCommas(purchase.returnAmount || purchase.grandTotal)}
+                                    </p>
+                                </td>
+                            ) : (
+                                <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">
+                                    <p className={`rounded-[5px] text-center p-[6px] bg-green-100 text-green-500`}>
+                                        {currency}{' '} {formatWithCustomCommas(purchase.grandTotal)}
+                                    </p>
+                                </td>
+                            )}
+                            
                             <td className="px-6 py-4  text-left whitespace-nowrap text-m text-gray-900">{currency}{' '} {formatWithCustomCommas(purchase.paidAmount)}</td>
                             <td className="px-6 py-4  flex justify-end text-right whitespace-nowrap text-m text-gray-900">
                                 <div className='flex items-center'>
@@ -317,14 +337,12 @@ function ViewPurchaseReturnBody() {
                                             <i className="fas fa-trash mr-1"></i>
                                         </button>
                                     )}
-                                    {/* {(permissionData.view_pur_return_popup) && ( */}
                                     <button
                                         onClick={() => handleTogglePopup(purchase._id)}
                                         className="text-gray-500 hover:text-gray-700 font-bold py-1 px-2 flex items-center rotate-90"
                                     >
                                         <i className="fa fa-ellipsis-h"></i>
                                     </button>
-                                    {/* )} */}
 
                                     {/* Conditional rendering of the popup for the specific sale._id */}
                                     {openPopupId === purchase._id && (
@@ -332,7 +350,7 @@ function ViewPurchaseReturnBody() {
                                             <ul className="text-sm text-gray-700">
                                                 {permissionData.view_pur_return_popup && (
                                                     <li onClick={() => handleSaleViewPopUp(purchase._id)} className="px-4 py-4 hover:bg-gray-100 cursor-pointer flex items-center">
-                                                        <i className="fas fa-eye mr-2 text-gray-600"></i> {/* Icon for "View Sale" */}
+                                                        <i className="fas fa-eye mr-2 text-gray-600"></i>
                                                         View Purchase Return
                                                     </li>
                                                 )}
@@ -341,6 +359,7 @@ function ViewPurchaseReturnBody() {
                                     )}
                                 </div>
                             </td>
+
                             {/* View purchase popup */}
                             {openViewSale === purchase._id && (
                                 <div ref={popupRef} className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -381,7 +400,7 @@ function ViewPurchaseReturnBody() {
                                                     <p className="m-2 text-left"><i className="fas fa-phone mr-2 text-gray-400 text-left"></i><span className="font-medium">Phone:</span> {companyMobile}</p>
                                                     <p className="m-2 text-left"><i className="fas fa-map-marker-alt mr-2 text-gray-400 text-left"></i><span className="font-medium ">Address:</span> {address}</p>
                                                 </div>
-                                                {/* Invoice Info <span className="font-medium m-2">Orser status:</span>*/}
+                                                {/* Invoice Info */}
                                                 <div>
                                                     <h3 className="text-left text-lg p-[8px] bg-gray-100 font-semibold mb-2 text-gray-700">
                                                         <i className="fas fa-file-invoice mr-2 text-gray-600"></i>
@@ -391,6 +410,13 @@ function ViewPurchaseReturnBody() {
                                                         <span className="font-medium m-2 mt-4"><i className="fas fa-warehouse mr-1 text-gray-400"></i>Warehouse:</span>
                                                         {purchase.warehouse}
                                                     </p>
+                                                    {/* Show Return Amount for company returns in the invoice info */}
+                                                    {isCompanyTab && (
+                                                        <p className='mt-2 text-left'>
+                                                            <span className="font-medium m-2 mt-4"><i className="fas fa-money-bill-wave mr-1 text-gray-400"></i>Return Amount:</span>
+                                                            {currency} {formatWithCustomCommas(purchase.returnAmount || purchase.grandTotal)}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -400,24 +426,22 @@ function ViewPurchaseReturnBody() {
                                                 <table className=" mt-4 min-w-full bg-white border border-gray-300">
                                                     <thead>
                                                         <tr>
-                                                            {/* <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product ID</th> */}
                                                             <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product name</th>
                                                             <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Warehouse</th>
                                                             <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product price</th>
-                                                            <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Qty</th>
-                                                            <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product tax</th>
+                                                            <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Return Qty</th>
+                                                            {/* <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Product tax</th> */}
                                                             <th className="text-gray-700 py-2 px-4 border-b text-left bg-gray-100 ">Sub total</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {purchase.productsData.map((product) => (
                                                             <tr key={product._id} className="text-gray-700">
-                                                                {/* <td className="text-left py-2 px-4 border-b">{product.currentID}</td> */}
                                                                 <td className="text-left py-2 px-4 border-b">{product.name}</td>
                                                                 <td className="text-left py-2 px-4 border-b">{product.warehouse ? product.warehouse : purchase.warehouse}</td>
                                                                 <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.price)}</td>
-                                                                <td className="text-left py-2 px-4 border-b">{product.quantity}</td>
-                                                                <td className="py-2 px-4 border-b text-left">{product.taxRate} %</td>
+                                                                <td className="text-left py-2 px-4 border-b">{product.returnQty}</td>
+                                                                {/* <td className="py-2 px-4 border-b text-left">{product.taxRate} %</td> */}
                                                                 <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(product.subtotal)}</td>
                                                             </tr>
                                                         ))}
@@ -434,24 +458,29 @@ function ViewPurchaseReturnBody() {
 
                                             {/* Additional data */}
                                             <div className="mt-10">
-                                                <table className=" mt-10 min-w-[400px] bg-white border border-gray-300">
+                                                <h3 className="text-md  mt-5 text-left p-[2px] text-gray-700">Proportionally Returned Amounts</h3>
+                                                <table className=" mt-2 min-w-[400px] bg-white border border-gray-300">
                                                     <tbody>
                                                         <tr>
                                                             <td className="text-left py-2 px-4 border-b">Tax</td>
-                                                            <td className="text-left py-2 px-4 border-b">{purchase.tax} %</td>
+                                                            <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.returnTax ? purchase.returnTax : '0.00')} </td>
                                                         </tr>
-                                                        <tr>
-                                                            <td className="text-left py-2 px-4 border-b">Shipping</td>
-                                                            <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.shipping ? purchase.shipping : '0.00')}</td>
-                                                        </tr>
+                                                    
                                                         <tr>
                                                             <td className="text-left py-2 px-4 border-b">Discount</td>
-                                                            <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.discount ? purchase.discount : '0.00')}</td>
+                                                            <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.returnDiscount ? purchase.returnDiscount : '0.00')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-left py-2 px-4 border-b">Total</td>
-                                                            <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.grandTotal ? purchase.grandTotal : '0.00')}</td>
+                                                            <td className="text-left py-2 px-4 border-b">Products Total</td>
+                                                            <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.productsTotal ? purchase.productsTotal : '0.00')}</td>
                                                         </tr>
+                                                        {/* Show Return Amount for company returns in the summary */}
+                                                        {isCompanyTab && purchase.returnAmount && (
+                                                            <tr>
+                                                                <td className="text-left py-2 px-4 border-b">Return Amount</td>
+                                                                <td className="text-left py-2 px-4 border-b">{currency} {formatWithCustomCommas(purchase.returnAmount)}</td>
+                                                            </tr>
+                                                        )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -472,15 +501,15 @@ function ViewPurchaseReturnBody() {
                                         </div>
                                     </div>
                                 </div>
-
                             )}
-
                         </tr>
                     ))}
                 </tbody>
             </table>
         </div>
     );
+};
+
 
     return (
         <div className='relative background-white absolute top-[80px] left-[18%] w-[82%] h-[100vh] p-5'>

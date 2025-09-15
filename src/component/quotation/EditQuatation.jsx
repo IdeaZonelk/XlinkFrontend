@@ -80,32 +80,55 @@ function EditQuatationBody() {
     };
 
     const calculateTotal = () => {
-        // Step 1: Sum all product subtotals including the tax for each product
-        const subtotal = quatationProductData.reduce((acc, product, index) => {
-            const productQty = quatationProductData[index]?.quantity || 1;
-            const productTaxRate = quatationProductData[index]?.taxRate / 100 || 0;
-            const discount = quatationProductData[index]?.discount || 0;
-            const productPrice = getApplicablePrice(product) || 0;
-            const discountedPrice = productPrice - discount;
+    // Step 1: Sum all product subtotals including the tax for each product
+    const subtotal = quatationProductData.reduce((acc, product, index) => {
+        const productQty = quatationProductData[index]?.quantity || 1;
+        console.log('Product Quantity:', productQty);
+        const discount = quatationProductData[index]?.discount || 0;
+        console.log('Product Discount:', discount);
+        const productPrice = getApplicablePrice(product) || 0;
+        console.log('Product Price:', productPrice);
+        const discountedPrice = productPrice - discount;
+        console.log('Discounted Price:', discountedPrice);
 
-            // Calculate subtotal based on the specified formula
-            const productSubtotal = ((discountedPrice) * productQty) + ((productPrice) * productQty * (productTaxRate * 100));
-            return acc + productSubtotal;
-        }, 0);
+        // Handle variation taxType
+              const taxType =
+            product.ptype === 'Variation'
+                 ? product.taxType
+                : product.taxType;
 
-        let discountValue = 0;
-        if (quatationData.discountType === 'fixed') {
-            discountValue = Number(quatationData.discount || 0);
-        } else if (quatationData.discountType === 'percentage') {
-            discountValue = (subtotal * Number(quatationData.discount || 0)) / 100;
+        let productSubtotal;
+        if (taxType === 'Inclusive') {
+            // Ignore tax for inclusive
+            productSubtotal = discountedPrice * productQty;
+        } else {
+            // Calculate tax for exclusive
+            const productTaxRate = product.taxRate || 0;
+            const taxPerProduct = productPrice * productTaxRate;
+            productSubtotal = (discountedPrice * productQty) + (taxPerProduct * productQty);
         }
+        return acc + productSubtotal;
+    }, 0);
 
-        const shipping = parseFloat(quatationData.shipping) || 0;
-        const overallTaxRate = quatationData.tax ? parseFloat(quatationData.tax) / 100 : 0;
-        const taxAmount = subtotal * overallTaxRate;
-        const total = (subtotal - discountValue) + taxAmount + shipping;
-        return total.toFixed(2);
-    };
+    let discountValue = 0;
+    if (quatationData.discountType === 'fixed') {
+        discountValue = Number(quatationData.discount || 0);
+    } else if (quatationData.discountType === 'percentage') {
+        discountValue = (subtotal * Number(quatationData.discount || 0)) / 100;
+    }
+    console.log('Subtotal:', subtotal);
+    console.log('Discount Value:', discountValue);  
+
+    const shipping = parseFloat(quatationData.shipping) || 0;
+    console.log('Shipping:', shipping);
+    const overallTaxRate = quatationData.tax ? parseFloat(quatationData.tax) / 100 : 0;
+    console.log('Overall Tax Rate:', overallTaxRate);
+    const taxAmount = subtotal * overallTaxRate;
+    console.log('Tax Amount:', taxAmount);
+    const total = (subtotal - discountValue) + taxAmount + shipping;
+    console.log('Total:', total);
+    return total.toFixed(2);
+};
 
     const calculateProfitOfSale = () => {
         const profitTotal = quatationProductData.reduce((totalProfit, product) => {
@@ -243,13 +266,27 @@ function EditQuatationBody() {
             // Ensure the new quantity is within the valid range
             newQty = Math.max(1, Math.min(newQty, stockQty));
 
-            const updatedProduct = { ...prev[index], quantity: newQty };
-            const productPrice = getApplicablePrice(updatedProduct); // ✅ Apply wholesale logic
-            const discount = updatedProduct.discount || 0;
-            const taxRate = updatedProduct.taxRate || 0;
-            const discountedPrice = productPrice - discount;
+                   const updatedProduct = { ...prev[index], quantity: newQty };
+        const productPrice = getApplicablePrice(updatedProduct); // ✅ Apply wholesale logic
+        const discount = updatedProduct.discount || 0;
+        const discountedPrice = productPrice - discount;
 
-            const newSubtotal = (discountedPrice * newQty) + (productPrice * newQty * taxRate);
+        // Use the same taxType logic as calculateTotal
+        const taxType =
+            updatedProduct.ptype === 'Variation'
+                ? updatedProduct.taxType
+                : updatedProduct.taxType;
+
+        let newSubtotal;
+        if (taxType === 'Inclusive') {
+            // Ignore tax for inclusive
+            newSubtotal = discountedPrice * newQty;
+        } else {
+            // Calculate tax for exclusive
+            const taxRate = updatedProduct.taxRate || 0;
+            const taxPerProduct = productPrice * taxRate;
+            newSubtotal = (discountedPrice * newQty) + (taxPerProduct * newQty);
+        }
 
             const updatedQuatationProductData = prev.map((item, i) =>
                 i === index
@@ -497,7 +534,7 @@ function EditQuatationBody() {
 
                                             {/* Subtotal */}
                                             <td className="px-6 text-left py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {currency} {product.subtotal}
+                                                {currency} {Number(product.subtotal).toFixed(2)}
                                             </td>
 
                                             {/* Delete Action */}
@@ -542,7 +579,7 @@ function EditQuatationBody() {
                                     placeholder="Discount"
                                     className='block w-full rounded-md border-0 py-2.5 px-2 pr-10 text-gray-900 shadow-sm ring-1 ring-gray-400 placeholder:text-gray-400 focus:ring-gray-400 focus:outline-none sm:text-sm' />
                                 <span className="absolute inset-y-0 right-0 flex items-end mb-2 pr-3 text-gray-500">
-                                    {discountType === 'percentage' ? '%' : currency}
+                                    {quatationData.discountType === 'percentage' ? '%' : currency}
                                 </span>
                             </div>
                             <div className="relative">
@@ -623,9 +660,9 @@ function EditQuatationBody() {
                     <div className="mt-4 text-right text-lg font-semibold">
                         Total: {currency} {formatWithCustomCommas(calculateTotal())}
                     </div>
-                    <div className="mt-4 text-right text-lg font-semibold">
+                    {/* <div className="mt-4 text-right text-lg font-semibold">
                         Profit: {currency} {formatWithCustomCommas(calculateProfitOfSale().toFixed(2))}
-                    </div>
+                    </div> */}
                     <button
                         onClick={() => handleUpdateQuatation(id, calculateTotal(), quatationData.orderStatus, quatationData.paymentStatus, quatationData.paidAmount, quatationData.paymentType, quatationData.shipping, quatationData.discountType, quatationData.discount, calculateDiscountValue() , quatationData.tax, quatationData.warehouse, quatationData.selectedCustomer, quatationData.customerName,quatationProductData, selectedDate, setError, setResponseMessage, setProgress, navigate)}
                         className="mt-5 submit w-[200px] text-white rounded py-2 px-4"

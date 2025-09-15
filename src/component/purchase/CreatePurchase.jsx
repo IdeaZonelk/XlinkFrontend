@@ -125,7 +125,7 @@ function CreatePurchaseBody() {
                 : getTax(product, product.selectedVariation) / 100; // Use variation tax if available
 
             // Calculate subtotal for this product (including tax)
-            const subTotal = (productPrice * productQty) + (productPrice * productQty * taxRate);
+            const subTotal = (productPrice * productQty) ;
 
             // Accumulate the subtotal for the product
             return total + subTotal;
@@ -842,8 +842,8 @@ const handleImageChange = async (e, setError) => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Qty</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Qty</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th> */}
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sub Total</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
@@ -895,11 +895,11 @@ const handleImageChange = async (e, setError) => {
                                             </td>
 
                                             {/* Display Product Tax */}
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.oderTax
-                                                    ? `${product.oderTax}%`
+                                            {/* <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                {product.orderTax
+                                                    ? `${product.orderTax}%`
                                                     : `${getTax(product, product.selectedVariation)}%`}
-                                            </td>
+                                            </td> */}
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {currency} {' '} {
@@ -910,7 +910,7 @@ const handleImageChange = async (e, setError) => {
                                                             ? product.oderTax / 100
                                                             : getTax(product, product.selectedVariation) / 100;
 
-                                                        const subtotal = (price * quantity) + (price * quantity * taxRate);
+                                                        const subtotal = (price * quantity) ;
                                                         return formatWithCustomCommas(subtotal);
                                                     })()
                                                 }

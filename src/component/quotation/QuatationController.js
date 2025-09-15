@@ -46,61 +46,98 @@ export const handlePreview = (selectedProduct, grandTotal, paymentStatus, paymen
 
 
 //HANDLE SAVE PRODUCT
-export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus, paymentType, shipping, discountType, discount, discountValue, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage,setError, setProgress, statusOfQuatation, navigate, getApplicablePrice) => {   
+export const handleSaveQuatation = async (
+    grandTotal, orderStatus, paymentStatus, paymentType, shipping, discountType, discount, discountValue, tax, warehouse, selectedCustomer, selectedProduct, date, setResponseMessage, setError, setProgress, statusOfQuatation, navigate, getApplicablePrice
+) => {
     setProgress(true);
     setResponseMessage('');
     setError('');
 
-    const numberRegex = /^[0-9]*(\.[0-9]+)?$/; // Regex for numeric values (integer or float)
+    const numberRegex = /^[0-9]*(\.[0-9]+)?$/;
     if (!numberRegex.test(tax)) {
         setError('Tax must be a valid number');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!numberRegex.test(discount)) {
         setError('Discount must be a valid number');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!numberRegex.test(shipping)) {
         setError('Shipping must be a valid number');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!date) {
         setError('Date is required');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!paymentStatus) {
         setError('Payment Status is required');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!warehouse) {
         setError('Warehouse is required');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!selectedCustomer || !selectedCustomer.name) {
         setError('Customer information is required');
-        setProgress(false)
+        setProgress(false);
         return;
     }
     if (!orderStatus) {
-        setError('Oder Status is required');
-        setProgress(false)
+        setError('Order Status is required');
+        setProgress(false);
         return;
     }
     if (!paymentType) {
         setError('Payment is required');
-        setProgress(false)
+        setProgress(false);
         return;
     }
 
-    const totalAmount = Number(grandTotal) || 0;
-    const paidAmount = paymentStatus.toLowerCase() === 'paid' ? grandTotal : 0;
     const defaultWarehouse = sessionStorage.getItem('defaultWarehouse') || 'Unknown';
+
+    // Calculate subtotal using the same logic as calculateTotal
+    const subtotal = selectedProduct.reduce((acc, product) => {
+        const quantity = product.barcodeQty || 1;
+        const discountVal = getDiscount(product, product.selectedVariation) || 0;
+        const productPrice = getApplicablePrice(product) || 0;
+
+        // Handle variation taxType
+        const taxType =
+            product.ptype === 'Variation'
+                ? product.variationValues?.[product.selectedVariation]?.taxType
+                : product.taxType;
+
+        let productSubtotal;
+        if (taxType === 'Inclusive') {
+            productSubtotal = (productPrice - discountVal) * quantity;
+        } else {
+            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+            const taxPerProduct = productPrice * taxRate;
+            productSubtotal = ((productPrice - discountVal) * quantity) + (taxPerProduct * quantity);
+        }
+        return acc + productSubtotal;
+    }, 0);
+
+    // Calculate discount value
+    let discountValueCalc = 0;
+    if (discountType === 'fixed') {
+        discountValueCalc = Number(discount || 0);
+    } else if (discountType === 'percentage') {
+        discountValueCalc = (subtotal * Number(discount || 0)) / 100;
+    }
+
+    const shippingValue = parseFloat(shipping) || 0;
+    const overallTaxRate = tax ? parseFloat(tax) / 100 : 0;
+    const taxAmount = subtotal * overallTaxRate;
+    const totalAmount = (subtotal - discountValueCalc) + taxAmount + shippingValue;
+    const paidAmount = paymentStatus.toLowerCase() === 'paid' ? totalAmount : 0;
 
     const commonSaleData = {
         date,
@@ -110,7 +147,7 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
         tax,
         discountType,
         discount,
-        discountValue,
+        discountValue: discountValueCalc,
         shipping,
         paymentStatus,
         paymentType,
@@ -125,11 +162,10 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
         const currentID = product._id;
         const ptype = product.ptype;
         const variationValue = product.selectedVariation;
-
         const quantity = product.barcodeQty || 1;
         const variationObj = product.ptype === 'Variation'
-        ? product.variationValues?.[variationValue] || {}
-        : product;
+            ? product.variationValues?.[variationValue] || {}
+            : product;
 
         const wholesaleEnabled = variationObj.wholesaleEnabled || false;
         const wholesaleMinQty = variationObj.wholesaleMinQty || 0;
@@ -137,13 +173,23 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
 
         const applicablePrice = getApplicablePrice(product);
         const price = getPriceRange(product, product.selectedVariation);
-        const discount = getDiscount(product, product.selectedVariation) || 0; 
+        const discountVal = getDiscount(product, product.selectedVariation) || 0;
         const productCost = variationObj.productCost || product.productCost || 0;
 
+        // Handle variation taxType
+        const taxType =
+            product.ptype === 'Variation'
+                ? product.variationValues?.[variationValue]?.taxType
+                : product.taxType;
 
-        
-        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
-        const subtotal = ((applicablePrice-discount) * quantity) + ((applicablePrice) * quantity * taxRate);
+        let taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+        let subtotal;
+        if (taxType === 'Inclusive') {
+            subtotal = (applicablePrice - discountVal) * quantity;
+        } else {
+            const taxPerProduct = applicablePrice * taxRate;
+            subtotal = ((applicablePrice - discountVal) * quantity) + (taxPerProduct * quantity);
+        }
         const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
 
         return {
@@ -153,7 +199,7 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
             name: product.name,
             price,
             productCost,
-            discount,
+            discount: discountVal,
             quantity,
             taxRate,
             subtotal,
@@ -176,40 +222,36 @@ export const handleSaveQuatation = async (grandTotal, orderStatus, paymentStatus
         console.log('Response:', response.data);
         toast.success(
             'Quotation created successfully!',
-                     { autoClose: 2000 },
-                     { className: "custom-toast" }
-                   );
-            navigate ('/viewQuotation');
+            { autoClose: 2000 },
+            { className: "custom-toast" }
+        );
+        navigate('/viewQuotation');
     } catch (error) {
         console.error('Error creating Quatation:', error);
-    
+
         if (error.response) {
-            // Server responded with a status outside the 2xx range
             toast.error(
                 'Server error' || 'Unknown error',
-                         { autoClose: 2000 },
-                         { className: "custom-toast" }
-                       );
+                { autoClose: 2000 },
+                { className: "custom-toast" }
+            );
         } else if (error.request) {
-            // Request was made but no response received
             toast.error(
                 'No response from server. Please check your network connection.',
-                         { autoClose: 2000 },
-                         { className: "custom-toast" }
-                       );
+                { autoClose: 2000 },
+                { className: "custom-toast" }
+            );
         } else {
-            // Something else happened
             toast.error(
-               `Unexpected error: ${error.message}`,
-                         { autoClose: 2000 },
-                         { className: "custom-toast" }
-                       );
+                `Unexpected error: ${error.message}`,
+                { autoClose: 2000 },
+                { className: "custom-toast" }
+            );
         }
     } finally {
         setProgress(false);
     }
 };
-
 export const handleUpdateQuatation = async (
     id, grandTotal, orderStatus, paymentStatus, paidAmount, paymentType, shipping,
     discountType, discount, discountValue, tax, warehouse, selectedCustomer, customerName,

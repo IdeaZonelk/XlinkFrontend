@@ -86,7 +86,7 @@ function EditPurchaseReturnBody() {
 
     const calculateTotal = () => {
         const subtotal = saleReturnData.reduce((acc, product, index) => {
-            const productQty = saleReturnData[index]?.quantity || 1;
+            const productQty = saleReturnData[index]?.returnQty|| 0;
             const productTaxRate = saleReturnData[index]?.taxRate / 100 || 0;
             const productSubtotal = (product.price * productQty) + (product.price * productQty * productTaxRate);
             return acc + productSubtotal;
@@ -251,7 +251,7 @@ function EditPurchaseReturnBody() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Qty</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return Qty</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
+                                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th> */}
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation Type</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sub Total</th>
                                         {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th> */}
@@ -267,37 +267,8 @@ function EditPurchaseReturnBody() {
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm">
                                                 <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.stockQty}</p>
                                             </td>
-
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                <div className="flex items-center">
-                                                    {/* Decrement Button */}
-                                                    <button
-                                                        onClick={() => handleQtyChange(index, -1)} // Decrement
-                                                        disabled={saleReturnData[index]?.quantity <= 1} // Disable if quantity <= 1
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
-                                                    >
-                                                        <img className='w-[16px] h-[16px]' src={Decrease} alt='decrease' />
-                                                    </button>
-
-                                                    {/* Input field for quantity */}
-                                                    <input
-                                                        type="number"
-                                                        value={saleReturnData[index]?.quantity || 1} // Use the current quantity
-                                                        onChange={(e) => handleQtyInputChange(index, e.target.value)} // Handle user input
-                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
-                                                        min="1"
-                                                        max={saleReturnData[index]?.stokeQty || 1} // Max quantity is the stock quantity
-                                                    />
-
-                                                    {/* Increment Button */}
-                                                    <button
-                                                        onClick={() => handleQtyChange(index, 1)} // Increment
-                                                        disabled={saleReturnData[index]?.quantity >= saleReturnData[index]?.stokeQty} // Disable if quantity >= stockQty
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
-                                                    >
-                                                        <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='increase' />
-                                                    </button>
-                                                </div>
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm">
+                                                <p className='rounded-[5px] text-center p-[6px] bg-gray-100 text-gray-500'>{product.returnQty}</p>
                                             </td>
 
 
@@ -307,9 +278,9 @@ function EditPurchaseReturnBody() {
                                             </td>
 
                                             {/* Product Tax */}
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                                                {product.taxRate} %  {/* Show a default if no tax is available */}
-                                            </td>
+                                            {/* <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                {product.taxRate} % 
+                                            </td> */}
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 {product.variationValue}
@@ -362,7 +333,7 @@ function EditPurchaseReturnBody() {
                         </div>
                     </div>
                     <div className="mt-8 text-right text-lg font-semibold">
-                        Total:  {currency}  {formatWithCustomCommas(calculateTotal())}
+                        Products Total:  {currency}  {formatWithCustomCommas(calculateTotal())}
                     </div>
 
                     <button

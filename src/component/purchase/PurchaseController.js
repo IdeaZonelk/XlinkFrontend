@@ -389,9 +389,9 @@ export const handleSave = async (grandTotal, orderStatus, paymentStatus, payment
         const ptype = product.ptype;
         const variationValue = product.selectedVariation;
         const price = getPriceRange(product, product.selectedVariation);
+        const originalPurchaseQty = product.barcodeQty || 0;
         const quantity = product.barcodeQty || 1;
-        const taxRate = product.oderTax ? product.oderTax / 100 : getTax(product, product.selectedVariation) / 100;
-        const subtotal = (price * quantity) + (price * quantity * taxRate);
+        const subtotal = (price * quantity);
 
         return {
             currentID,
@@ -399,8 +399,8 @@ export const handleSave = async (grandTotal, orderStatus, paymentStatus, payment
             variationValue: variationValue ? variationValue : 'No variations',
             name: product.name,
             price,
+            originalPurchaseQty,
             quantity,
-            taxRate,
             subtotal,
         };
     });
@@ -453,7 +453,7 @@ export const handleSave = async (grandTotal, orderStatus, paymentStatus, payment
 };
 
 //HANDLE THE RETURN OF PURCHASE
-export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehouse, supplier, selectedProduct, date, _id, setError, setResponseMessage, setProgress, navigate) => {
+export const handleReturnPurchase = async (returnAmount, returnTax, returnDiscount, productsTotal, paidAmount, note, warehouse, supplier, selectedProduct, date, _id, setError, setResponseMessage, setProgress, navigate) => {
     setProgress(true)
 
     if (!note) {
@@ -462,12 +462,14 @@ export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehou
         return;
     }
     const commonPurchaseData = {
-        // refferenceId: referenceId,
         date,
         supplier,
         warehouse: warehouse || 'Unknown',
-        grandTotal,
-        paidAmount,
+        productsTotal: Number(productsTotal),
+        returnAmount: Number(returnAmount),
+        returnTax: Number(returnTax),
+        returnDiscount: Number(returnDiscount),
+        paidAmount: Number(paidAmount),
         note
     };
     // Create products data array
@@ -477,6 +479,7 @@ export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehou
         const price = product.price;
         const ptype = product.ptype;
         const quantity = product.quantity;
+        const returnQty = product.returnQty;
         const taxRate = product.taxRate * 100;
         const subtotal = product.subtotal;
 
@@ -487,6 +490,7 @@ export const handleReturnPurchase = async (grandTotal, paidAmount, note, warehou
             price,
             ptype,
             quantity,
+            returnQty,
             taxRate,
             subtotal,
         };
@@ -769,7 +773,9 @@ export const handleUpdatePurchase = async (
         const variationValue = product.variationValue;
         const ptype = product.ptype;
         const price = product.price;
+        const originalPurchaseQty = product.originalPurchaseQty || 0;
         const quantity = product.quantity || 1;
+        const returnQty = product.returnQty || 0;
         const taxRate = product.taxRate
         const subtotal = product.subtotal;
 
@@ -782,7 +788,9 @@ export const handleUpdatePurchase = async (
             ptype,
             name: product.name,
             price,
+            originalPurchaseQty,
             quantity,
+            returnQty,
             taxRate,
             subtotal,
         };
