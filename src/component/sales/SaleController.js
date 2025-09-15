@@ -773,30 +773,221 @@ export const handleSave = async (
         className: "custom-toast",
       });
     }
-  } catch (error) {
-    console.error("Error creating sale:", error);
-    if (error.response) {
-      const errorMessage = error.response.data.message;
-      if (
-        errorMessage === "Please choose products from the default warehouse."
-      ) {
-        alert(errorMessage);
-      } else {
-        toast.error(errorMessage || "An error occurred on the server", {
-          autoClose: 2000,
-          className: "custom-toast",
-        });
-      }
-    } else if (error.request) {
-      toast.error("No response received from server. Please try again later.", {
-        autoClose: 2000,
-        className: "custom-toast",
-      });
-    } else {
-      toast.error(error.message || "An unexpected error occurred.", {
-        autoClose: 2000,
-        className: "custom-toast",
-      });
+
+
+    const paymentTypesArray = Object.keys(paymentType)
+        .filter((type) => paymentType[type] && Number(amounts[type]) > 0)
+        .map((type) => ({ type, amount: Number(amounts[type]) }));
+
+    const cashierUsername = sessionStorage.getItem('name');
+    const cashRegisterKey = cashierID ? cashierID : sessionStorage.getItem('cashierUsername');
+    const cashRegisterID = RegisterID ? RegisterID : sessionStorage.getItem('cashRegisterID');
+    const defaultWarehouse = sessionStorage.getItem('defaultWarehouse') || 'Unknown';
+
+    // **Define productsData FIRST**
+const productsData = selectedProduct.map(product => {
+    const currentID = product._id;
+    const ptype = product.ptype;
+    const variationValue = product.selectedVariation;
+    const quantity = product.barcodeQty || 1;
+    const wholesaleEnabled = product.wholesaleEnabled || false;
+    const wholesaleMinQty = product.wholesaleMinQty || 0;
+    const wholesalePrice = product.wholesalePrice || 0;
+    const appliedWholesale = wholesaleEnabled && quantity >= wholesaleMinQty;
+    const applicablePrice = appliedWholesale ? wholesalePrice : product.price || getPriceRange(product, product.selectedVariation);
+    const price = product.price || getPriceRange(product, product.selectedVariation);
+    const productCost = parseFloat(product.productCost) || parseFloat(getProductCost(product, product.selectedVariation)) || 0;
+    
+    // Get discount - check if variation exists first
+    const discount = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.discount !== undefined
+        ? parseFloat(product.variationValues[product.selectedVariation].discount)
+        : parseFloat(product.discount) || 0;
+    
+    const specialDiscount = product.specialDiscount || 0;
+    const stockQty = product.productQty - quantity;
+    
+    // Get taxType - check if variation exists first
+    const taxType = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.taxType !== undefined
+        ? product.variationValues[product.selectedVariation].taxType
+        : product.taxType || 'exclusive';
+    
+    // Get tax rate - check if variation exists first
+    const taxRate = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.orderTax !== undefined
+        ? parseFloat(product.variationValues[product.selectedVariation].orderTax) / 100
+        : (parseFloat(product.orderTax) || 0) / 100;
+    
+    console.log("price", applicablePrice);
+    console.log("tax", taxRate ); // Convert back to percentage for logging
+    console.log("taxType", taxType);
+    console.log("discount", discount);
+    console.log("qty", quantity);
+    
+    const newPrice = applicablePrice - discount - specialDiscount;
+    console.log("newPrice", newPrice);
+
+    // Calculate subtotal based on tax type - EXACTLY like getRowSubtotal
+   // Calculate subtotal based on tax type - EXACTLY like getRowSubtotal
+let subtotal;
+if (taxType && taxType.toLowerCase() === 'inclusive') {
+    // Tax is already included in the price, don't add additional tax
+    subtotal = newPrice * quantity;
+} else {
+    // Tax is exclusive, add tax to the price
+    const baseAmount = newPrice * quantity;
+    const taxAmount = price * taxRate;
+    
+    // Round the tax amount to 2 decimal places to avoid floating point issues
+    const roundedTaxAmount = Math.round(taxAmount * 100) / 100;
+    
+    subtotal = baseAmount + roundedTaxAmount;
+}
+console.log("subtotal", subtotal);
+    
+    // Calculate product profit
+    const productProfit = (newPrice - productCost) * quantity;
+    console.log("productProfit", productProfit);
+
+    const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
+
+        return {
+            currentID,
+            ptype,
+            variationValue: variationValue || 'No variations',
+            name: product.name,
+            appliedWholesale,
+            applicablePrice,
+            price,
+            discount,
+            specialDiscount,
+            quantity,
+            stockQty,
+            taxType,
+            taxRate,
+            subtotal,
+            productProfit,
+            warehouse: warehouseId,
+            wholesaleEnabled,
+            wholesaleMinQty,
+            wholesalePrice,
+            wholesaleApplied: appliedWholesale,
+            productCost
+        };
+    });
+
+    const commonSaleData = {
+        date,
+        customer: selectedCustomer || 'Unknown',
+        warehouse: defaultWarehouse,
+        tax,
+        discountType: discountType || 'fixed',
+        discount,
+        discountValue,
+        shipping,
+        paymentStatus,
+        paymentType: paymentTypesArray,
+        orderStatus: orderStatus || 'ordered',
+        paidAmount,
+        baseTotal,
+        grandTotal: totalAmount,
+        pureProfit: profitAmount,
+        cashierUsername: cashierUsername || 'Unknown',
+        offerPercentage,
+        invoiceNumber,
+        note,
+        cashBalance,
+        useCreditPayment,
+        creditDetails,
+        cashRegisterKey,
+        cashRegisterID
+    };
+
+    const finalSaleData = {
+        ...commonSaleData,
+        productsData,
+    };
+    try {
+        let endpoint = '';
+        let isPosSale = false;
+
+        if (window.location.pathname === '/posSystem') {
+            endpoint = '/api/createSale';
+            finalSaleData.saleType = 'POS';
+            isPosSale = true;
+        } else if (window.location.pathname === '/createSale') {
+            endpoint = '/api/createNonPosSale';
+            finalSaleData.saleType = 'Non-POS';
+        } else {
+            setError('Unknown sale route!');
+            setProgress(false);
+            return;
+        }
+
+        const response = await axios.post(`${process.env.REACT_APP_BASE_URL}${endpoint}`, finalSaleData);
+        if (response.data.status === 'success') {
+           if (isPosSale && typeof setFetchRegData === 'function') {
+                setFetchRegData(true); // Only call if it's a function
+            }
+            setInvoiceData(response.data);
+            if (shouldPrint) {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(response.data.html);
+                iframeDoc.close();
+
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+
+                    // KOT printing logic
+                    // if (shouldPrintKOT && response.data.kotHtml) {
+                    //     const kotIframe = document.createElement('iframe');
+                    //     kotIframe.style.display = 'none';
+                    //     document.body.appendChild(kotIframe);
+
+                    //     const kotDoc = kotIframe.contentDocument || kotIframe.contentWindow.document;
+                    //     kotDoc.open();
+                    //     kotDoc.write(response.data.kotHtml);
+                    //     kotDoc.close();
+
+                    //     setTimeout(() => {
+                    //         kotIframe.contentWindow.focus();
+                    //         kotIframe.contentWindow.print();
+                    //         setTimeout(() => document.body.removeChild(kotIframe), 1000);
+                    //     }, 500);
+                    // }
+
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                }, 500);
+            }
+
+            handlePrintAndClose();
+            toast.success('Sale created successfully!', {
+                autoClose: 2000,
+                className: "custom-toast"
+            });
+        }
+    } catch (error) {
+        console.error('Error creating sale:', error);
+        if (error.response) {
+            const errorMessage = error.response.data.message;
+            if (errorMessage === "Please choose products from the default warehouse.") {
+                alert(errorMessage);
+            } else {
+                toast.error(errorMessage || 'An error occurred on the server', { autoClose: 2000, className: "custom-toast" });
+            }
+        } else if (error.request) {
+            toast.error('No response received from server. Please try again later.', { autoClose: 2000, className: "custom-toast" });
+        } else {
+            toast.error(error.message || 'An unexpected error occurred.', { autoClose: 2000, className: "custom-toast" });
+        }
+        setProgress(false);
+    } finally {
+        console.log("type of setProgress", setProgress)
+        setProgress(false);
     }
     setProgress(false);
   } finally {

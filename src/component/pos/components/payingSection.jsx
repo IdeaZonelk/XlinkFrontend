@@ -21,7 +21,15 @@ import formatWithCustomCommas from '../../utill/NumberFormate';
 import { useReactToPrint } from 'react-to-print';
 import Barcode from 'react-barcode';
 
+
 const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, shipping, discount, discountValue, productDetails, baseTotal, handleBillReset, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setProductData, selectedCustomer, selectedCustomerName, discountType, warehouse, responseMessage, setResponseMessage, setReloadStatus, offerPercentage, calculateTotalPrice, setError, setProgress, setSelectedOffer, useCreditPayment, setUseCreditPayment, creditDetails, setCreditDetails, setFetchRegData, claimedPoints, isPointsClaimed, redeemedPointsFromSale, logPoints }) => {
+     console.log("PayingSection received productDetails:", productDetails);
+    if (productDetails && productDetails.length > 0) {
+        productDetails.forEach((product, idx) => {
+            console.log(`Product ${idx}: name=${product.name}, productCost=${product.productCost}`);
+        });
+    }
+
     const [receivedAmount, setReceivedAmount] = useState('');
     const [returnAmount, setReturnAmount] = useState('');
     const [paymentType, setPaymentType] = useState('cash');
@@ -207,11 +215,15 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                 const selectedVariation = product.variation;
                 const price = product.price;
                 const barcodeQty = product.qty || 1;
+                const taxType = product.taxType || 'exclusive';
                 const orderTax = product.tax;
                 const specialDiscount = product.specialDiscount || 0;
                 const wholesaleEnabled = product.wholesaleEnabled || false;
                 const wholesaleMinQty = product.wholesaleMinQty || 0;
                 const wholesalePrice = product.wholesalePrice || 0;
+                const productCost = product.productCost || 0; 
+                const productQty = product.productQty || 0;
+
 
                 return {
                     name,
@@ -222,10 +234,13 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     selectedVariation,
                     price,
                     barcodeQty,
+                    taxType,
                     orderTax,
                     wholesaleEnabled,
                     wholesaleMinQty,
                     wholesalePrice,
+                    productCost,
+                    productQty
                     claimedPoints
                 };
             });

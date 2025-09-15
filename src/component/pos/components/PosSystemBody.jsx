@@ -277,6 +277,7 @@ function PosSystemBody({ defaultWarehouse }) {
                     price: getPriceRange(product),
                     productCost: getProductCost(product),
                     stokeQty: product.productQty || getQty(product),
+                    taxType: product.taxType || 'exclusive',
                     tax: product.oderTax ? product.oderTax : getTax(product),
                     discount: getDiscount(product),
                     ptype: product.ptype,
@@ -292,94 +293,115 @@ function PosSystemBody({ defaultWarehouse }) {
         }
     }, [searchedProductData]);
 
-    const handleAddingProduct = (product) => {
-        setProductBillingHandling((prevBilling) => {
-            const selectedWarehouse = warehouse || sessionStorage.getItem("defaultWarehouse");
-            const defaultWarehouse = sessionStorage.getItem("defaultWarehouse");
 
-            if (!selectedWarehouse) {
-                alert("No warehouse selected.");
-                return prevBilling;
-            }
+   const handleAddingProduct = (product) => {
+  setProductBillingHandling((prevBilling) => {
+    const selectedWarehouse = warehouse || sessionStorage.getItem("defaultWarehouse");
+    const defaultWarehouse = sessionStorage.getItem("defaultWarehouse");
 
-            if (selectedWarehouse !== defaultWarehouse) {
-                alert("You can only add products from the default warehouse.");
-                return prevBilling;
-            }
+    if (!selectedWarehouse) {
+      alert("No warehouse selected.");
+      return prevBilling;
+    }
 
-            if (!product.warehouse || Object.keys(product.warehouse).length === 0) {
-                alert("Product data is missing warehouse details.");
-                return prevBilling;
-            }
+    if (selectedWarehouse !== defaultWarehouse) {
+      alert("You can only add products from the default warehouse.");
+      return prevBilling;
+    }
 
-            const warehouseKey = Object.keys(product.warehouse || {}).find(
-                key => key.toLowerCase() === selectedWarehouse.toLowerCase()
-            );
+    if (!product.warehouse || Object.keys(product.warehouse).length === 0) {
+      alert("Product data is missing warehouse details.");
+      return prevBilling;
+    }
 
-            if (!warehouseKey) {
-                alert(`Warehouse '${selectedWarehouse}' does not exist for this product.`);
-                return prevBilling;
-            }
-            const warehouseData = product.warehouse[warehouseKey];
+    const warehouseKey = Object.keys(product.warehouse || {}).find(
+      key => key.toLowerCase() === selectedWarehouse.toLowerCase()
+    );
 
-            if (!warehouseData) {
-                alert(`No data found for warehouse '${warehouseKey}'.`);
-                return prevBilling;
-            }
+    if (!warehouseKey) {
+      alert(`Warehouse '${selectedWarehouse}' does not exist for this product.`);
+      return prevBilling;
+    }
+    
+    const warehouseData = product.warehouse[warehouseKey];
 
-            if (product.ptype === "Single") {
-                const existingProduct = prevBilling.find(
-                    (p) => p.id === product.id && p.warehouse === selectedWarehouse
-                );
+    if (!warehouseData) {
+      alert(`No data found for warehouse '${warehouseKey}'.`);
+      return prevBilling;
+    }
 
-                if (existingProduct) {
-                    if (existingProduct.qty + 1 > warehouseData.productQty) {
-                        console.warn("[WARNING] Cannot add more than available stock.");
-                        alert("Cannot add more than available stock.");
-                        return prevBilling;
-                    } else {
-                        return prevBilling.map((p) =>
-                            p.id === product.id && p.warehouse === selectedWarehouse
-                                ? { ...p, qty: p.qty + 1 }
-                                : p
-                        );
-                    }
-                } else {
-                    if (warehouseData.productQty > 0) {
-                        return [...prevBilling, { ...product, qty: 1, warehouse: selectedWarehouse }];
-                    } else {
-                        console.error("[ERROR] Product is out of stock.");
-                        alert("This product is out of stock.");
-                        return prevBilling;
-                    }
-                }
-            } else if (product.ptype === "Variation") {
-                const existingVariation = prevBilling.find(
-                    (p) => p.id === product.id && p.selectedVariation === product.selectedVariation
-                );
+    // Extract warehouse-specific data including taxType
+    const productWithWarehouseData = {
+      id: product.id,
+      name: product.name,
+      price: getPriceRange(product),
+      productCost: getProductCost(product),
+      stokeQty: warehouseData.productQty || 0,
+      tax: warehouseData.orderTax || 0, // Use warehouse orderTax
+      taxType: warehouseData.taxType || 'exclusive', // Extract taxType from warehouse
+      discount: warehouseData.discount || 0, // Use warehouse discount
+      ptype: product.ptype,
+      warranty: product.warranty,
+      warehouse: selectedWarehouse,
+      variation: product.variation,
+      variationType: product.variationType || "Unknown",
+      variationValues: warehouseData.variationValues || {},
+      wholesaleEnabled: warehouseData.wholesaleEnabled || false,
+      wholesaleMinQty: warehouseData.wholesaleMinQty || 0,
+      wholesalePrice: warehouseData.wholesalePrice || 0,
+    };
 
-                if (existingVariation) {
-                    alert("This variation is already added from held products.");
-                    return prevBilling;
-                }
+    if (product.ptype === "Single") {
+      const existingProduct = prevBilling.find(
+        (p) => p.id === product.id && p.warehouse === selectedWarehouse
+      );
 
-                const variationValues = warehouseData.variationValues || {};
-                if (!Object.keys(variationValues).length) {
-                    alert("No variations found for this product in the selected warehouse.");
-                    return prevBilling;
-                }
+      if (existingProduct) {
+        if (existingProduct.qty + 1 > warehouseData.productQty) {
+          console.warn("[WARNING] Cannot add more than available stock.");
+          alert("Cannot add more than available stock.");
+          return prevBilling;
+        } else {
+          return prevBilling.map((p) =>
+            p.id === product.id && p.warehouse === selectedWarehouse
+              ? { ...p, qty: p.qty + 1 }
+              : p
+          );
+        }
+      } else {
+        if (warehouseData.productQty > 0) {
+          return [...prevBilling, { ...productWithWarehouseData, qty: 1 }];
+        } else {
+          console.error("[ERROR] Product is out of stock.");
+          alert("This product is out of stock.");
+          return prevBilling;
+        }
+      }
+    } else if (product.ptype === "Variation") {
+      const existingVariation = prevBilling.find(
+        (p) => p.id === product.id && p.selectedVariation === product.selectedVariation
+      );
 
-                setSelectVariation(true);
-                setSelectedProduct({
-                    ...product,
-                    warehouse: selectedWarehouse,
-                    variationValues,
-                });
-                return prevBilling;
-            }
-            return prevBilling;
+      if (existingVariation) {
+        alert("This variation is already added from held products.");
+        return prevBilling;
+      }
 
-        });
+      const variationValues = warehouseData.variationValues || {};
+      if (!Object.keys(variationValues).length) {
+        alert("No variations found for this product in the selected warehouse.");
+        return prevBilling;
+      }
+
+      setSelectVariation(true);
+      setSelectedProduct({
+        ...productWithWarehouseData,
+        variationValues,
+      });
+      return prevBilling;
+    }
+    return prevBilling;
+  });
 
         setTimeout(() => {
             fetchAllData(
@@ -1833,6 +1855,7 @@ function PosSystemBody({ defaultWarehouse }) {
                                                         price: getPriceRange(p),
                                                         productCost: getProductCost(p),
                                                         stokeQty: warehouseData ? warehouseData.productQty || getQty(p) : 0,
+                                                        taxType: p.taxType || 'exclusive',
                                                         tax: getTax(p),
                                                         discount: getDiscount(p),
                                                         ptype: p.ptype,

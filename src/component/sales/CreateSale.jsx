@@ -114,8 +114,7 @@ function CreateSaleBody() {
         setFilteredProducts([]); // Close dropdown
       }
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
+     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -140,6 +139,137 @@ function CreateSaleBody() {
     const formattedDate = today.toISOString().split("T")[0];
     setDate(formattedDate);
   }, []);
+
+
+const calculateBaseTotal = () => {
+    return selectedProduct.reduce((total, product) => {
+        const productPrice = Number(getApplicablePrice(product));
+        const productQty = product.barcodeQty || 1;
+        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+        const discount = Number(getDiscount(product, product.selectedVariation));
+        const discountedPrice = productPrice - discount;
+
+        // Get correct taxType for variations or single products
+        const taxType = product.ptype === "Variation"
+            ? product.variationValues?.[product.selectedVariation]?.taxType
+            : product.taxType;
+
+        let subTotal;
+        if (taxType === "Inclusive") {
+            subTotal = discountedPrice * productQty;
+        } else {
+            subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
+        }
+        return total + subTotal;
+    }, 0);
+};
+
+   const totalWithoutInterest = () => {
+    const productTotal = selectedProduct.reduce((total, product) => {
+        const productPrice = Number(getApplicablePrice(product));
+        const productQty = product.barcodeQty || 1;
+        const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+        const discount = Number(getDiscount(product, product.selectedVariation));
+        const discountedPrice = productPrice - discount;
+
+        const taxType = product.ptype === "Variation"
+            ? product.variationValues?.[product.selectedVariation]?.taxType
+            : product.taxType;
+
+        let subTotal;
+        if (taxType === "Inclusive") {
+            subTotal = discountedPrice * productQty;
+        } else {
+            subTotal = (discountedPrice * productQty) + (productPrice * productQty * taxRate);
+        }
+        return total + subTotal;
+    }, 0);
+
+    let discountValue = 0;
+    if (discountType === 'fixed') {
+        discountValue = Number(discount);
+    } else if (discountType === 'percentage') {
+        discountValue = (productTotal * Number(discount)) / 100;
+    }
+
+    // Shipping cost remains the same
+    const shippingValue = Number(shipping);
+
+    // Calculate global tax for the total bill
+    const globalTaxRate = Number(tax) / 100; // Convert to decimal
+    const globalTax = productTotal * globalTaxRate; // Tax on total product amount
+
+    // Grand total = productTotal - discount + shipping + globalTax
+    const grandTotal = productTotal - discountValue + shippingValue + globalTax;
+    
+    return grandTotal;
+};
+    const calculateTotal =() =>{
+        const total = totalWithoutInterest();
+        if (useCreditPayment) {
+            const interestRate = parseFloat(creditDetails.interestRate) || 0;
+            const interest = (total * interestRate) / 100;
+            return total + interest;
+        }
+        return total;
+    }
+
+    const calculateTaxLessTotal = () => {
+        let subtotal = selectedProduct.reduce((total, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            console.log("product price", productPrice);
+            const productQty = product.barcodeQty || 1;
+            console.log("product qty", productQty);
+            const discount = Number(getDiscount(product, product.selectedVariation));
+            console.log("product discount", discount);
+            const discountedPrice = productPrice - discount
+            console.log("discounted price", discountedPrice);
+            const subTotal = (discountedPrice * productQty);
+            console.log("sub total", subTotal);
+            return total + subTotal;
+
+        }, 0);
+        const total = subtotal;
+        console.log("subtotal", subtotal);
+        return isNaN(total) ? 0 : total;
+    };
+
+    const calculateProfitOfSale = () => {
+        const profitTotal = selectedProduct.reduce((totalProfit, product) => {
+            const productPrice = Number(getApplicablePrice(product));
+            // console.log("product price", productPrice);
+            const productCost = Number(getProductCost(product, product.selectedVariation));
+            // console.log("product cost", productCost);
+            const productQty = product.barcodeQty || 1;
+            // console.log("product qty", productQty);
+            const discount = Number(getDiscount(product, product.selectedVariation));
+            // console.log("product discount", discount);
+            const discountedPrice = productPrice - discount;
+            // console.log("discounted price", discountedPrice);
+
+            const totalProductCost = (productCost * productQty)
+            // console.log("total product cost", totalProductCost);
+            const subTotal = (discountedPrice * productQty);
+            // console.log("sub total", subTotal);
+            const profitOfProduct = subTotal - totalProductCost;
+            console.log("profit of product", profitOfProduct);
+            return totalProfit + profitOfProduct;
+        }, 0);
+
+        const totalPrice = calculateTaxLessTotal();
+        console.log("total price", totalPrice);
+        let discountValue = 0;
+        if (discountType === 'fixed') {
+            discountValue = Number(discount);
+        } else if (discountType === 'percentage') {
+            discountValue = (totalPrice * Number(discount)) / 100;
+        }
+        console.log("discount value", discountValue);
+        // Grand total = productTotal - discount + shipping + globalTax
+        const pureProfit = profitTotal - discountValue;
+        console.log("pure profit", pureProfit);
+        return pureProfit;
+    };
 
   const calculateBalance = () => {
     const total = calculateTotal();
@@ -175,115 +305,7 @@ function CreateSaleBody() {
         : parseFloat(product.price || product.productPrice || 0);
     }
   };
-
-  const calculateBaseTotal = () => {
-    return selectedProduct.reduce((total, product) => {
-      const productPrice = Number(getApplicablePrice(product));
-      const productQty = product.barcodeQty || 1;
-      const taxRate = product.orderTax
-        ? product.orderTax / 100
-        : getTax(product, product.selectedVariation) / 100;
-      const discount = Number(getDiscount(product, product.selectedVariation));
-      const discountedPrice = productPrice - discount;
-      const subTotal =
-        discountedPrice * productQty + productPrice * productQty * taxRate;
-      return total + subTotal;
-    }, 0);
-  };
-
-  const totalWithoutInterest = () => {
-    const productTotal = selectedProduct.reduce((total, product) => {
-      const productPrice = Number(getApplicablePrice(product));
-      const productQty = product.barcodeQty || 1;
-      const taxRate = product.orderTax
-        ? product.orderTax / 100
-        : getTax(product, product.selectedVariation) / 100;
-      const discount = Number(getDiscount(product, product.selectedVariation));
-      const discountedPrice = productPrice - discount;
-
-      const subTotal =
-        discountedPrice * productQty + productPrice * productQty * taxRate;
-      return total + subTotal;
-    }, 0);
-
-    let discountValue = 0;
-    if (discountType === "fixed") {
-      discountValue = Number(discount);
-    } else if (discountType === "percentage") {
-      discountValue = (productTotal * Number(discount)) / 100;
-    }
-
-    // Shipping cost remains the same
-    const shippingValue = Number(shipping);
-
-    // Calculate global tax for the total bill
-    const globalTaxRate = Number(tax) / 100; // Convert to decimal
-    const globalTax = productTotal * globalTaxRate; // Tax on total product amount
-
-    // Grand total = productTotal - discount + shipping + globalTax
-    const grandTotal = productTotal - discountValue + shippingValue + globalTax;
-
-    return grandTotal;
-  };
-
-  const calculateTotal = () => {
-    const total = totalWithoutInterest();
-    if (useCreditPayment) {
-      const interestRate = parseFloat(creditDetails.interestRate) || 0;
-      const interest = (total * interestRate) / 100;
-      return total + interest;
-    }
-    if (isPointsClaimed && claimedPoints) {
-      const pointsValue = parseFloat(claimedPoints) || 0;
-      return Math.max(0, total - pointsValue);
-    }
-    return total;
-  };
-
-  const calculateTaxLessTotal = () => {
-    let subtotal = selectedProduct.reduce((total, product) => {
-      const productPrice = Number(getApplicablePrice(product));
-      const productQty = product.barcodeQty || 1;
-      const discount = Number(getDiscount(product, product.selectedVariation));
-
-      const discountedPrice = productPrice - discount;
-
-      const subTotal = discountedPrice * productQty;
-      return total + subTotal;
-    }, 0);
-    const total = subtotal;
-    return isNaN(total) ? 0 : total;
-  };
-
-  const calculateProfitOfSale = () => {
-    const profitTotal = selectedProduct.reduce((totalProfit, product) => {
-      const productPrice = Number(getApplicablePrice(product));
-      const productCost = Number(
-        getProductCost(product, product.selectedVariation)
-      );
-      const productQty = product.barcodeQty || 1;
-      const discount = Number(getDiscount(product, product.selectedVariation));
-      const discountedPrice = productPrice - discount;
-
-      const totalProductCost = productCost * productQty;
-      const subTotal = discountedPrice * productQty;
-      const profitOfProduct = subTotal - totalProductCost;
-      return totalProfit + profitOfProduct;
-    }, 0);
-
-    const totalPrice = calculateTaxLessTotal();
-    let discountValue = 0;
-    if (discountType === "fixed") {
-      discountValue = Number(discount);
-    } else if (discountType === "percentage") {
-      discountValue = (totalPrice * Number(discount)) / 100;
-    }
-
-    // Grand total = productTotal - discount + shipping + globalTax
-    const pureProfit = profitTotal - discountValue;
-    return pureProfit;
-  };
-
+  
   const calculateRedeemedPoints = () => {
     const total = parseFloat(calculateTotal()) || 0;
     const loyaltyPoints = total * 0.01;
@@ -527,395 +549,256 @@ function CreateSaleBody() {
     navigate("/viewSale");
   };
 
-  return (
-    <div className="background-white relative left-[18%] w-[82%] min-h-[100vh]  p-5">
-      {progress && (
-        <Box
-          sx={{
-            width: "100%",
-            position: "fixed",
-            top: "80px",
-            left: "18%",
-            margin: "0",
-            padding: "0",
-            zIndex: 1200,
-          }}
-        >
-          <LinearProgress />
-        </Box>
-      )}
-      <div className="mt-20 flex justify-between items-center">
-        <div>
-          <h2 className="text-lightgray-300 m-0 p-0 text-2xl">Create Sale</h2>
-        </div>
-        <div>
-          <Link
-            className="px-4 py-1.5 border border-[#35AF87] text-[#35AF87] rounded-md transition-colors duration-300 hover:bg-[#35AF87] hover:text-white"
-            to={"/viewSale"}
-          >
-            Back
-          </Link>
-        </div>
-      </div>
-      <div className="bg-white mt-[20px] w-full rounded-2xl px-8 shadow-md pb-20">
-        <div className="flex  flex-1 flex-col px-2 py-12 lg:px-8">
-          <form>
-            <div className="flex w-full space-x-5">
-              {" "}
-              {/* Add space between inputs if needed */}
-              {/* warehouse*/}
-              <div className="flex-1">
-                {" "}
-                {/* Use flex-1 to allow the field to take full width */}
-                <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                  Select warehouse <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="warehouse"
-                  name="warehouse"
-                  value={warehouse}
-                  onChange={(e) =>
-                    handleWarehouseChange(
-                      e,
-                      setWarehouse,
-                      fetchProductDataByWarehouse,
-                      setProductData,
-                      setSelectedCategoryProducts,
-                      setSelectedBrandProducts,
-                      setSearchedProductData,
-                      setLoading
-                    )
-                  }
-                  className="searchBox w-full pl-10 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
-                >
-                  <option value="">Select a warehouse</option>
-                  {warehouseData.map((wh) => (
-                    <option key={wh.name} value={wh.name}>
-                      {wh.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {/* customer */}
-              <div className="flex-1 relative">
-                {" "}
-                {/* Use flex-1 here as well */}
-                <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                  Customer <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="customer"
-                  name="customer"
-                  value={searchCustomer}
-                  required
-                  onChange={(e) =>
-                    handleCustomerSearch(
-                      e,
-                      setSearchCustomer,
-                      setFilteredCustomer
-                    )
-                  }
-                  placeholder={"        Search..."}
-                  className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50"
-                />
-                {filteredCustomer.length > 0 && (
-                  <ul className="absolute z-10 mt-1 w-[344px] text-left bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {filteredCustomer.map((customer) => (
-                      <li
-                        key={customer._id}
-                        onClick={() =>
-                          handleCustomerSelect(
-                            customer,
-                            setSelectedCustomer,
-                            setSearchCustomer,
-                            setFilteredCustomer,
-                            setClaimedPoints,
-                            setIsPointsClaimed,
-                            setSelectedCustomerName
-                          )
-                        }
-                        className="cursor-pointer hover:bg-gray-100 px-4 py-4"
-                      >
-                        {customer.name}{" "}
-                        {customer.redeemedPoints
-                          ? `(${customer.redeemedPoints} points)`
-                          : ""}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {/*Date*/}
-              <div className="flex-1 ">
-                {" "}
-                {/* Use flex-1 here as well */}
-                <label className="block text-sm font-medium leading-6 text-gray-900 text-left">
-                  Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="date"
-                  name="date"
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  autoComplete="given-name"
-                  className="block w-full rounded-md border- pl-5 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-          </form>
-
-          {/*Product search*/}
-          <div className="flex-1 mt-5 relative" ref={dropdownRef}>
-            <input
-              id="text"
-              name="text"
-              type="text"
-              required
-              value={searchTerm}
-              onChange={(e) =>
-                handleProductSearch(
-                  e,
-                  setSearchTerm,
-                  setFilteredProducts,
-                  warehouse
-                )
-              }
-              placeholder={searchTerm ? "" : "        Search..."}
-              className={`block w-full rounded-md border-0 py-2.5 pl-10 pr-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6 ${
-                !warehouse ? "bg-gray-200 cursor-not-allowed opacity-50" : ""
-              }`}
-              disabled={!warehouse}
-            />
-
-            {filteredProducts.length > 0 && (
-              <ul className="absolute left-0 z-10 w-full text-left bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
-                {filteredProducts.map((product) => (
-                  <li
-                    key={product._id}
-                    onClick={() =>
-                      handleProductSelect(
-                        product,
-                        setSelectedProduct,
-                        setSearchTerm,
-                        setFilteredProducts
-                      )
-                    }
-                    className="cursor-pointer hover:bg-gray-100 px-4 py-4"
-                  >
-                    {product.name}
-                  </li>
-                ))}
-              </ul>
+    return (
+        <div className='background-white relative left-[18%] w-[82%] min-h-[100vh]  p-5'>
+            {progress && (
+                <Box sx={{ width: '100%', position: "fixed", top: "80px", left: "18%", margin: "0", padding: "0", zIndex: 1200, }}>
+                    <LinearProgress />
+                </Box>
             )}
-          </div>
+            <div className='mt-20 flex justify-between items-center'>
+                <div>
+                    <h2 className="text-lightgray-300 m-0 p-0 text-2xl">Create Sale</h2>
+                </div>
+                <div>
+                    <Link className='px-4 py-1.5 border border-[#35AF87] text-[#35AF87] rounded-md transition-colors duration-300 hover:bg-[#35AF87] hover:text-white' to={'/viewSale'}>Back</Link>
+                </div>
+            </div>
+            <div className="bg-white mt-[20px] w-full rounded-2xl px-8 shadow-md pb-20">
+                <div className="flex  flex-1 flex-col px-2 py-12 lg:px-8">
+                    <form >
+                        <div className="flex w-full space-x-5"> {/* Add space between inputs if needed */}
+                            {/* warehouse*/}
+                            <div className="flex-1"> {/* Use flex-1 to allow the field to take full width */}
+                                <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Select warehouse <span className='text-red-500'>*</span></label>
+                                <select
+                                    id="warehouse"
+                                    name="warehouse"
+                                    value={warehouse}
+                                    onChange={(e) => handleWarehouseChange(e, setWarehouse, fetchProductDataByWarehouse, setProductData, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setLoading)}
+                                    className="searchBox w-full pl-10 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:border-transparent"
+                                >
+                                    <option value="">Select a warehouse</option>
+                                    {warehouseData.map((wh) => (
+                                        <option key={wh.name} value={wh.name}>
+                                            {wh.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-          <div className="overflow-x-auto">
-            {selectedProduct.length > 0 && (
-              <table className="mt-10 min-w-full bg-white border border-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Stock Qty
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Purchase Qty
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      tax
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Sub Total
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Variation
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedProduct.map((product, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <span>{product.name}</span>
-                          {(() => {
-                            const price = getApplicablePrice(product);
-                            const basePrice = getPriceRange(
-                              product,
-                              product.selectedVariation
-                            );
-                            if (price < basePrice) {
-                              return (
-                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
-                                  W
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
+                            {/* customer */}
+                            <div className="flex-1 relative"> {/* Use flex-1 here as well */}
+                                <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Customer <span className='text-red-500'>*</span></label>
+                                <input
+                                    id="customer"
+                                    name="customer"
+                                    value={searchCustomer}
+                                    required
+                                    onChange={(e) => handleCustomerSearch(e, setSearchCustomer, setFilteredCustomer)}
+                                    placeholder={"        Search..."}
+                                    className="searchBox w-full pl-2 pr-2 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50"
+                                />
+                                {filteredCustomer.length > 0 && (
+                                    <ul className="absolute z-10 mt-1 w-[344px] text-left bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                        {filteredCustomer.map((customer) => (
+                                            <li
+                                                key={customer._id}
+                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer)}
+                                                className="cursor-pointer hover:bg-gray-100 px-4 py-4"
+                                            >
+                                                {customer.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+
+                            {/*Date*/}
+                            <div className="flex-1 "> {/* Use flex-1 here as well */}
+                                <label className="block text-sm font-medium leading-6 text-gray-900 text-left">Date <span className='text-red-500'>*</span></label>
+                                <input
+                                    id="date"
+                                    name="date"
+                                    type="date"
+                                    required
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    autoComplete="given-name"
+                                    className="block w-full rounded-md border- pl-5 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6"
+                                />
+                            </div>
                         </div>
-                      </td>
+                    </form>
 
-                      <td className="px-6 py-4 text-left whitespace-nowrap text-sm ">
-                        <p className="rounded-[5px] text-center p-[6px] bg-green-100 text-green-500">
-                          {product.productQty ||
-                            getQty(product, product.selectedVariation)}
-                        </p>
-                      </td>
+                    {/*Product search*/}
+                    <div className="flex-1 mt-5 relative" ref={dropdownRef}> 
+                        <input
+                            id="text"
+                            name="text"
+                            type="text"
+                            required
+                            value={searchTerm}
+                            onChange={(e) => handleProductSearch(e, setSearchTerm, setFilteredProducts, warehouse)}
+                            placeholder={searchTerm ? "" : "        Search..."}
+                            className={`block w-full rounded-md border-0 py-2.5 pl-10 pr-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-400 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-gray-400 focus:outline-none sm:text-sm sm:leading-6 ${!warehouse ? "bg-gray-200 cursor-not-allowed opacity-50" : ""
+                                }`}
+                            disabled={!warehouse}
+                        />
 
-                      <td className="px-6 py-4 text-left  whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <button
-                            onClick={() =>
-                              handleQtyChange(
-                                index,
-                                product.selectedVariation,
-                                setSelectedProduct,
-                                -1
-                              )
-                            } // Decrement
-                            className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
-                          >
-                            <img
-                              className="w-[16px] h-[16px]"
-                              src={Decrease}
-                              alt="increase"
-                            />
-                          </button>
-                          {/* Input Field */}
-                          <input
-                            type="number"
-                            value={
-                              product.ptype === "Variation"
-                                ? product.variationValues[
-                                    product.selectedVariation
-                                  ]?.barcodeQty || 1
-                                : product.barcodeQty || 1
-                            }
-                            onChange={(e) =>
-                              handleQtyChange(
-                                index,
-                                product.selectedVariation,
-                                setSelectedProduct,
-                                e.target.value
-                              )
-                            }
-                            className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
-                            min="1"
-                          />
-
-                          <button
-                            onClick={() =>
-                              handleQtyChange(
-                                index,
-                                product.selectedVariation,
-                                setSelectedProduct,
-                                1
-                              )
-                            } // Increment
-                            className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
-                          >
-                            <img
-                              className="w-[16px] h-[16px] transform rotate-180"
-                              src={Decrease}
-                              alt="decrease"
-                            />
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Product Price */}
-                      <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                        {currency} {getApplicablePrice(product).toFixed(2)}
-                      </td>
-
-                      {/* Display Product Tax */}
-                      <td className="px-6 py-4 text-left  whitespace-nowrap text-sm text-gray-500">
-                        {product.orderTax
-                          ? `${product.orderTax}%`
-                          : `${getTax(product, product.selectedVariation)}%`}
-                      </td>
-
-                      <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                        {currency}{" "}
-                        {(() => {
-                          const price = getApplicablePrice(product);
-                          const quantity =
-                            product.variationValues?.[product.selectedVariation]
-                              ?.barcodeQty ||
-                            product.barcodeQty ||
-                            1;
-                          const taxRate = product.orderTax
-                            ? product.orderTax / 100
-                            : getTax(product, product.selectedVariation) / 100;
-                          const discount = getDiscount(
-                            product,
-                            product.selectedVariation
-                          );
-                          const discountedPrice = price - discount;
-
-                          const subtotal =
-                            discountedPrice * quantity +
-                            price * quantity * taxRate;
-                          return formatWithCustomCommas(subtotal);
-                        })()}
-                      </td>
-
-                      <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
-                        {product.ptype === "Variation" &&
-                        product.variationValues ? (
-                          <select
-                            value={product.selectedVariation}
-                            onChange={(e) =>
-                              handleVariationChange(
-                                index,
-                                e.target.value,
-                                setSelectedProduct
-                              )
-                            }
-                            className="block w-full border py-2 border-gray-300 rounded-md shadow-sm focus:border-transparent"
-                          >
-                            {Object.keys(product.variationValues).map(
-                              (variationKey) => (
-                                <option key={variationKey} value={variationKey}>
-                                  {variationKey}
-                                </option>
-                              )
-                            )}
-                          </select>
-                        ) : (
-                          <span>No Variations</span>
+                        {filteredProducts.length > 0 && (
+                            <ul className="absolute left-0 z-10 w-full text-left bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+                                {filteredProducts.map((product) => (
+                                    <li
+                                        key={product._id}
+                                        onClick={() => handleProductSelect(product, setSelectedProduct, setSearchTerm, setFilteredProducts)}
+                                        className="cursor-pointer hover:bg-gray-100 px-4 py-4"
+                                    >
+                                        {product.name}
+                                    </li>
+                                ))}
+                            </ul>
                         )}
-                      </td>
+                    </div>
 
-                      {/* Delete Action */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          onClick={() =>
-                            handleDelete(
-                              index,
-                              selectedProduct,
-                              setSelectedProduct
-                            )
-                          }
-                          className="text-red-500 hover:text-red-700 font-bold py-1 px-2"
-                        >
-                          <i className="fas fa-trash mr-1"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                    <div className="overflow-x-auto">
+                        {selectedProduct.length > 0 && (
+                            <table className="mt-10 min-w-full bg-white border border-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock Qty</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purchase Qty</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">tax</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sub Total</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variation</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedProduct.map((product, index) => (
+                                        <tr key={index}>
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                <div className="flex items-center gap-2">
+                                                    <span>{product.name}</span>
+                                                    {(() => {
+                                                        const price = getApplicablePrice(product);
+                                                        const basePrice = getPriceRange(product, product.selectedVariation);
+                                                        if (price < basePrice) {
+                                                            return (
+                                                                <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-md border border-green-400">
+                                                                    W
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
+                                            </td>
+
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm "><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.productQty || getQty(product, product.selectedVariation)}</p></td>
+
+                                            <td className="px-6 py-4 text-left  whitespace-nowrap text-sm text-gray-500">
+                                                <div className="flex items-center">
+                                                    <button
+                                                        onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, -1)} // Decrement
+                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                    >
+                                                        <img className='w-[16px] h-[16px]' src={Decrease} alt='increase' />
+                                                    </button>
+                                                    {/* Input Field */}
+                                                    <input
+                                                        type="number"
+                                                        value={product.ptype === "Variation"
+                                                            ? product.variationValues[product.selectedVariation]?.barcodeQty || 1
+                                                            : product.barcodeQty || 1
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleQtyChange(index, product.selectedVariation, setSelectedProduct, e.target.value)
+                                                        }
+                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                        min="1"
+                                                    />
+
+                                                    <button
+                                                        onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, 1)} // Increment            
+                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                    >
+                                                        <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='decrease' />
+                                                    </button>
+                                                </div>
+                                            </td>
+
+
+                                            {/* Product Price */}
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                {currency}  {getApplicablePrice(product).toFixed(2)}
+                                            </td>
+
+                                            {/* Display Product Tax */}
+                                            <td className="px-6 py-4 text-left  whitespace-nowrap text-sm text-gray-500">
+                                                {product.orderTax
+                                                    ? `${product.orderTax}%`
+                                                    : `${getTax(product, product.selectedVariation)}%`}
+                                            </td>
+
+                                   
+<td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+    {currency}  {
+        (() => {
+            const price = getApplicablePrice(product);
+            const quantity = product.variationValues?.[product.selectedVariation]?.barcodeQty || product.barcodeQty || 1;
+            const taxRate = product.orderTax ? product.orderTax / 100 : getTax(product, product.selectedVariation) / 100;
+            const discount = getDiscount(product, product.selectedVariation);
+            const discountedPrice = price - discount;
+
+           const taxType = product.ptype === "Variation"
+                ? product.variationValues?.[product.selectedVariation]?.taxType
+                : product.taxType;
+
+            let subtotal;
+            if (taxType === "Inclusive") {
+                subtotal = discountedPrice * quantity;
+            } else {
+                subtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
+            }
+            return formatWithCustomCommas(subtotal);
+        })()
+    }
+</td>
+
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
+                                                {product.ptype === 'Variation' && product.variationValues ? (
+                                                    <select
+                                                        value={product.selectedVariation}
+                                                        onChange={(e) => handleVariationChange(index, e.target.value, setSelectedProduct)}
+                                                        className="block w-full border py-2 border-gray-300 rounded-md shadow-sm focus:border-transparent"
+                                                    >
+                                                        {Object.keys(product.variationValues).map((variationKey) => (
+                                                            <option key={variationKey} value={variationKey}>
+                                                                {variationKey}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <span>No Variations</span>
+                                                )}
+                                            </td>
+
+
+                                            {/* Delete Action */}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <button
+                                                    onClick={() => handleDelete(index, selectedProduct, setSelectedProduct)}
+                                                    className="text-red-500 hover:text-red-700 font-bold py-1 px-2"
+                                                >
+                                                    <i className="fas fa-trash mr-1"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
               </table>
             )}
           </div>

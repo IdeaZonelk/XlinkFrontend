@@ -20,6 +20,12 @@ import GiftIcon from '../../../img/giftbox.png';
 import { toast } from 'react-toastify';
 
 const BillingSection = ({ productBillingHandling, setProductBillingHandling, setProductData, selectedCustomer, selectedCustomerName, selectedCustomerData, setSelectedCustomer, setSelectedCustomerName, setSelectedCustomerData, warehouse, setReloadStatus, setHeldProductReloading, setSelectedCategoryProducts, setSelectedBrandProducts, setSearchedProductData, setError, setFetchRegData }) => {
+
+      if (productBillingHandling && productBillingHandling.length > 0) {
+        productBillingHandling.forEach((product, idx) => {
+            console.log(`Product ${idx}: name=${product.name}, productCost=${product.productCost}`);
+        });
+    }
     const { currency } = useCurrency();
     const [permissionData, setPermissionData] = useState({});
     const { userData } = useContext(UserContext);
@@ -64,6 +70,25 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         monthlyInstallment: '',
     });
 
+    // Add this debug useEffect at the top of your component
+useEffect(() => {
+  console.log("DEBUG - productBillingHandling:", productBillingHandling);
+  if (productBillingHandling && productBillingHandling.length > 0) {
+    productBillingHandling.forEach((product, index) => {
+      console.log(`Product ${index}:`, {
+        name: product.name,
+        ptype: product.ptype,
+        qty: product.qty,
+        price: product.price,
+        productCost: product.productCost,
+        tax: product.tax,
+        taxType: product.taxType,
+        hasVariation: !!product.selectedVariation,
+        variationData: product.selectedVariation ? product.variationValues?.[product.selectedVariation] : null
+      });
+    });
+  }
+}, [productBillingHandling]);
     const getApplicablePrice = (product) => {
         const qty = product.qty || 0;
 
@@ -420,52 +445,89 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         setProductBillingHandling((prev) => prev.filter((_, i) => i !== index));
     };
 
+ 
 
-    const getRowSubtotal = (product) => {
-        const variation = product.selectedVariation
-            ? product.variationValues?.[product.selectedVariation]
-            : null;
+const getRowSubtotal = (product) => {
+  const variation = product.selectedVariation
+    ? product.variationValues?.[product.selectedVariation]
+    : null;
 
-        const price = getApplicablePrice(product);
-        const tax = variation?.orderTax !== undefined ? parseFloat(variation.orderTax) : parseFloat(product.tax) || 0;
-        const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
-        const qty = product.qty || 0;
-        const specialDiscount = parseFloat(product.specialDiscount) || 0;
+  const price = getApplicablePrice(product);
+  console.log("price", price);
+  
+  // Get tax from the right source - use product.tax (which now comes from warehouse)
+  const tax = variation?.orderTax !== undefined 
+    ? parseFloat(variation.orderTax) 
+    : parseFloat(product.tax) || 0; // Changed to use product.tax
+  console.log("tax", tax);
+  
+  // Get taxType from the right source - use product.taxType (which now comes from warehouse)
+  const taxType = variation?.taxType !== undefined 
+    ? variation.taxType 
+    : product.taxType || 'exclusive'; // This should now have the correct value
+  console.log("taxType", taxType);
+  
+  const discount = variation?.discount !== undefined 
+    ? parseFloat(variation.discount) 
+    : parseFloat(product.discount) || 0;
+  console.log("discount", discount);
+  
+  const qty = product.qty || 0;
+  console.log("qty", qty);
+  
+  const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
-        const newPrice = price - discount - specialDiscount;
+  const newPrice = price - discount - specialDiscount;
+  console.log("newPrice", newPrice);
 
-        const productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
+  // Calculate product total based on tax type
+  let productTotal;
+  if (taxType && taxType.toLowerCase() === 'inclusive') {
+    // Tax is already included in the price, don't add additional tax
+    productTotal = newPrice * qty;
+  } else {
+    // Tax is exclusive, add tax to the price
+    productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
+  }
+  console.log("productTotal", productTotal);
+  
+  return productTotal.toFixed(2);
+};
 
-        return (productTotal).toFixed(2);
-    };
+const calculateBaseTotal = () => {
+  return productBillingHandling
+    .filter(product => product.ptype !== 'Base')
+    .reduce((acc, product) => {
+      const variation = product.selectedVariation
+        ? product.variationValues?.[product.selectedVariation]
+        : null;
 
+      const price = getApplicablePrice(product);
+      const tax = variation?.orderTax !== undefined ? parseFloat(variation.orderTax) : parseFloat(product.tax) || 0; // Use product.tax
+      const taxType = variation?.taxType !== undefined ? variation.taxType : product.taxType || 'exclusive'; // Add taxType check
+      const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
 
-    const calculateBaseTotal = () => {
-        return productBillingHandling
-            .filter(product => product.ptype !== 'Base')
-            .reduce((acc, product) => {
-                const variation = product.selectedVariation
-                    ? product.variationValues?.[product.selectedVariation]
-                    : null;
+      const qty = product.qty || 0;
+      const specialDiscount = parseFloat(product.specialDiscount) || 0;
+      const newPrice = price - discount - specialDiscount;
 
-                const price = getApplicablePrice(product);
-                const tax = variation?.orderTax !== undefined ? parseFloat(variation.orderTax) : parseFloat(product.tax) || 0;
-                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
+      if (isNaN(newPrice) || isNaN(tax) || isNaN(qty)) {
+        console.warn(`[WARNING] Skipping product due to NaN values: ${product.name}`, { newPrice, tax, qty });
+        return acc;
+      }
 
-                const qty = product.qty || 0;
-                const specialDiscount = parseFloat(product.specialDiscount) || 0;
-                const newPrice = price - discount - specialDiscount;
+      let productTotal;
+      if (taxType && taxType.toLowerCase() === 'inclusive') {
+        // Tax is already included in the price, don't add additional tax
+        productTotal = newPrice * qty;
+      } else {
+        // Tax is exclusive, add tax to the price
+        productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
+      }
 
-                if (isNaN(newPrice) || isNaN(tax) || isNaN(qty)) {
-                    console.warn(`[WARNING] Skipping product due to NaN values: ${product.name}`, { newPrice, tax, qty });
-                    return acc;
-                }
-
-                const productTotal = (newPrice * qty) + ((price * qty * (tax / 100)));
-
-                return acc + productTotal;
-            }, 0);
-    };
+      return acc + productTotal;
+    }, 0);
+};
 
     //calculating total price
     const calculateTotalPrice = () => {
@@ -504,8 +566,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
     // }, [productBillingHandling]);
 
 
-
-    const calculateTaxLessTotal = () => {
+  const calculateTaxLessTotal = () => {
         let subtotal = productBillingHandling
             .filter(product => product.ptype !== 'Base')
             .reduce((acc, product) => {
@@ -513,7 +574,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     ? product.variationValues?.[product.selectedVariation]
                     : null;
 
-                const price = getApplicablePrice(product);
+                const price = parseFloat(variation?.price) || parseFloat(product.price) || 0;
                 const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
                 const specialDiscount = parseFloat(product.specialDiscount) || 0;
 
@@ -527,28 +588,31 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         return isNaN(total) ? 0 : total;
     };
 
-    // Function to calculate the profit for a product
     const calculateProfit = () => {
-        let pureProfit = productBillingHandling
+        let subtotal = productBillingHandling
             .filter(product => product.ptype !== 'Base')
             .reduce((acc, product) => {
                 const variation = product.selectedVariation
                     ? product.variationValues?.[product.selectedVariation]
                     : null;
+                const price = parseFloat(variation?.price) || parseFloat(product.price) || 0;
+                const discount = variation?.discount !== undefined
+                    ? parseFloat(variation.discount)
+                    : parseFloat(product.discount) || 0;
 
-                const price = getApplicablePrice(product);
-                const discount = variation?.discount !== undefined ? parseFloat(variation.discount) : parseFloat(product.discount) || 0;
-                const productCost = variation?.productCost !== undefined ? parseFloat(variation.productCost) : parseFloat(product.productCost) || 0;
+                const specialDiscount = parseFloat(product.specialDiscount) || 0;
+
+                const productCost = variation?.productCost !== undefined
+                    ? parseFloat(variation.productCost)
+                    : parseFloat(product.productCost) || 0;
 
                 const qty = product.qty || 0;
-                const specialDiscount = parseFloat(product.specialDiscount) || 0;
-                const newPrice = price - discount - specialDiscount;
 
-                const totalProductCost = (productCost * qty);
-                const subTotal = (newPrice * qty);
-                const profitOfProduct = subTotal - totalProductCost;
+                const netPrice = (price - discount - specialDiscount) * qty;
+                const productSubtotal = netPrice ;
+                const totalCost = (productCost * qty);
 
-                return acc + profitOfProduct;
+                return acc + (productSubtotal - totalCost);
             }, 0);
 
         const totalPrice = calculateTaxLessTotal();
@@ -559,13 +623,15 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
             discountAmount = (totalPrice * (parseFloat(discount) || 0) / 100);
         }
         const offerDiscountAmount = totalPrice * (parseFloat(offerPercentage) / 100);
-        const totalProfit = pureProfit - discountAmount - offerDiscountAmount;
+        const totalProfit = subtotal - discountAmount - offerDiscountAmount;
 
-        setProfit(totalProfit);
         return totalProfit;
     };
 
-
+    useEffect(() => {
+        const calculatedProfit = calculateProfit();
+        setProfit(calculatedProfit);
+    }, [productBillingHandling, discountType, discount, offerPercentage, calculateTaxLessTotal]);
 
     const calculateDiscountAmount = (baseTotal) => {
         let discountAmount = 0;
@@ -576,11 +642,17 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
         }
         return discountAmount;
     };
+// Add this useEffect to call and log taxLessTotal
+// Add these useEffects to your component
+useEffect(() => {
+  const taxLessTotal = calculateTaxLessTotal();
+  console.log("Tax Less Total:", taxLessTotal);
+}, [productBillingHandling, discount, offerPercentage]);
 
-    useEffect(() => {
-        const calculatedProfit = calculateProfit();
-        console.log('Profit Details:', calculatedProfit);
-    }, [profit]);
+// useEffect(() => {
+//   const calculatedProfit = calculateProfit();
+//   console.log('Profit Details:', calculatedProfit);
+// }, [productBillingHandling, discount, tax, shipping, offerPercentage]);
 
     const calculateTotalItemsAndPcs = () => {
         let itemsCount = 0;
@@ -718,6 +790,7 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
 
                 const discount = isVariation ? variationData.discount || 0 : product.discount || 0;
                 const tax = isVariation ? variationData.orderTax || 0 : product.tax || 0;
+                const taxType = isVariation ? variationData.taxType || 'exclusive' : product.taxType || 'exclusive';
 
                 const applicablePrice = getApplicablePrice(product);
                 const subTotal = (((applicablePrice - discount) * product.qty) + ((applicablePrice - discount) * product.qty * (tax) / 100)).toFixed(2);
@@ -738,6 +811,12 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     wholesalePrice = product.wholesalePrice || 0;
                 }
 
+                 const productCost = isVariation
+                ? variationData.productCost !== undefined
+                    ? variationData.productCost
+                    : product.productCost
+                : product.productCost;
+
                 return {
                     currentID: product.id,
                     name: product.name,
@@ -747,12 +826,14 @@ const BillingSection = ({ productBillingHandling, setProductBillingHandling, set
                     variation: product.selectedVariation ? product.selectedVariation : null,
                     qty: product.qty,
                     discount: discount,
+                    taxType: taxType,
                     tax: tax,
                     price: product.price,
                     subTotal: subTotal,
                     wholesaleEnabled: wholesaleEnabled,
                     wholesaleMinQty: wholesaleMinQty,
-                    wholesalePrice: wholesalePrice
+                    wholesalePrice: wholesalePrice,
+                    productCost: productCost
                 };
             });
     };
