@@ -204,15 +204,26 @@ const calculateBaseTotal = () => {
     
     return grandTotal;
 };
-    const calculateTotal =() =>{
-        const total = totalWithoutInterest();
-        if (useCreditPayment) {
-            const interestRate = parseFloat(creditDetails.interestRate) || 0;
-            const interest = (total * interestRate) / 100;
-            return total + interest;
-        }
-        return total;
+const calculateTotal = () => {
+    const total = totalWithoutInterest();
+    
+    // Apply credit interest if credit payment is used
+    let totalWithInterest = total;
+    if (useCreditPayment) {
+        const interestRate = parseFloat(creditDetails.interestRate) || 0;
+        const interest = (total * interestRate) / 100;
+        totalWithInterest = total + interest;
     }
+    
+    // Subtract claimed points if they are claimed
+    let finalTotal = totalWithInterest;
+    if (isPointsClaimed && claimedPoints) {
+        const pointsValue = parseFloat(claimedPoints) || 0;
+        finalTotal = Math.max(0, totalWithInterest - pointsValue); // Ensure total doesn't go negative
+    }
+    
+    return finalTotal;
+};
 
     const calculateTaxLessTotal = () => {
         let subtotal = selectedProduct.reduce((total, product) => {
@@ -420,11 +431,13 @@ const calculateBaseTotal = () => {
     setShipping(e.target.value);
   };
 
-  const handleClaimedPoints = () => {
+const handleClaimedPoints = () => {
     if (selectedCustomer && selectedCustomer.redeemedPoints > 0) {
-      setIsPointsClaimed(true);
+        setIsPointsClaimed(true);
+        // Set the actual points value from the customer's redeemedPoints
+        setClaimedPoints(selectedCustomer.redeemedPoints.toString());
     }
-  };
+};
 
   function restructureProductData(products) {
     if (!Array.isArray(products)) {
