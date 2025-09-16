@@ -53,6 +53,57 @@ const ZBill = () => {
     const printRefs = useRef({})
     const combinedProductData = searchedCustomerSale ? searchedCustomerSale : saleData;
 
+    // Helper function to safely format dates
+    const formatDateSafely = (dateValue, formatType = 'date') => {
+        if (!dateValue) return '-';
+        
+        // If it's already a formatted string from backend (DD/MM/YYYY HH:MM:SS)
+        if (typeof dateValue === 'string' && dateValue.includes('/')) {
+            const parts = dateValue.split(' ');
+            if (parts.length === 2) {
+                const [datePart, timePart] = parts;
+                if (formatType === 'date') {
+                    return datePart; // Returns DD/MM/YYYY
+                } else if (formatType === 'time') {
+                    return timePart; // Returns HH:MM:SS
+                }
+            }
+            return dateValue; // Return as-is if format is unexpected
+        }
+        
+        // Handle Date objects or ISO strings
+        let date;
+        if (typeof dateValue === 'string') {
+            date = new Date(dateValue);
+        } else if (dateValue instanceof Date) {
+            date = dateValue;
+        } else {
+            return '-';
+        }
+        
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return '-';
+        }
+        
+        if (formatType === 'date') {
+            return date.toLocaleDateString([], {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } else if (formatType === 'time') {
+            return date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+        
+        return '-';
+    };
+
     useEffect(() => {
         if (userData?.permissions) {
             setPermissionData(extractPermissions(userData.permissions));
@@ -80,6 +131,14 @@ const ZBill = () => {
             });
             const rawData = response.data.data;
 
+            // Debug logging to see what the backend is sending
+            console.log('Raw Z-reading data from backend:', rawData);
+            if (rawData.length > 0) {
+                console.log('First register data:', rawData[0].registers[0]);
+                console.log('First register openedTime:', rawData[0].registers[0]?.openedTime);
+                console.log('First register closedTime:', rawData[0].registers[0]?.closedTime);
+            }
+
             const aggregated = rawData.map(z => {
                 let totalCash = 0;
                 let totalCard = 0;
@@ -89,10 +148,40 @@ const ZBill = () => {
                 let totalVariance = 0;
                 let totalCashHandIn = 0;
                 let totalGrandTotal = 0;
-                let openedTimes = z.registers.map(r => new Date(r.openedTime));
-                let closedTimes = z.registers.map(r => new Date(r.closedTime));
-                let earliestOpen = new Date(Math.min(...openedTimes));
-                let latestClose = new Date(Math.max(...closedTimes));
+                
+                // Extract times safely, handling pre-formatted strings from backend
+                let earliestOpen = null;
+                let latestClose = null;
+                
+                if (z.registers && z.registers.length > 0) {
+                    // Parse times from either Date objects or formatted strings
+                    const openedTimes = z.registers.map(r => {
+                        if (typeof r.openedTime === 'string' && r.openedTime.includes('/')) {
+                            // Handle formatted string (DD/MM/YYYY HH:MM:SS)
+                            const [datePart, timePart] = r.openedTime.split(' ');
+                            const [day, month, year] = datePart.split('/');
+                            return new Date(`${year}-${month}-${day}T${timePart}`);
+                        }
+                        return new Date(r.openedTime);
+                    }).filter(date => !isNaN(date.getTime()));
+                    
+                    const closedTimes = z.registers.map(r => {
+                        if (typeof r.closedTime === 'string' && r.closedTime.includes('/')) {
+                            // Handle formatted string (DD/MM/YYYY HH:MM:SS)
+                            const [datePart, timePart] = r.closedTime.split(' ');
+                            const [day, month, year] = datePart.split('/');
+                            return new Date(`${year}-${month}-${day}T${timePart}`);
+                        }
+                        return new Date(r.closedTime);
+                    }).filter(date => !isNaN(date.getTime()));
+                    
+                    if (openedTimes.length > 0) {
+                        earliestOpen = new Date(Math.min(...openedTimes));
+                    }
+                    if (closedTimes.length > 0) {
+                        latestClose = new Date(Math.max(...closedTimes));
+                    }
+                }
 
                 z.registers.forEach(r => {
                     totalCash += r.cashPaymentAmount || 0;
@@ -119,8 +208,8 @@ const ZBill = () => {
                     totalVariance,
                     totalCashHandIn,
                     totalGrandTotal,
-                    openedTime: earliestOpen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                    closedTime: latestClose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    openedTime: earliestOpen ? earliestOpen.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-',
+                    closedTime: latestClose ? latestClose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'
                 };
             });
 
@@ -299,28 +388,18 @@ const ZBill = () => {
                                 <tr key={index}>
                                     <td className="px-6 py-4 text-left whitespace-nowrap">
                                         {zReading.registers && zReading.registers.length === 1
-                                            ? new Date(zReading.registers[0].openedTime).toLocaleDateString([], {
-                                                year: 'numeric',
-                                                month: '2-digit',
-                                                day: '2-digit'
-                                            })
+                                            ? formatDateSafely(zReading.registers[0].openedTime, 'date')
                                             : '-'}
                                     </td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap">
                                         {zReading.registers && zReading.registers.length === 1
-                                            ? new Date(zReading.registers[0].openedTime).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                second: '2-digit',
-                                                hour12: false
-                                            })
+                                            ? formatDateSafely(zReading.registers[0].openedTime, 'time')
                                             : '-'}
                                     </td>
 
                                     <td className="px-6 py-4 text-left whitespace-nowrap">
                                         {zReading.registers && zReading.registers.length === 1
-                                            ? new Date(zReading.registers[0].closedTime)
-                                                .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit',hour12: false })
+                                            ? formatDateSafely(zReading.registers[0].closedTime, 'time')
                                             : '-'}
                                     </td>
 
@@ -451,11 +530,7 @@ const ZBill = () => {
                                                                                     <div>
                                                                                         <p className="text-xs text-gray-500 text-left uppercase tracking-wide">Open Date</p>
                                                                                         <p className="font-semibold text-gray-700 text-left"> {zReading.registers && zReading.registers.length === 1
-                                                                                            ? new Date(zReading.registers[0].openedTime).toLocaleDateString([], {
-                                                                                                year: 'numeric',
-                                                                                                month: '2-digit',
-                                                                                                day: '2-digit'
-                                                                                            })
+                                                                                            ? formatDateSafely(zReading.registers[0].openedTime, 'date')
                                                                                             : '-'}</p>
                                                                                     </div>
                                                                                 </div>
@@ -464,12 +539,7 @@ const ZBill = () => {
                                                                                     <div>
                                                                                         <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Open Time</p>
                                                                                         <p className="font-semibold text-gray-700 text-left">
-                                                                                            {new Date(register.openedTime).toLocaleTimeString([], {
-                                                                                                hour: '2-digit',
-                                                                                                minute: '2-digit',
-                                                                                                second: '2-digit',
-                                                                                                hour12: false,
-                                                                                            })}
+                                                                                            {formatDateSafely(register.openedTime, 'time')}
                                                                                         </p>
                                                                                     </div>
                                                                                 </div>
@@ -478,7 +548,7 @@ const ZBill = () => {
                                                                                     <div>
                                                                                         <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Close Date</p>
                                                                                         <p className="font-semibold text-gray-700 text-left">
-                                                                                            {new Date(register.closedTime).toLocaleDateString()}
+                                                                                            {formatDateSafely(register.closedTime, 'date')}
                                                                                         </p>
                                                                                     </div>
                                                                                 </div>
@@ -486,7 +556,7 @@ const ZBill = () => {
                                                                                     <TimerOff className="w-5 h-5 text-red-600" />
                                                                                     <div>
                                                                                         <p className="text-xs text-gray-500 uppercase tracking-wide text-left">Close Time</p>
-                                                                                        <p className="font-semibold text-gray-700 text-left">{new Date(register.closedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+                                                                                        <p className="font-semibold text-gray-700 text-left">{formatDateSafely(register.closedTime, 'time')}</p>
                                                                                     </div>
                                                                                 </div>
                                                                                 <div className="flex items-center space-x-3 p-3 bg-indigo-50 rounded-lg">
