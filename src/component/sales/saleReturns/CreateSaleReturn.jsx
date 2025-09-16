@@ -57,49 +57,58 @@ function CreateSaleReturnBody() {
     }, [purchasedQty]);
 
     useEffect(() => {
-        const findSaleById = async () => {
-            try {
-                setProgress(true);
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchSales`, { params: { id } });
+    const findSaleById = async () => {
+        try {
+            setProgress(true);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/fetchSales`, { params: { id } });
 
-                if (!response.data) {
-                    console.warn('No data found for the given sale ID.');
-                    return;
-                }
-                const sale = response.data;
-                const baseProductData = Array.isArray(sale.productsData) ? sale.productsData : []; // Ensure it's an array
-
-                const initializedProducts = baseProductData.map(product => {
-                    const price = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
-                    const quantity = parseInt(product.quantity, 10) || 1;
-                    const taxRate = parseFloat(product.taxRate) || 0;
-                    const discount = parseFloat(product.discount) || 0;
-                    const discountedPrice = price - discount;
-
-                    const subtotal = (discountedPrice * quantity) + ( price * quantity * taxRate);
-                    return {
-                        ...product,
-                        selectedVariation: product.variationValue || "No Variation",  // Handle null values
-                        stockQty: product.stockQty || "0",  // Ensure stockQty is correctly set
-                        taxRate,
-                        subtotal,  // Set calculated subtotal
-                        restocking: true,
-                    };
-                });
-                setSelectedProduct(initializedProducts);
-                setPurchasedQty(baseProductData);
-                setSaleProduct(sale);
-                setRestocking(new Array(initializedProducts.length).fill(true));
-            } catch (error) {
-                console.error('Error fetching sale by ID:', error.response ? error.response.data : error.message);
-            } finally {
-                setProgress(false);
+            if (!response.data) {
+                console.warn('No data found for the given sale ID.');
+                return;
             }
-        };
-        if (id) {
-            findSaleById();
+            const sale = response.data;
+            const baseProductData = Array.isArray(sale.productsData) ? sale.productsData : []; // Ensure it's an array
+
+            const initializedProducts = baseProductData.map(product => {
+                const price = product.appliedWholesale ? parseFloat(product.wholesalePrice || 0) : parseFloat(product.price || 0);
+                const quantity = parseInt(product.quantity, 10) || 1;
+                const taxRate = parseFloat(product.taxRate) || 0;
+                const discount = parseFloat(product.discount) || 0;
+                const discountedPrice = price - discount;
+                const taxType = getTaxType(product) || 'exclusive'; // Get tax type
+
+                let subtotal;
+                if (taxType.toLowerCase() === 'inclusive') {
+                    // Tax is already included in the price, don't add additional tax
+                    subtotal = discountedPrice * quantity;
+                } else {
+                    // Tax is exclusive, add tax to the price
+                    subtotal = (discountedPrice * quantity) + (price * quantity * taxRate);
+                }
+                
+                return {
+                    ...product,
+                    selectedVariation: product.variationValue || "No Variation",  // Handle null values
+                    stockQty: product.stockQty || "0",  // Ensure stockQty is correctly set
+                    taxRate,
+                    subtotal,  // Set calculated subtotal
+                    restocking: true,
+                };
+            });
+            setSelectedProduct(initializedProducts);
+            setPurchasedQty(baseProductData);
+            setSaleProduct(sale);
+            setRestocking(new Array(initializedProducts.length).fill(true));
+        } catch (error) {
+            console.error('Error fetching sale by ID:', error.response ? error.response.data : error.message);
+        } finally {
+            setProgress(false);
         }
-    }, [id]);
+    };
+    if (id) {
+        findSaleById();
+    }
+}, [id]);
 
     useEffect(() => {
     }, [selectedProduct]);
@@ -130,6 +139,13 @@ function CreateSaleReturnBody() {
         setSelectedProduct(updatedProducts);
     };
 
+        const getTaxType = (product) => {
+    if (product.ptype === "Variation" && product.selectedVariation && product.variationValues) {
+        return product.variationValues[product.selectedVariation]?.taxType || product.taxType;
+    }
+    return product.taxType;
+};
+
     const calculateReturnAmount = () => {
         if (!saleProduct) return {
             returnAmount: 0,
@@ -142,15 +158,24 @@ function CreateSaleReturnBody() {
             const discount = parseFloat(product.discount) || 0;
             const taxRate = parseFloat(product.taxRate) || 0;
             const returnQty = parseFloat(product.returnQty) || 0;
+            const taxType = getTaxType(product);
 
             if (returnQty <= 0) return total;
 
             const discountedPrice = price - discount;
+            let subtotal;
+        if (taxType.toLowerCase() === 'inclusive') {
+            // Tax is already included in the price, don't add additional tax
+            subtotal = discountedPrice * returnQty;
+        } else {
+            // Tax is exclusive, add tax to the price
             const subtotalWithoutTax = discountedPrice * returnQty;
             const taxAmount = (price * taxRate) * returnQty;
+            subtotal = subtotalWithoutTax + taxAmount;
+        }
 
-            return total + subtotalWithoutTax + taxAmount;
-        }, 0);
+        return total + subtotal;
+    }, 0);
 
         if (productSubtotal <= 0) return {
             returnAmount: 0,
@@ -163,8 +188,19 @@ function CreateSaleReturnBody() {
             const discount = parseFloat(product.discount) || 0;
             const taxRate = parseFloat(product.taxRate) || 0;
             const quantity = product.isWeight ? parseFloat(product.weight) || 0 : parseInt(product.quantity, 10) || 0;
-            return total + ((price - discount) * quantity) + ((price * taxRate) * quantity);
-        }, 0);
+            const taxType = getTaxType(product) || 'exclusive'; // Use the getTaxType function
+        
+        let subtotal;
+        if (taxType.toLowerCase() === 'inclusive') {
+            // Tax is already included in the price
+            subtotal = (price - discount) * quantity;
+        } else {
+            // Tax is exclusive
+            subtotal = ((price - discount) * quantity) + ((price * taxRate) * quantity);
+        }
+        
+        return total + subtotal;
+    }, 0);
 
         const ratio = originalSubtotal > 0 ? productSubtotal / originalSubtotal : 0;
 
@@ -431,6 +467,9 @@ function CreateSaleReturnBody() {
                         </div>
                         <div className="mt-4 text-right text-lg font-semibold">
                             Return  Amount  :  {currency} {formatWithCustomCommas(calculateReturnAmount().returnAmount)}
+                              <div className="text-sm text-gray-500 font-normal mt-1">
+            (without shipping)
+        </div>
                         </div>
                     </div>
 

@@ -604,7 +604,7 @@ const calculateBaseTotal = () => {
                                         {filteredCustomer.map((customer) => (
                                             <li
                                                 key={customer._id}
-                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer)}
+                                                onClick={() => handleCustomerSelect(customer, setSelectedCustomer, setSearchCustomer, setFilteredCustomer, setClaimedPoints, setIsPointsClaimed, setSelectedCustomerName)}
                                                 className="cursor-pointer hover:bg-gray-100 px-4 py-4"
                                             >
                                                 {customer.name}
