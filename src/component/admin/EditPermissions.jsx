@@ -43,6 +43,187 @@ const EditPermissionsBody = () => {
 
                 let formattedPermissions = roleData.permissions || {};
 
+                // Transform flat permission structure to nested structure for EditPermissions
+                const transformFlatToNested = (flatPermissions) => {
+                    const nestedPermissions = {};
+                    
+                    // Define the mapping from flat permissions to nested structure
+                    const permissionMapping = {
+                        // Roles and Permissions
+                        'create_role': 'manageRolesAndPermissions.create_role',
+                        'edit_role': 'manageRolesAndPermissions.edit_role',
+                        'delete_role': 'manageRolesAndPermissions.delete_role',
+                        'view_role': 'manageRolesAndPermissions.view_role',
+                        
+                        // Products
+                        'create_product': 'manageProducts.create_product',
+                        'edit_product': 'manageProducts.edit_product',
+                        'view_product': 'manageProducts.view_product',
+                        'delete_product': 'manageProducts.delete_product',
+                        
+                        // Base Units
+                        'create_baseunit': 'manageBaseUnits.create_baseunit',
+                        'edit_baseunit': 'manageBaseUnits.edit_baseunit',
+                        'view_baseunit': 'manageBaseUnits.view_baseunit',
+                        'delete_baseunit': 'manageBaseUnits.delete_baseunit',
+                        
+                        // Variations
+                        'create_variation': 'manageVariation.create_variation',
+                        'edit_variation': 'manageVariation.edit_variation',
+                        'view_variation': 'manageVariation.view_variation',
+                        'delete_variation': 'manageVariation.delete_variation',
+                        
+                        // Users
+                        'create_user': 'manageUsers.create_user',
+                        'edit_user': 'manageUsers.edit_user',
+                        'view_user': 'manageUsers.view_user',
+                        'delete_user': 'manageUsers.delete_user',
+                        
+                        // Quotations
+                        'create_quotation': 'manageQuotations.create_quotation',
+                        'edit_quotation': 'manageQuotations.edit_quotation',
+                        'view_quotation': 'manageQuotations.view_quotation',
+                        'view_quotation_popup': 'manageQuotations.view_quotation_popup',
+                        'delete_quotation': 'manageQuotations.delete_quotation',
+                        
+                        // Reports
+                        'view_reports': 'manageReports.view_reports',
+                        
+                        // Warehouse
+                        'create_warehouse': 'manageWarehouse.create_warehouse',
+                        'edit_warehouse': 'manageWarehouse.edit_warehouse',
+                        'view_warehouse': 'manageWarehouse.view_warehouse',
+                        'delete_warehouse': 'manageWarehouse.delete_warehouse',
+                        
+                        // Offers
+                        'create_offer': 'manageOffers.create_offer',
+                        'edit_offer': 'manageOffers.edit_offer',
+                        'view_offer': 'manageOffers.view_offer',
+                        'delete_offer': 'manageOffers.delete_offer',
+                        
+                        // Brands
+                        'create_brand': 'manageBrands.create_brand',
+                        'edit_brand': 'manageBrands.edit_brand',
+                        'view_brand': 'manageBrands.view_brand',
+                        'delete_brand': 'manageBrands.delete_brand',
+                        
+                        // Units
+                        'create_unit': 'manageUnits.create_unit',
+                        'edit_unit': 'manageUnits.edit_unit',
+                        'view_unit': 'manageUnits.view_unit',
+                        'delete_unit': 'manageUnits.delete_unit',
+                        
+                        // Transfer
+                        'create_transfer': 'manageTransfer.create_transfer',
+                        'edit_transfer': 'manageTransfer.edit_transfer',
+                        'view_transfer': 'manageTransfer.view_transfer',
+                        'view_transfer_popup': 'manageTransfer.view_transfer_popup',
+                        'delete_transfer': 'manageTransfer.delete_transfer',
+                        
+                        // Sales
+                        'create_sale': 'manageSales.create_sale',
+                        'edit_sale': 'manageSales.edit_sale',
+                        'view_sale': 'manageSales.view_sale',
+                        'view_sl_popup': 'manageSales.view_sl_popup',
+                        'delete_sale': 'manageSales.delete_sale',
+                        
+                        // Sale Returns
+                        'view_sl_return': 'manageSaleReturns.view_sl_return',
+                        'edit_sl_return': 'manageSaleReturns.edit_sl_return',
+                        'view_sl_return_popup': 'manageSaleReturns.view_sl_return_popup',
+                        'delete_sl_return': 'manageSaleReturns.delete_sl_return',
+                        
+                        // Purchases
+                        'create_purchase': 'managePurchases.create_purchase',
+                        'edit_purchase': 'managePurchases.edit_purchase',
+                        'view_purchase': 'managePurchases.view_purchase',
+                        'view_purchase_popup': 'managePurchases.view_purchase_popup',
+                        'delete_purchase': 'managePurchases.delete_purchase',
+                        'return_purchase': 'managePurchases.return_purchase',
+                        
+                        // Purchase Returns
+                        'view_pur_return_popup': 'managePurchaseReturns.view_pur_return_popup',
+                        'edit_pur_return': 'managePurchaseReturns.edit_pur_return',
+                        'view_pur_return': 'managePurchaseReturns.view_pur_return',
+                        'delete_pur_return': 'managePurchaseReturns.delete_pur_return',
+                        
+                        // Suppliers
+                        'create_supplier': 'manageSuppliers.create_supplier',
+                        'edit_supplier': 'manageSuppliers.edit_supplier',
+                        'view_supplier': 'manageSuppliers.view_supplier',
+                        'delete_supplier': 'manageSuppliers.delete_supplier',
+                        
+                        // Expenses Category
+                        'create_exp_category': 'manageExpensesCategory.create_exp_category',
+                        'edit_exp_category': 'manageExpensesCategory.edit_exp_category',
+                        'view_exp_category': 'manageExpensesCategory.view_exp_category',
+                        'delete_exp_category': 'manageExpensesCategory.delete_exp_category',
+                        
+                        // Currency
+                        'create_currency': 'manageCurrency.create_currency',
+                        'edit_currency': 'manageCurrency.edit_currency',
+                        'view_currency': 'manageCurrency.view_currency',
+                        'delete_currency': 'manageCurrency.delete_currency',
+                        
+                        // Category
+                        'create_category': 'manageCategory.create_category',
+                        'edit_category': 'manageCategory.edit_category',
+                        'view_category': 'manageCategory.view_category',
+                        'delete_category': 'manageCategory.delete_category',
+                        
+                        // Customers
+                        'create_customer': 'manageCustomers.create_customer',
+                        'edit_customer': 'manageCustomers.edit_customer',
+                        'view_customer': 'manageCustomers.view_customer',
+                        'delete_customer': 'manageCustomers.delete_customer',
+                        
+                        // Adjustments
+                        'create_adjustment': 'manageAdjustments.create_adjustment',
+                        'edit_adjustment': 'manageAdjustments.edit_adjustment',
+                        'view_adjustment': 'manageAdjustments.view_adjustment',
+                        'view_adjustment_popup': 'manageAdjustments.view_adjustment_popup',
+                        'delete_adjustment': 'manageAdjustments.delete_adjustment',
+                        
+                        // Expenses
+                        'create_expense': 'manageExpenses.create_expense',
+                        'edit_expense': 'manageExpenses.edit_expense',
+                        'view_expense': 'manageExpenses.view_expense',
+                        'delete_expense': 'manageExpenses.delete_expense',
+                        
+                        // Z Bills
+                        'view_zbills': 'manageZbill.view_zbill',
+                        'delete_zbill': 'manageZbill.delete_zbill'
+                    };
+                    
+                    // Transform flat permissions to nested structure
+                    Object.keys(flatPermissions).forEach(key => {
+                        if (key === 'managePOS') {
+                            // Handle POS permissions separately as they're already nested
+                            nestedPermissions[key] = flatPermissions[key];
+                        } else if (permissionMapping[key]) {
+                            const [category, permission] = permissionMapping[key].split('.');
+                            if (!nestedPermissions[category]) {
+                                nestedPermissions[category] = {};
+                            }
+                            nestedPermissions[category][permission] = flatPermissions[key];
+                        } else {
+                            // For any unmapped permissions, keep them as is
+                            nestedPermissions[key] = flatPermissions[key];
+                        }
+                    });
+                    
+                    return nestedPermissions;
+                };
+
+                // Transform the permissions if they appear to be in flat structure
+                const isFlat = Object.keys(formattedPermissions).some(key => 
+                    typeof formattedPermissions[key] === 'boolean' && key !== 'managePOS'
+                );
+                
+                if (isFlat) {
+                    formattedPermissions = transformFlatToNested(formattedPermissions);
+                }
+
                 formattedPermissions.managePOS = formattedPermissions.managePOS || { view_pos: false, warehouses: {} };
                 const existingWarehouses = formattedPermissions.managePOS.warehouses || {};
 
@@ -381,8 +562,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewProduct"
                                                 name="manageProducts_view_product"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageProducts?.view_product || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Product</label>
                                         </div>
@@ -434,8 +615,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewBaseunit"
                                                 name="manageBaseUnits_view_baseunit"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageBaseUnits?.view_baseunit || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Baseunit</label>
                                         </div>
@@ -487,8 +668,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewVariation"
                                                 name="manageVariation_view_variation"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageVariation?.view_variation || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Variation</label>
                                         </div>
@@ -571,8 +752,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewUser"
                                                 name="manageUsers_view_user"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageUsers?.view_user || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View User</label>
                                         </div>
@@ -623,8 +804,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewQuotation"
                                                 name="manageQuotations_view_quotation"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageQuotations?.view_quotation || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Quotation</label>
                                         </div>
@@ -713,8 +894,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewWarehouse"
                                                 name="manageWarehouse_view_warehouse"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageWarehouse?.view_warehouse || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Warehouse</label>
                                         </div>
@@ -763,8 +944,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewOffer"
                                                 name="manageOffers_view_offer"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageOffers?.view_offer || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Offer</label>
                                         </div>
@@ -829,8 +1010,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewBrand"
                                                 name="manageBrands_view_brand"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageBrands?.view_brand || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Brand</label>
                                         </div>
@@ -882,8 +1063,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewUnit"
                                                 name="manageUnits_view_unit"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageUnits?.view_unit || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Unit</label>
                                         </div>
@@ -934,8 +1115,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewTransfer"
                                                 name="manageTransfer_view_transfer"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageTransfer?.view_transfer || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Transfer</label>
                                         </div>
@@ -997,8 +1178,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewSale"
                                                 name="manageSales_view_sale"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageSales?.view_sale || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Sale</label>
                                         </div>
@@ -1071,8 +1252,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewSLReturn"
                                                 name="manageSaleReturns_view_sl_return"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageSaleReturns?.view_sl_return || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Sale Return</label>
                                         </div>
@@ -1145,8 +1326,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewPurchase"
                                                 name="managePurchases_view_purchase"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.managePurchases?.view_purchase || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Purchase</label>
                                         </div>
@@ -1219,8 +1400,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewPURReturn"
                                                 name="managePurchaseReturns_view_pur_return"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.managePurchaseReturns?.view_pur_return || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Purchase Return</label>
                                         </div>
@@ -1271,8 +1452,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewSupplier"
                                                 name="manageSuppliers_view_supplier"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageSuppliers?.view_supplier || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Supplier</label>
                                         </div>
@@ -1334,8 +1515,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewEXPCategory"
                                                 name="manageExpensesCategory_view_exp_category"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageExpensesCategory?.view_exp_category || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Expenses Category</label>
                                         </div>
@@ -1389,8 +1570,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewCurrency"
                                                 name="manageCurrency_view_currency"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageCurrency?.view_currency || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Currency</label>
                                         </div>
@@ -1441,8 +1622,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewCategory"
                                                 name="manageCategory_view_category"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageCategory?.view_category || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Category</label>
                                         </div>
@@ -1493,8 +1674,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewCustomer"
                                                 name="manageCustomers_view_customer"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageCustomers?.view_customer || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Customer</label>
                                         </div>
@@ -1545,8 +1726,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewAdjustment"
                                                 name="manageAdjustments_view_adjustment"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageAdjustments?.view_adjustment || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Adjustment</label>
                                         </div>
@@ -1716,7 +1897,7 @@ const EditPermissionsBody = () => {
                                                                 // Ensure 'create_pos_sale' permission is used here for checked state
                                                                 checked={warehouse.create_sale_from_pos || false}
                                                                 onChange={(e) => handleWarehousePermissionChange(e, warehouse.warehouseId, "create_sale_from_pos")}
-                                                                disabled={!warehouse.access} // Disable if warehouse is not checked
+                                                                disabled={!warehouse.access}
                                                             />
                                                             <label htmlFor={`${warehouse.warehouseId}-create_sale_from_pos`} className="ml-4">
                                                                 Create Sale From POS
@@ -1764,8 +1945,8 @@ const EditPermissionsBody = () => {
                                                 id="checkbox-viewExpense"
                                                 name="manageExpenses_view_expense"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageExpenses?.view_expense || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Expense</label>
                                         </div>
@@ -1790,10 +1971,10 @@ const EditPermissionsBody = () => {
                                             <input
                                                 type="checkbox"
                                                 id="checkbox-viewZbills"
-                                                name="view_zbills"
+                                                name="manageZbill_view_zbill"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.manageZbill?.view_zbill || permissions.view_zbills || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Z bills</label>
                                         </div>

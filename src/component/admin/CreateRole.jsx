@@ -400,8 +400,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewProduct"
                                                 name="view_product"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_product || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Product</label>
                                         </div>
@@ -464,8 +464,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-deleteBaseunit"
                                                 name="delete_baseunit"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.delete_baseunit || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">Delete Baseunit</label>
                                         </div>
@@ -517,8 +517,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-deleteVariation"
                                                 name="delete_variation"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.delete_variation || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">Delete Variation</label>
                                         </div>
@@ -601,8 +601,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-deleteUser"
                                                 name="delete_user"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.delete_user || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">Delete User</label>
                                         </div>
@@ -642,8 +642,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewQuotation"
                                                 name="view_quotation"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_quotation || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Quotation</label>
                                         </div>
@@ -735,8 +735,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewWarehouse"
                                                 name="view_warehouse"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_warehouse || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Warehouse</label>
                                         </div>
@@ -787,8 +787,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewEXPCategory"
                                                 name="view_exp_category"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_exp_category || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Expenses Category</label>
                                         </div>
@@ -906,8 +906,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewBrand"
                                                 name="view_brand"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_brand || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Brand</label>
                                         </div>
@@ -958,8 +958,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewUnit"
                                                 name="view_unit"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_unit || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Unit</label>
                                         </div>
@@ -1010,8 +1010,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewTransfer"
                                                 name="view_transfer"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_transfer || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Transfer</label>
                                         </div>
@@ -1073,8 +1073,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewSale"
                                                 name="view_sale"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_sale || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Sale</label>
                                         </div>
@@ -1147,8 +1147,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewSLReturn"
                                                 name="view_sl_return"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_sl_return || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Sale Return</label>
                                         </div>
@@ -1221,8 +1221,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewPurchase"
                                                 name="view_purchase"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_purchase || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Purchase</label>
                                         </div>
@@ -1295,8 +1295,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewPURReturn"
                                                 name="view_pur_return"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_pur_return || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Purchase Return</label>
                                         </div>
@@ -1347,8 +1347,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewSupplier"
                                                 name="view_supplier"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_supplier || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Supplier</label>
                                         </div>
@@ -1386,8 +1386,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewZbills"
                                                 name="view_zbills"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_zbills || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Z bills</label>
                                         </div>
@@ -1441,8 +1441,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewCurrency"
                                                 name="view_currency"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_currency || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Currency</label>
                                         </div>
@@ -1493,8 +1493,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewCategory"
                                                 name="view_category"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_category || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Category</label>
                                         </div>
@@ -1545,8 +1545,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewCustomer"
                                                 name="view_customer"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_customer || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Customer</label>
                                         </div>
@@ -1597,8 +1597,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewAdjustment"
                                                 name="view_adjustment"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_adjustment || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Adjustment</label>
                                         </div>
@@ -1813,8 +1813,8 @@ const CreateRoleBody = () => {
                                                 id="checkbox-viewExpense"
                                                 name="view_expense"
                                                 className="checkbox-custom"
-                                                checked={true}
-                                                disabled
+                                                checked={permissions.view_expense || false}
+                                                onChange={handlePermissionChange}
                                             />
                                             <label className="text-lightgray-300 ml-4">View Expense</label>
                                         </div>
