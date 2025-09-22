@@ -241,7 +241,8 @@ const PayingSection = ({ handlePopupClose, totalItems, totalPcs, profit, tax, sh
                     wholesalePrice,
                     productCost,
                     productQty,
-                    claimedPoints
+                    claimedPoints,
+                    isService: product.isService || false // Add isService property
                 };
             });
 

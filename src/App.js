@@ -27,6 +27,9 @@ import CreateProductBody from "./component/product/createProduct";
 import EditProductBody from "./component/product/editProduct";
 import MainLayout from "./component/layout/MainLayout";
 import ViewProductsBody from "./component/product/viewProducts";
+import CreateServicesBody from "./component/product/services/createService";
+import ViewServicesBody from "./component/product/services/viewService";
+import EditServicesBody from "./component/product/services/editService";
 import DashboardBody from "./component/layout/DashboardCards";
 import CreateUserBody from "./component/user/CreateUser";
 import CreateAdminBody from "./component/admin/CreateAdmin";
@@ -364,6 +367,23 @@ function App() {
                     <EditProductBody />
                   </CurrencyProvider>
                 </PermissionGuard>} />
+
+              {/**create , read ,and update service */}
+              <Route path="/createService" element={
+                  <CurrencyProvider>
+                    <CreateServicesBody />
+                  </CurrencyProvider>
+              } />
+              <Route path="/viewServices" element={
+                  <CurrencyProvider>
+                    <ViewServicesBody />
+                  </CurrencyProvider>
+              } />
+              <Route path="/editService/:id" element={
+                  <CurrencyProvider>
+                    <EditServicesBody />
+                  </CurrencyProvider>
+              } />
 
               {/**Barcode creating and printing */}
               <Route path="/barcodePrint" element={

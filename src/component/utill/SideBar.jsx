@@ -54,6 +54,7 @@ const Sidebar = ({ items }) => {
 
       setPermissionData({
         manageProducts: hasAnyPermission("manageProducts"),
+        manageServices: hasAnyPermission("manageServices"),
         manageBaseUnits: hasAnyPermission("manageBaseUnits"),
         manageUnits: hasAnyPermission("manageUnits"),
         manageVariation: hasAnyPermission("manageVariation"),
@@ -83,6 +84,7 @@ const Sidebar = ({ items }) => {
         managePrefixesSettings: hasAnyPermission("managePrefixesSettings"),
         managePOS: hasAnyPermission("managePOS"),
         manageZbill: hasAnyPermission("manageZbill"),
+        manageServices: hasAnyPermission("manageServices"),
       });
     }
   }, [userData]);
@@ -369,14 +371,20 @@ const Sidebar = ({ items }) => {
                 </Link>
               </li>
             )}
+            <li id="services" className="rounded-sm w-full flex items-center space-x-2">
+               <Link to="/viewServices" className={`w-full text-black hover:text-[#2a9d34] flex items-center cursor-pointer space-x-2 p-2 ${activeIndex === 46 ? 'bg-gray-100' : 'hover:bg-gray-100'}`} onClick={() => handleClick(46)}>
+          <CogIcon className="h-6 w-6 text-gray-500 mr-4" aria-hidden="true" />
+          Services
+          </Link>
+          </li>
 
-            {permissionData.manageBaseUnits === false && (
+             {permissionData.manageBaseUnits === true && (
               <li id="products" className="rounded-sm w-full flex items-center space-x-2">
                 <Link to="/viewBaseUnit" className={`w-full text-black hover:text-[#2a9d34] flex items-center cursor-pointer space-x-2 p-2 ${activeIndex === 3 ? 'bg-gray-100' : 'hover:bg-gray-100'}`} onClick={() => handleClick(3)}>
                   <CubeIcon className="h-6 w-6 text-gray-500 mr-4" aria-hidden="true" />
                   Base units</Link>
               </li>
-            )}
+            )} 
 
             {permissionData.manageUnits === true && (
               <li id="products" className="rounded-sm w-full flex items-center space-x-2">

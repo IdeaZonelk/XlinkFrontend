@@ -250,6 +250,14 @@ export const getQty = (product, selectedVariation) => {
 };
 
 export const getPriceRange = (product, selectedVariation) => {
+  // Special handling for services
+  if (product.isService) {
+    const servicePrice = Number(product.price);
+    return !isNaN(servicePrice) && servicePrice > 0
+      ? servicePrice
+      : "Price not available";
+  }
+
   if (product.variationValues) {
     // If a variation is selected, return the price of that variation
     if (selectedVariation && product.variationValues[selectedVariation]) {
@@ -277,6 +285,12 @@ export const getPriceRange = (product, selectedVariation) => {
 };
 
 export const getProductCost = (product, selectedVariation) => {
+  // Special handling for services - use price as cost for services
+  if (product.isService) {
+    const serviceCost = Number(product.productCost || product.price || 0);
+    return !isNaN(serviceCost) ? serviceCost : 0;
+  }
+
   if (product.variationValues) {
     // If a variation is selected, return the price of that variation
     if (selectedVariation && product.variationValues[selectedVariation]) {
@@ -617,7 +631,7 @@ export const handleSave = async (
   // **Define productsData FIRST**
   const productsData = selectedProduct.map((product) => {
     const currentID = product._id;
-    const ptype = product.ptype;
+    const ptype = product.ptype || (product.isService ? 'Service' : 'Single');
     const variationValue = product.selectedVariation;
     const quantity = product.barcodeQty || 1;
     const wholesaleEnabled = product.wholesaleEnabled || false;
@@ -637,15 +651,17 @@ export const handleSave = async (
         : parseFloat(product.discount) || 0;
     
     const specialDiscount = product.specialDiscount || 0;
-    const stockQty = product.productQty - quantity;
+    const stockQty = product.isService ? 999999 : (product.productQty - quantity); // Services don't have stock
     
     // Get taxType - check if variation exists first
     const taxType = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.taxType !== undefined
         ? product.variationValues[product.selectedVariation].taxType
         : product.taxType || 'exclusive';
     
-    // Get tax rate - check if variation exists first
-    const taxRate = product.selectedVariation && product.variationValues?.[product.selectedVariation]?.orderTax !== undefined
+    // Get tax rate - check if variation exists first  
+    const taxRate = product.isService 
+        ? 0 // Services typically don't have tax
+        : product.selectedVariation && product.variationValues?.[product.selectedVariation]?.orderTax !== undefined
         ? parseFloat(product.variationValues[product.selectedVariation].orderTax) / 100
         : (parseFloat(product.orderTax) || 0) / 100;
     
@@ -679,7 +695,9 @@ export const handleSave = async (
     const productProfit = (newPrice - productCost) * quantity;
     console.log("productProfit", productProfit);
 
-    const warehouseId = product.selectedWarehouseId || product.warehouseId || defaultWarehouse;
+    const warehouseId = product.isService 
+        ? 'service' // Services don't belong to a specific warehouse
+        : (product.selectedWarehouseId || product.warehouseId || defaultWarehouse);
 
     return {
         currentID,
@@ -702,7 +720,8 @@ export const handleSave = async (
         wholesaleMinQty,
         wholesalePrice,
         wholesaleApplied: appliedWholesale,
-        productCost
+        productCost,
+        isService: product.isService || false // Add service flag for backend processing
     };
   });
 

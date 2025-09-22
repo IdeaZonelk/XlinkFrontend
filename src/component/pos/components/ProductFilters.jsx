@@ -1,33 +1,23 @@
-/*
- * Copyright (c) 2025 Ideazone (Pvt) Ltd
- * Proprietary and Confidential
- *
- * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
- * Use of this code is governed by a license agreement and an NDA.
- * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
- *
- * Contact info@ideazone.lk for more information.
- */
-
 import { useEffect } from "react";
 
 function ProductFilters({ setFilters, setLoading }) {
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true); // Start loading
+            setLoading(true);
             try {
                 const [brandResponse, warehouseResponse, categoryResponse] = await Promise.all([
-                    fetch(`${process.env.REACT_APP_BASE_URL}/api/fetchBrands`),
+                    // Use ONLY the non-paginated endpoint for brands
+                    fetch(`${process.env.REACT_APP_BASE_URL}/api/fetchAllBrandsNoPagination`),
                     fetch(`${process.env.REACT_APP_BASE_URL}/api/fetchWarehouses`),
-                    fetch(`${process.env.REACT_APP_BASE_URL}/api/fetchCategories`),
+                    fetch(`${process.env.REACT_APP_BASE_URL}/api/fetchAllCategoriesNoPagination`),
                 ]);
 
-                // Parse JSON responses
                 const brands = await brandResponse.json();
                 const warehouses = await warehouseResponse.json();
                 const categories = await categoryResponse.json();
 
-                // Update filters
+                console.log('Brands fetched:', brands.data?.length); // Debug log
+
                 setFilters({
                     brands: Array.isArray(brands.data) ? brands.data : [],
                     warehouses: Array.isArray(warehouses?.warehouses) ? warehouses.warehouses : [],
@@ -41,13 +31,14 @@ function ProductFilters({ setFilters, setLoading }) {
                     categories: [],
                 });
             } finally {
-                setLoading(false); // Stop loading
+                setLoading(false);
             }
         };
 
         fetchData();
     }, []);
 
-    return null
+    return null;
 }
+
 export default ProductFilters;
