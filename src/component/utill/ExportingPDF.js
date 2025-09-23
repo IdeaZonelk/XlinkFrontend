@@ -249,7 +249,6 @@ export const handleExportPdf = async ({
                 currentY += logoHeight + 5;
             }
         }
-        
 
         // Company Info Section
         pdf.setFontSize(12);
@@ -287,8 +286,12 @@ export const handleExportPdf = async ({
             if (col.toLowerCase() === "product" || col.toLowerCase() === "product name" || col.toLowerCase() === "name") {
                 return 47; 
             }
-             if (col.toLowerCase() === "code") {
+            if (col.toLowerCase() === "code") {
                 return 24;
+            }
+            // Fixed width for brand column
+            if (col.toLowerCase() === "brand") {
+                return 35; // Fixed width for brand column
             }
             const maxTextWidth = Math.max(
                 ...data.map(row => getTextWidth(row[dataKeys[index]] ? row[dataKeys[index]].toString() : "")),
@@ -332,13 +335,14 @@ export const handleExportPdf = async ({
             let columnX = startX;
             let maxLines = 1;
             
-            // First, calculate how many lines the product name will need
+            // Calculate how many lines the product name and brand will need
             rowData.forEach((cell, cellIndex) => {
                 if (
                     tableColumns[cellIndex].toLowerCase() === "product" ||
                     tableColumns[cellIndex].toLowerCase() === "product name" ||
                     tableColumns[cellIndex].toLowerCase() === "name" ||
-                    tableColumns[cellIndex].toLowerCase() === "code"
+                    tableColumns[cellIndex].toLowerCase() === "code" ||
+                    tableColumns[cellIndex].toLowerCase() === "brand" // Added brand to text wrapping
                 ) {
                     const cellText = cell != null ? cell.toString() : '';
                     const cellWidth = columnWidths[cellIndex] - 6;
@@ -366,7 +370,8 @@ export const handleExportPdf = async ({
                     tableColumns[cellIndex].toLowerCase() === "product" ||
                     tableColumns[cellIndex].toLowerCase() === "product name" ||
                     tableColumns[cellIndex].toLowerCase() === "name" ||
-                    tableColumns[cellIndex].toLowerCase() === "code"
+                    tableColumns[cellIndex].toLowerCase() === "code" ||
+                    tableColumns[cellIndex].toLowerCase() === "brand" // Added brand to text wrapping logic
                 ) {
                     const cellWidth = columnWidths[cellIndex] - 6;
                     const lines = pdf.splitTextToSize(cellText, cellWidth);
@@ -380,7 +385,7 @@ export const handleExportPdf = async ({
                         pdf.text(line, columnX + 3, lineY);
                     });
                 } else {
-                    // For non-product columns, center text vertically in the cell
+                    // For other columns, center text vertically in the cell
                     const textY = currentY + (actualRowHeight / 2) + 1.5; // Center vertically
                     pdf.text(cellText, columnX + 3, textY);
                 }
