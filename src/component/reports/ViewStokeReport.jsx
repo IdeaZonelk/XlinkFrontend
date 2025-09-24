@@ -159,6 +159,23 @@ function StokeReportBody() {
         return !isNaN(singleProductQty) && singleProductQty > 0 ? singleProductQty : 0;
     };
 
+    // Calculate valuation (price × quantity) for products
+    const getValuation = (product) => {
+        if (product.variationValues) {
+            // For products with variations, calculate total valuation across all variations
+            const totalValuation = Object.values(product.variationValues).reduce((total, variation) => {
+                const price = Number(variation.productPrice) || 0;
+                const qty = Number(variation.productQty) || 0;
+                return total + (price * qty);
+            }, 0);
+            return totalValuation;
+        }
+        // For single products
+        const price = Number(product.productPrice) || 0;
+        const qty = Number(product.productQty) || 0;
+        return price * qty;
+    };
+
     return (
         <div className='relative background-white absolute top-[80px] left-[18%] w-[82%] min-h-screen p-5'>
             <div>
@@ -181,17 +198,26 @@ function StokeReportBody() {
                     </div>
                     <div className='absolute right-10'>
                         <button
-                            onClick={() => handleExportPdf({
-                                data: combinedProductData,
-                                currency,
-                                title: "Stock Report",
-                                summaryTitle: "Summary of Stock",
-                                tableColumns: ["Product Name", "Code", "Brand", "Price", "In Stock", "Created On"],
-                                dataKeys: ["name", "code", "brand", "productPrice", "productQty", "createdAt"],
-                                additionalData: {
-                                    "Total Products": combinedProductData.length,
-                                }
-                            })}
+                            onClick={() => {
+                                // Prepare data with valuation for PDF export
+                                const dataWithValuation = combinedProductData.map(product => ({
+                                    ...product,
+                                    valuation: getValuation(product)
+                                }));
+                                
+                                handleExportPdf({
+                                    data: dataWithValuation,
+                                    currency,
+                                    title: "Stock Report",
+                                    summaryTitle: "Summary of Stock",
+                                    tableColumns: ["Product Name", "Code", "Brand", "Price", "In Stock", "Valuation", "Created On"],
+                                    dataKeys: ["name", "code", "brand", "productPrice", "productQty", "valuation", "createdAt"],
+                                    additionalData: {
+                                        "Total Products": combinedProductData.length,
+                                        "Total Stock Valuation": `${currency} ${formatWithCustomCommas(dataWithValuation.reduce((total, product) => total + product.valuation, 0))}`
+                                    }
+                                });
+                            }}
                             className="submit flex-none rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 w-40 text-center"
                         >
                             {'Export As PDF'}
@@ -214,6 +240,25 @@ function StokeReportBody() {
                         />
                     </form>
                 </div>
+                
+           {/* Total Valuation Card */}
+{combinedProductData.length > 0 && (
+    <div className="flex justify-end mb-4 pr-6">
+        <div className="bg-white text-blue-600 rounded-lg shadow-lg p-6 min-w-[280px]">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-sm font-medium text-blue-600 uppercase tracking-wide">Total Stock Valuation</h3>
+                    <p className="text-2xl font-bold mt-2">
+                        {currency} {formatWithCustomCommas(
+                            combinedProductData.reduce((total, product) => total + getValuation(product), 0)
+                        )}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
+
                 <div ref={ref} className='pt-2'>
                     {loading ? (
                         <Box sx={{ width: '100%', position: "absolute", top: "0", left: "0", margin: "0", padding: "0" }}>
@@ -230,6 +275,7 @@ function StokeReportBody() {
                                         <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                                         <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                                         <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Stock</th>
+                                        <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valuation</th>
                                         <th className="px-7 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created On</th>
                                         <th className="px-7 py-3 text-right mr-5 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Action</th>
                                     </tr>
@@ -250,6 +296,11 @@ function StokeReportBody() {
                                             <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">{currency}{' '}{formatWithCustomCommas(getPriceRange(p))}</td>
                                             <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900 flex">
                                                 <p className='mr-2 text-left rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{p.productQty ? p.productQty : getQty(p)}</p> <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-blue-500'>{p.saleUnit}</p>
+                                            </td>
+                                            <td className="px-7 py-5 text-left whitespace-nowrap text-m text-gray-900">
+                                                <p className='rounded-[5px] text-center p-[6px] bg-blue-100 text-blue-600 font-semibold'>
+                                                    {currency}{' '}{formatWithCustomCommas(getValuation(p))}
+                                                </p>
                                             </td>
                                             <td className="px-7 py-5 whitespace-nowrap text-m text-gray-900">{p.createdAt}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">

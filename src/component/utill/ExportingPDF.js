@@ -176,6 +176,28 @@
 //     });
 // };
 
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
+/*
+ * Copyright (c) 2025 Ideazone (Pvt) Ltd
+ * Proprietary and Confidential
+ *
+ * This source code is part of a proprietary Point-of-Sale (POS) system developed by Ideazone (Pvt) Ltd.
+ * Use of this code is governed by a license agreement and an NDA.
+ * Unauthorized use, modification, distribution, or reverse engineering is strictly prohibited.
+ *
+ * Contact info@ideazone.lk for more information.
+ */
+
 import { jsPDF } from "jspdf";
 import axios from "axios";
 
@@ -227,7 +249,6 @@ export const handleExportPdf = async ({
                 currentY += logoHeight + 5;
             }
         }
-        
 
         // Company Info Section
         pdf.setFontSize(12);
@@ -256,6 +277,22 @@ export const handleExportPdf = async ({
 
         // Calculate Column Widths Dynamically
         const columnWidths = tableColumns.map((col, index) => {
+            if (col.toLowerCase() === "valuation") {
+                return 24;
+            }
+            if (col.toLowerCase() === "in stock") {
+                return 18;
+            }
+            if (col.toLowerCase() === "product" || col.toLowerCase() === "product name" || col.toLowerCase() === "name") {
+                return 47; 
+            }
+            if (col.toLowerCase() === "code") {
+                return 24;
+            }
+            // Fixed width for brand column
+            if (col.toLowerCase() === "brand") {
+                return 35; // Fixed width for brand column
+            }
             const maxTextWidth = Math.max(
                 ...data.map(row => getTextWidth(row[dataKeys[index]] ? row[dataKeys[index]].toString() : "")),
                 getTextWidth(col)
@@ -263,7 +300,7 @@ export const handleExportPdf = async ({
             return Math.min(Math.max(maxTextWidth + 6, 30), 80); // Min 30, Max 80
         });
 
-        let startX = 10;
+        let startX = 3;
         let startY = currentY + 10;
         let rowHeight = 8;
 
@@ -296,10 +333,65 @@ export const handleExportPdf = async ({
             pdf.setFont("helvetica", "normal");
             pdf.setTextColor(0, 0, 0);
             let columnX = startX;
+            let maxLines = 1;
+            
+            // Calculate how many lines the product name and brand will need
             rowData.forEach((cell, cellIndex) => {
-                const cellText = cell != null ? cell.toString() : ''; 
-                pdf.text(cellText, columnX + 3, currentY + 5);
-                pdf.rect(columnX, currentY, columnWidths[cellIndex], rowHeight);
+                if (
+                    tableColumns[cellIndex].toLowerCase() === "product" ||
+                    tableColumns[cellIndex].toLowerCase() === "product name" ||
+                    tableColumns[cellIndex].toLowerCase() === "name" ||
+                    tableColumns[cellIndex].toLowerCase() === "code" ||
+                    tableColumns[cellIndex].toLowerCase() === "brand" // Added brand to text wrapping
+                ) {
+                    const cellText = cell != null ? cell.toString() : '';
+                    const cellWidth = columnWidths[cellIndex] - 6;
+                    const lines = pdf.splitTextToSize(cellText, cellWidth);
+                    if (lines.length > maxLines) maxLines = lines.length;
+                }
+            });
+
+            // Calculate the actual row height based on number of lines
+            const actualRowHeight = rowHeight * maxLines;
+            
+            // Redraw the background for the actual height
+            if (rowIndex % 2 === 0) {
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(startX, currentY, columnWidths.reduce((a, b) => a + b, 0), actualRowHeight, "F");
+            }
+            
+            // Reset columnX for rendering
+            columnX = startX;
+            
+            // Now render each cell with proper positioning
+            rowData.forEach((cell, cellIndex) => {
+                const cellText = cell != null ? cell.toString() : '';
+                if (
+                    tableColumns[cellIndex].toLowerCase() === "product" ||
+                    tableColumns[cellIndex].toLowerCase() === "product name" ||
+                    tableColumns[cellIndex].toLowerCase() === "name" ||
+                    tableColumns[cellIndex].toLowerCase() === "code" ||
+                    tableColumns[cellIndex].toLowerCase() === "brand" // Added brand to text wrapping logic
+                ) {
+                    const cellWidth = columnWidths[cellIndex] - 6;
+                    const lines = pdf.splitTextToSize(cellText, cellWidth);
+                    
+                    // Calculate starting Y position to center the text block vertically
+                    const totalTextHeight = lines.length * 4; // 4mm per line
+                    const startTextY = currentY + (actualRowHeight - totalTextHeight) / 2 + 3;
+                    
+                    lines.forEach((line, i) => {
+                        const lineY = startTextY + (i * 4);
+                        pdf.text(line, columnX + 3, lineY);
+                    });
+                } else {
+                    // For other columns, center text vertically in the cell
+                    const textY = currentY + (actualRowHeight / 2) + 1.5; // Center vertically
+                    pdf.text(cellText, columnX + 3, textY);
+                }
+                
+                // Draw cell border with actual height
+                pdf.rect(columnX, currentY, columnWidths[cellIndex], actualRowHeight);
                 columnX += columnWidths[cellIndex];
             });
 
@@ -307,9 +399,9 @@ export const handleExportPdf = async ({
                 totalAmount += parseFloat(row.saleAmount);
             }
 
-            currentY += rowHeight;
+            currentY += actualRowHeight;
 
-            if (currentY + rowHeight > pageHeight - 40) {
+            if (currentY + actualRowHeight > pageHeight - 40) {
                 pdf.addPage();
                 currentY = 20;
             }
