@@ -630,7 +630,18 @@ export const handleSave = async (
 
   // **Define productsData FIRST**
   const productsData = selectedProduct.map((product) => {
-    const currentID = product._id;
+    // Debug service object structure
+    if (product.isService) {
+      console.log('🔧 Processing service in SaleController:', {
+        name: product.name,
+        currentID: product.currentID,
+        _id: product._id,
+        id: product.id,
+        allKeys: Object.keys(product)
+      });
+    }
+    
+    const currentID = product.currentID || product._id || product.id;
     const ptype = product.ptype || (product.isService ? 'Service' : 'Single');
     const variationValue = product.selectedVariation;
     const quantity = product.barcodeQty || 1;
@@ -1121,7 +1132,7 @@ export const handleReturnSale = async (
 
   // Create products data array
   const productsData = selectedProduct.map((product) => {
-    const currentID = product.currentID;
+    const currentID = product.currentID || product._id || product.id;
     const ptype = product.ptype;
     const variationValue = product.variationValue;
     const price = product.price;
@@ -1243,7 +1254,7 @@ export const handleUpdateSaleReturn = async (
 
   // Create products data array
   const productsData = productData.map((product) => {
-    const currentID = product.currentID;
+    const currentID = product.currentID || product._id || product.id;
     const ptype = product.ptype;
     const variationValue = product.variationValue;
     const price = product.price;

@@ -11,6 +11,7 @@ import Box from '@mui/material/Box';
 import { toast } from 'react-toastify';
 import formatWithCustomCommas from '../utill/NumberFormate';
 import { useCurrency } from '../../context/CurrencyContext';
+import ServicesPopupModal from '../pos/components/ServicesPopupModal';
 
 function EditSaleBody() {
     // State management
@@ -40,6 +41,8 @@ function EditSaleBody() {
     const [selectedDate, setSelectedDate] = useState('');
     const [progress, setProgress] = useState(false);
     const [total, setTotal] = useState(0);
+    const [services, setServices] = useState([]);
+    const [isServicesPopupOpen, setIsServicesPopupOpen] = useState(false);
     const navigate = useNavigate();
     const { id } = useParams();
     const [useCreditPayment, setUseCreditPayment] = useState(false);
@@ -115,6 +118,73 @@ function EditSaleBody() {
             findSaleById();
         }
     }, [id]);
+
+    const fetchServices = async () => {
+        try {
+            console.log('Fetching services from:', `${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+            console.log('Services API response:', response.data);
+            if (response.data.status === 'success' && Array.isArray(response.data.services)) {
+                console.log('Services fetched successfully:', response.data.services);
+                setServices(response.data.services);
+            } else {
+                console.log('No services found or invalid response:', response.data);
+                setServices([]);
+            }
+        } catch (error) {
+            console.error('Error fetching services:', error);
+            console.error('Error details:', error.response?.data);
+            setServices([]);
+        }
+    };
+
+    useEffect(() => {
+        fetchServices();
+    }, []);
+
+    const handleServiceSelect = (service) => {
+        console.log('Service selected for edit sale:', service);
+        
+        // Create a service object that mimics product structure
+        const serviceAsProduct = {
+            _id: service._id,
+            currentID: service._id || service.id, // Add currentID for backend processing
+            name: service.name,
+            price: service.price,
+            quantity: 1,
+            sellingPrice: service.price,
+            isService: true,
+            serviceCode: service.code || `SRV-${service._id.slice(-6).toUpperCase()}`,
+            description: service.description,
+            // Add required fields for processing
+            warehouse: saleProduct?.warehouse || 'default', // Use existing sale's warehouse
+            productPrice: service.price,
+            productCost: service.price,
+            ptype: 'Service',
+            variationValue: 'No variations',
+            discount: service.discount || 0,
+            taxRate: service.orderTax || 0,
+            taxType: service.taxType || 'exclusive',
+            wholesaleEnabled: false,
+            wholesaleMinQty: 0,
+            wholesalePrice: 0,
+            appliedWholesale: false
+        };
+
+        // Add to sale return product data
+        const existingServiceIndex = saleReturProductData.findIndex(
+            item => item._id === service._id && item.isService
+        );
+
+        if (existingServiceIndex >= 0) {
+            // Service already exists, just close popup
+            setIsServicesPopupOpen(false);
+            return;
+        }
+
+        setSaleReturProductData(prev => [...prev, serviceAsProduct]);
+        setIsServicesPopupOpen(false);
+    };
 
     const fetchData = async (url, setter) => {
         setLoading(true);
@@ -949,8 +1019,8 @@ const handleClaimedPoints = () => {
 
 
                                             <td className="px-6 py-4  text-left whitespace-nowrap text-sm ">
-                                                <p className="rounded-[5px] text-center p-[6px] bg-green-100 text-green-500">
-                                                    {product.productQty ? product.productQty : product.stockQty || getQty(product, product.selectedVariation)}
+                                                <p className={`rounded-[5px] text-center p-[6px] ${product.isService ? 'bg-blue-100 text-blue-500' : 'bg-green-100 text-green-500'}`}>
+                                                    {product.isService ? 'Service' : (product.productQty ? product.productQty : product.stockQty || getQty(product, product.selectedVariation))}
                                                 </p>
                                             </td>
 
@@ -958,22 +1028,26 @@ const handleClaimedPoints = () => {
                                                 <div className="flex items-center">
                                                     <button
                                                         onClick={() => handleQtyChange(index, -1)} // Decrement
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        disabled={product.isService}
                                                     >
                                                         <img className="w-[16px] h-[16px]" src={Decrease} alt="decrease" />
                                                     </button>
                                                     <input
                                                         type="number"
-                                                        value={product.quantity}
+                                                        value={product.isService ? 1 : product.quantity}
                                                         onChange={(e) =>
-                                                            handleQtyChange(index, e.target.value, true) // Handle direct input
+                                                            !product.isService && handleQtyChange(index, e.target.value, true) // Handle direct input
                                                         }
-                                                        className="mx-2 w-16 py-[5px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                        className={`mx-2 w-16 py-[5px] text-center border rounded outline-none ${product.isService ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-1 focus:ring-blue-100'}`}
                                                         min="1"
+                                                        disabled={product.isService}
+                                                        readOnly={product.isService}
                                                     />
                                                     <button
                                                         onClick={() => handleQtyChange(index, 1)}
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        disabled={product.isService}
                                                     >
                                                         <img className="w-[16px] h-[16px] transform rotate-180" src={Decrease} alt="increase" />
                                                     </button>
@@ -1052,9 +1126,25 @@ const handleClaimedPoints = () => {
                         </table>
                     </div>
 
+                    {/* Add Services Button - left aligned above discount type field */}
+                    <div className="flex w-full mt-6 mb-2">
+                        <div className="flex-1 flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => setIsServicesPopupOpen(true)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#44BC8D] border border-transparent rounded-md shadow-sm hover:bg-[#3a9d75] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#44BC8D]"
+                            >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Services
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="">
                  {/* DISCOUNT, SHIPPING, TAX AND CLAIMED POINTS INPUT */}
-  <div className="grid grid-cols-5 gap-4 mb-4 mt-60">
+  <div className="grid grid-cols-5 gap-4 mb-4 mt-10">
     <div className="relative">
       <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
       <select
@@ -1328,6 +1418,16 @@ const handleClaimedPoints = () => {
                     </div>
                 </div>
             </div>
+            
+            {/* Services Popup Modal */}
+            <ServicesPopupModal
+                isOpen={isServicesPopupOpen}
+                onClose={() => setIsServicesPopupOpen(false)}
+                services={services}
+                onServiceSelect={handleServiceSelect}
+                warehouse={warehouse}
+                currency={currency}
+            />
         </div>
     );
 }

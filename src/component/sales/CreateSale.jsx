@@ -38,6 +38,7 @@ import formatWithCustomCommas from "../utill/NumberFormate";
 import { useCurrency } from "../../context/CurrencyContext";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import ServicesPopupModal from "../pos/components/ServicesPopupModal";
 
 function CreateSaleBody() {
   const navigate = useNavigate();
@@ -97,6 +98,10 @@ function CreateSaleBody() {
   const [isPointsClaimed, setIsPointsClaimed] = useState(false);
   const [redeemedPointsFromSale, setRedeemedPointsFromSale] = useState(0);
   const [selectedCustomerName, setSelectedCustomerName] = useState("");
+  
+  // Services-related state
+  const [services, setServices] = useState([]);
+  const [isServicesPopupOpen, setIsServicesPopupOpen] = useState(false);
 
   useEffect(() => {
     const points = calculateRedeemedPoints();
@@ -534,6 +539,71 @@ const handleClaimedPoints = () => {
     shipping,
   ]);
 
+  // Fetch services data
+  const fetchServices = async () => {
+    try {
+      console.log('Fetching services from:', `${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+      console.log('Services API response:', response.data);
+      if (response.data.status === 'success' && Array.isArray(response.data.services)) {
+        console.log('Services fetched successfully:', response.data.services);
+        setServices(response.data.services);
+      } else {
+        console.log('No services found or invalid response:', response.data);
+        setServices([]);
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      console.error('Error details:', error.response?.data);
+      setServices([]);
+    }
+  };
+
+  // Fetch services on component mount
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  // Handle service selection from popup
+  const handleServiceSelect = (service) => {
+    console.log('Service selected for sale:', service);
+    
+    // Add service to selected products with service-specific properties
+    setSelectedProduct((prevProducts) => {
+      const existingServiceIndex = prevProducts.findIndex(
+        (product) => product.isService && product.id === service.id
+      );
+
+      if (existingServiceIndex !== -1) {
+        // Service already exists, increment quantity (but for services, we just show it's already added)
+        toast.info("Service is already added to the sale");
+        return prevProducts;
+      } else {
+        // Add new service
+        const newService = {
+          ...service,
+          isService: true,
+          selectedVariation: null,
+          quantity: 1, // Services typically have quantity 1
+          productQty: 999999, // Unlimited availability for services
+          stokeQty: 999999,
+          productPrice: service.price,
+          productCost: service.price,
+          orderTax: service.orderTax || 0,
+          taxType: service.taxType || 'exclusive',
+          discount: service.discount || 0,
+          discountType: service.discountType || 'fixed',
+          saleUnit: 'Service',
+          currentID: service.id || service._id // Use either id or _id from the service object
+        };
+        
+        return [...prevProducts, newService];
+      }
+    });
+    
+    setIsServicesPopupOpen(false);
+  };
+
   const handlePrintAndClose = () => {
     // Reset all relevant state
     setWarehouse("");
@@ -710,35 +780,43 @@ const handleClaimedPoints = () => {
                                                 </div>
                                             </td>
 
-                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm "><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.productQty || getQty(product, product.selectedVariation)}</p></td>
+                                            <td className="px-6 py-4 text-left whitespace-nowrap text-sm ">
+                                                <p className={`rounded-[5px] text-center p-[6px] ${product.isService ? 'bg-blue-100 text-blue-500' : 'bg-green-100 text-green-500'}`}>
+                                                    {product.isService ? 'Service' : (product.productQty || getQty(product, product.selectedVariation))}
+                                                </p>
+                                            </td>
 
                                             <td className="px-6 py-4 text-left  whitespace-nowrap text-sm text-gray-500">
                                                 <div className="flex items-center">
                                                     <button
                                                         onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, -1)} // Decrement
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        disabled={product.isService}
                                                     >
-                                                        <img className='w-[16px] h-[16px]' src={Decrease} alt='increase' />
+                                                        <img className='w-[16px] h-[16px]' src={Decrease} alt='decrease' />
                                                     </button>
                                                     {/* Input Field */}
                                                     <input
                                                         type="number"
-                                                        value={product.ptype === "Variation"
+                                                        value={product.isService ? 1 : (product.ptype === "Variation"
                                                             ? product.variationValues[product.selectedVariation]?.barcodeQty || 1
-                                                            : product.barcodeQty || 1
+                                                            : product.barcodeQty || 1)
                                                         }
                                                         onChange={(e) =>
-                                                            handleQtyChange(index, product.selectedVariation, setSelectedProduct, e.target.value)
+                                                            !product.isService && handleQtyChange(index, product.selectedVariation, setSelectedProduct, e.target.value)
                                                         }
-                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                        className={`mx-2 w-16 py-[6px] text-center border rounded outline-none ${product.isService ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-1 focus:ring-blue-100'}`}
                                                         min="1"
+                                                        disabled={product.isService}
+                                                        readOnly={product.isService}
                                                     />
 
                                                     <button
                                                         onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, 1)} // Increment            
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        disabled={product.isService}
                                                     >
-                                                        <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='decrease' />
+                                                        <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='increase' />
                                                     </button>
                                                 </div>
                                             </td>
@@ -817,6 +895,29 @@ const handleClaimedPoints = () => {
           </div>
 
           <div className="">
+            {/* ADD SERVICES BUTTON */}
+            <div className="mb-6 mt-4">
+              <button
+                onClick={() => setIsServicesPopupOpen(true)}
+                className="px-6 py-3 bg-[#44BC8D] text-white rounded-lg hover:bg-[#3a9d7a] transition-colors duration-200 flex items-center gap-2"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Add Services
+              </button>
+            </div>
+
             {/* DISCOUNT, SHIPPING AND TAX INPUT */}
             <div className="grid grid-cols-5 gap-5 mb-4 mt-60">
               <div className="relative">
@@ -1216,6 +1317,16 @@ const handleClaimedPoints = () => {
           </div>
         </div>
       </div>
+      
+      {/* Services Popup Modal */}
+      <ServicesPopupModal
+        isOpen={isServicesPopupOpen}
+        onClose={() => setIsServicesPopupOpen(false)}
+        services={services}
+        onServiceSelect={handleServiceSelect}
+        warehouse={warehouse}
+        currency={currency}
+      />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import Box from '@mui/material/Box';
 import { useCurrency } from '../../context/CurrencyContext';
 import formatWithCustomCommas from '../utill/NumberFormate';
 import { toast } from 'react-toastify';
+import ServicesPopupModal from "../pos/components/ServicesPopupModal";
 
 function CreateSaleFromQuatationBody() {
     // State management
@@ -69,6 +70,10 @@ function CreateSaleFromQuatationBody() {
         const [isPointsClaimed, setIsPointsClaimed] = useState(false);
         const [redeemedPointsFromSale, setRedeemedPointsFromSale] = useState('');
         const [selectedCustomerName, setSelectedCustomerName] = useState('');
+
+        // Services-related state
+        const [services, setServices] = useState([]);
+        const [isServicesPopupOpen, setIsServicesPopupOpen] = useState(false);
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -520,6 +525,82 @@ function CreateSaleFromQuatationBody() {
     }
 }, [quatationData]);
 
+    // Fetch services data
+    const fetchServices = async () => {
+        try {
+            console.log('Fetching services from:', `${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+            console.log('Services API response:', response.data);
+            if (response.data.status === 'success' && Array.isArray(response.data.services)) {
+                console.log('Services fetched successfully:', response.data.services);
+                setServices(response.data.services);
+            } else {
+                console.log('No services found or invalid response:', response.data);
+                setServices([]);
+            }
+        } catch (error) {
+            console.error('Error fetching services:', error);
+            console.error('Error details:', error.response?.data);
+            setServices([]);
+        }
+    };
+
+    // Handle service selection from popup
+    const handleServiceSelect = (service) => {
+        console.log('Service selected for sale from quotation:', service);
+        
+        // Create a service object that mimics product structure
+        const serviceAsProduct = {
+            _id: service._id,
+            currentID: service._id || service.id, // Add currentID for backend processing
+            name: service.name,
+            price: service.price,
+            quantity: 1,
+            isService: true, // Critical: Mark as service
+            serviceCode: service.code || `SRV-${service._id.slice(-6).toUpperCase()}`,
+            description: service.description,
+            // Product-like fields for compatibility
+            productPrice: service.price,
+            productCost: service.price,
+            ptype: 'Service',
+            variationValue: 'No variations',
+            selectedVariation: null,
+            productQty: 999999, // Unlimited availability for services
+            stockQty: 999999,
+            orderTax: service.orderTax || 0,
+            taxType: service.taxType || 'exclusive',
+            taxRate: (service.orderTax || 0) / 100,
+            discount: service.discount || 0,
+            discountType: service.discountType || 'fixed',
+            saleUnit: 'Service',
+            wholesaleEnabled: false,
+            wholesaleMinQty: 0,
+            wholesalePrice: 0,
+            appliedWholesale: false,
+            warehouse: quatationData.warehouse || 'default',
+            subtotal: service.price
+        };
+
+        // Add to quotation product data
+        const existingServiceIndex = quatationProductData.findIndex(
+            item => item._id === service._id && item.isService
+        );
+
+        if (existingServiceIndex >= 0) {
+            toast.info("Service is already added to the sale");
+            setIsServicesPopupOpen(false);
+            return;
+        }
+
+        setQuatationProductData(prev => [...prev, serviceAsProduct]);
+        setIsServicesPopupOpen(false);
+    };
+
+    // Fetch services on component mount
+    useEffect(() => {
+        fetchServices();
+    }, []);
+
 
     return (
         <div className='background-white relative left-[18%] w-[82%] min-h-[100vh] p-5'>
@@ -658,30 +739,34 @@ function CreateSaleFromQuatationBody() {
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm ">
-                                                <p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.stockQty}</p>
+                                                <p className={`rounded-[5px] text-center p-[6px] ${product.isService ? 'bg-blue-100 text-blue-500' : 'bg-green-100 text-green-500'}`}>
+                                                    {product.isService ? 'Service' : product.stockQty}
+                                                </p>
                                             </td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 <div className="flex items-center">
                                                     <button
                                                         onClick={() => handleQtyChange(index, -1)} // Decrement
-                                                        disabled={!(quatationProductData[index]?.quantity > 1)}
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        disabled={product.isService || !(quatationProductData[index]?.quantity > 1)}
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
                                                         <img className='w-[16px] h-[16px]' src={Decrease} alt='decrease' />
                                                     </button>
                                                     <input
                                                         type="number"
                                                         min="1"
-                                                        max={product.stockQty}
-                                                        value={quatationProductData[index]?.quantity || 1}
-                                                        onChange={(e) => handleQtyInputChange(index, e.target.value)}
-                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                        max={product.isService ? 1 : product.stockQty}
+                                                        value={product.isService ? 1 : (quatationProductData[index]?.quantity || 1)}
+                                                        onChange={(e) => !product.isService && handleQtyInputChange(index, e.target.value)}
+                                                        className={`mx-2 w-16 py-[6px] text-center border rounded outline-none ${product.isService ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-1 focus:ring-blue-100'}`}
+                                                        disabled={product.isService}
+                                                        readOnly={product.isService}
                                                     />
                                                     <button
                                                         onClick={() => handleQtyChange(index, 1)} // Increment
-                                                        disabled={!(quatationProductData[index]?.quantity < product.stockQty)}
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        disabled={product.isService || !(quatationProductData[index]?.quantity < product.stockQty)}
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
                                                     >
                                                         <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='increase' />
                                                     </button>
@@ -719,9 +804,25 @@ function CreateSaleFromQuatationBody() {
                         </table>
                     </div>
 
+                    {/* ADD SERVICES BUTTON */}
+                    <div className="flex w-full mt-6 mb-2">
+                        <div className="flex-1 flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => setIsServicesPopupOpen(true)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#44BC8D] border border-transparent rounded-md shadow-sm hover:bg-[#3a9d75] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#44BC8D]"
+                            >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Services
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="">
                        {/* DISCOUNT, SHIPPING, TAX AND CLAIMED POINTS INPUT - ALL IN ONE ROW */}
-<div className="grid grid-cols-5 gap-4 mb-4 mt-60">
+<div className="grid grid-cols-5 gap-4 mb-4 mt-10">
     <div className="relative">
         <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
         <select
@@ -1023,6 +1124,16 @@ function CreateSaleFromQuatationBody() {
                     </div>
                 </div>
             </div>
+            
+            {/* Services Popup Modal */}
+            <ServicesPopupModal
+                isOpen={isServicesPopupOpen}
+                onClose={() => setIsServicesPopupOpen(false)}
+                services={services}
+                onServiceSelect={handleServiceSelect}
+                warehouse={quatationData.warehouse}
+                currency={currency}
+            />
         </div >
     );
 }

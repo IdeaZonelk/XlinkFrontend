@@ -24,6 +24,7 @@ import { isValidMobileInput, isAllowedKey } from '../utill/MobileValidation';
 import { useCurrency } from '../../context/CurrencyContext';
 import formatWithCustomCommas from '../utill/NumberFormate';
 import { toast } from 'react-toastify';
+import ServicesPopupModal from "../pos/components/ServicesPopupModal";
 
 function CreateQuatationBody() {
     // State management
@@ -72,6 +73,10 @@ function CreateQuatationBody() {
 const [claimedPoints, setClaimedPoints] = useState('');
 const [isPointsClaimed, setIsPointsClaimed] = useState(false);
 const [selectedCustomerName, setSelectedCustomerName] = useState('');
+
+// Services-related state
+const [services, setServices] = useState([]);
+const [isServicesPopupOpen, setIsServicesPopupOpen] = useState(false);
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -247,6 +252,99 @@ const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
         return 0;
     };
+
+    // Fetch services data
+    const fetchServices = async () => {
+        try {
+            console.log('Fetching services from:', `${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/findAllServiceNoPagination`);
+            console.log('Services API response:', response.data);
+            if (response.data.status === 'success' && Array.isArray(response.data.services)) {
+                console.log('Services fetched successfully:', response.data.services);
+                setServices(response.data.services);
+            } else {
+                console.log('No services found or invalid response:', response.data);
+                setServices([]);
+            }
+        } catch (error) {
+            console.error('Error fetching services:', error);
+            console.error('Error details:', error.response?.data);
+            setServices([]);
+        }
+    };
+
+    // Handle service selection from popup
+    const handleServiceSelect = (service) => {
+        console.log('Service selected for quotation:', service);
+        console.log('Service _id:', service._id);
+        console.log('Service id:', service.id);
+        console.log('All service keys:', Object.keys(service));
+        
+        // Ensure we have a valid service ID
+        const serviceId = service._id || service.id;
+        if (!serviceId) {
+            console.error('Service ID is missing!', service);
+            toast.error("Service ID is missing. Cannot add service.");
+            return;
+        }
+        
+        // Add service to selected products with service-specific properties
+        setSelectedProduct((prevProducts) => {
+            const existingServiceIndex = prevProducts.findIndex(
+                (product) => product.isService && product.currentID === serviceId
+            );
+
+            if (existingServiceIndex !== -1) {
+                // Service already exists, increment quantity (but for services, we just show it's already added)
+                toast.info("Service is already added to the quotation");
+                return prevProducts;
+            } else {
+                // Add new service with proper service structure
+                const newService = {
+                    _id: serviceId,
+                    currentID: serviceId, // Use the validated service ID
+                    name: service.serviceName || service.name || 'Unnamed Service', // Use serviceName from model
+                    price: service.finalPrice || service.price || 0,
+                    quantity: 1,
+                    isService: true, // Critical: Mark as service
+                    serviceCode: service.code || `SRV-${serviceId.toString().slice(-6).toUpperCase()}`,
+                    description: service.description || '',
+                    // Product-like fields for compatibility
+                    productPrice: service.finalPrice || service.price || 0,
+                    productCost: service.finalPrice || service.price || 0,
+                    ptype: 'Service',
+                    variationValue: 'No variations',
+                    selectedVariation: null,
+                    barcodeQty: 1,
+                    productQty: 999999, // Unlimited availability for services
+                    stockQty: 999999,
+                    orderTax: service.orderTax || service.serviceCharge || 0,
+                    taxType: service.taxType || service.serviceChargeType || 'exclusive',
+                    taxRate: ((service.orderTax || service.serviceCharge || 0) / 100),
+                    discount: service.discount || 0,
+                    discountType: service.discountType || 'fixed',
+                    saleUnit: 'Service',
+                    wholesaleEnabled: false,
+                    wholesaleMinQty: 0,
+                    wholesalePrice: 0,
+                    appliedWholesale: false,
+                    warehouse: warehouse || 'default',
+                    subtotal: service.finalPrice || service.price || 0
+                };
+                
+                console.log('Created service object:', newService);
+                console.log('Service currentID will be:', newService.currentID);
+                
+                return [...prevProducts, newService];
+            }
+        });
+        
+        setIsServicesPopupOpen(false);
+    };
+
+    useEffect(() => {
+        fetchServices();
+    }, []);
 
     useEffect(() => {
         if (discountType === 'fixed') {
@@ -649,33 +747,41 @@ const [selectedCustomerName, setSelectedCustomerName] = useState('');
                                                 </div>
                                             </td>
 
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm "><p className='rounded-[5px] text-center p-[6px] bg-green-100 text-green-500'>{product.productQty || getQty(product, product.selectedVariation)}</p></td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm ">
+                                                <p className={`rounded-[5px] text-center p-[6px] ${product.isService ? 'bg-blue-100 text-blue-500' : 'bg-green-100 text-green-500'}`}>
+                                                    {product.isService ? 'Service' : (product.productQty || getQty(product, product.selectedVariation))}
+                                                </p>
+                                            </td>
 
                                             <td className="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-500">
                                                 <div className="flex items-center">
                                                     <button
                                                         onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, -1)} // Decrement
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        disabled={product.isService}
                                                     >
-                                                        <img className='w-[16px] h-[16px]' src={Decrease} alt='increase' />
+                                                        <img className='w-[16px] h-[16px]' src={Decrease} alt='decrease' />
                                                     </button>
                                                     <input
                                                         type="number"
                                                         min="1"
-                                                        value={product.ptype === "Variation"
+                                                        value={product.isService ? 1 : (product.ptype === "Variation"
                                                             ? product.variationValues[product.selectedVariation]?.barcodeQty || 1
-                                                            : product.barcodeQty || 1}
+                                                            : product.barcodeQty || 1)}
                                                         onChange={(e) =>
-                                                            handleQtyChange(index, product.ptype === "Variation" ? product.selectedVariation : null, setSelectedProduct, e.target.value)
+                                                            !product.isService && handleQtyChange(index, product.ptype === "Variation" ? product.selectedVariation : null, setSelectedProduct, e.target.value)
                                                         }
-                                                        className="mx-2 w-16 py-[6px] text-center border rounded outline-none focus:ring-1 focus:ring-blue-100"
+                                                        className={`mx-2 w-16 py-[6px] text-center border rounded outline-none ${product.isService ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-1 focus:ring-blue-100'}`}
+                                                        disabled={product.isService}
+                                                        readOnly={product.isService}
                                                     />
 
                                                     <button
                                                         onClick={() => handleQtyChange(index, product.selectedVariation, setSelectedProduct, 1)} // Increment            
-                                                        className="px-2 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                                        className={`px-2 py-2 rounded ${product.isService ? 'bg-gray-200 cursor-not-allowed opacity-50' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                                        disabled={product.isService}
                                                     >
-                                                        <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='decrease' />
+                                                        <img className='w-[16px] h-[16px] transform rotate-180' src={Decrease} alt='increase' />
                                                     </button>
                                                 </div>
                                             </td>
@@ -760,9 +866,25 @@ const [selectedCustomerName, setSelectedCustomerName] = useState('');
                         )}
                     </div>
 
+                    {/* ADD SERVICES BUTTON */}
+                    <div className="flex w-full mt-6 mb-2">
+                        <div className="flex-1 flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => setIsServicesPopupOpen(true)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#44BC8D] border border-transparent rounded-md shadow-sm hover:bg-[#3a9d75] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#44BC8D]"
+                            >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Services
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="">
                         {/* DISCOUNT, SHIPPING AND TAX INPUT */}
-                        <div className="grid grid-cols-4 gap-4 mb-4 mt-60">
+                        <div className="grid grid-cols-4 gap-4 mb-4 mt-10">
                             <div className="relative">
                                 <label className="block text-left text-sm font-medium text-gray-700">Discount Type:</label>
                                 <select
@@ -1193,6 +1315,16 @@ const [selectedCustomerName, setSelectedCustomerName] = useState('');
 )}
 
             </div>
+            
+            {/* Services Popup Modal */}
+            <ServicesPopupModal
+                isOpen={isServicesPopupOpen}
+                onClose={() => setIsServicesPopupOpen(false)}
+                services={services}
+                onServiceSelect={handleServiceSelect}
+                warehouse={warehouse}
+                currency={currency}
+            />
         </div>
     );
 }

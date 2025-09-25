@@ -362,6 +362,12 @@ useEffect(() => {
     const handleIncrement = (index) => {
         setProductBillingHandling((prev) => {
             const product = prev[index];
+            
+            // Prevent incrementing services
+            if (product.isService) {
+                return prev;
+            }
+            
             const variation = product.selectedVariation
                 ? product.variationValues[product.selectedVariation]
                 : null;
@@ -380,6 +386,12 @@ useEffect(() => {
         const inputValue = e.target.value;
         const newQty = Number(inputValue);
         const product = productBillingHandling[index];
+        
+        // Prevent quantity changes for services
+        if (product.isService) {
+            return;
+        }
+        
         const variation = product.selectedVariation
             ? product.variationValues[product.selectedVariation]
             : null;
@@ -432,6 +444,11 @@ useEffect(() => {
     const handleDecrement = (index) => {
         setProductBillingHandling((prev) =>
             prev.map((product, i) => {
+                // Prevent decrementing services
+                if (product.isService) {
+                    return product;
+                }
+                
                 if (i === index && product.qty > 1) {
                     return { ...product, qty: product.qty - 1 };
                 }
@@ -946,23 +963,35 @@ useEffect(() => {
 
                                                 {/* Quantity Control Section */}
                                                 <td className="px-4 py-2 text-sm flex items-center text-left">
-                                                    <button
-                                                        onClick={() => handleDecrement(originalIndex)}
-                                                        className={`px-2 py-1 rounded-md bg-gray-200 text-gray-600`}
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <input
-                                                        className="w-[30px] text-center mx-2"
-                                                        value={product.qty || 1}
-                                                        onChange={(e) => handleQtyChange(e, originalIndex)}
-                                                    />
-                                                    <button
-                                                        onClick={() => handleIncrement(originalIndex)}
-                                                        className={`px-2 py-1 rounded-md bg-gray-200 text-gray-600`}
-                                                    >
-                                                        +
-                                                    </button>
+                                                    {product.isService ? (
+                                                        // For services, show fixed quantity without controls
+                                                        <div className="flex items-center">
+                                                            <span className="px-2 py-1 rounded-md bg-blue-100 text-blue-600 text-center w-[60px]">
+                                                                Service
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        // For regular products, show quantity controls
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleDecrement(originalIndex)}
+                                                                className={`px-2 py-1 rounded-md bg-gray-200 text-gray-600`}
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <input
+                                                                className="w-[30px] text-center mx-2"
+                                                                value={product.qty || 1}
+                                                                onChange={(e) => handleQtyChange(e, originalIndex)}
+                                                            />
+                                                            <button
+                                                                onClick={() => handleIncrement(originalIndex)}
+                                                                className={`px-2 py-1 rounded-md bg-gray-200 text-gray-600`}
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </td>
 
                                                 {/* Product Price */}

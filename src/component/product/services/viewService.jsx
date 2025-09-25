@@ -45,9 +45,9 @@ function ViewServicesBody() {
       
           setPermissionData(extractPermissions(userData.permissions));
         }
-      }, [userData]);
+    }, [userData]);
 
-      const extractPermissions = (permissions) => {
+    const extractPermissions = (permissions) => {
         let extractedPermissions = {};
       
         Object.keys(permissions).forEach((category) => {
@@ -57,7 +57,23 @@ function ViewServicesBody() {
         });
       
         return extractedPermissions;
-      };
+    };
+
+    // Format price display
+    const formatPrice = (price, type = 'fixed', value = 0) => {
+        if (!price && price !== 0) return '-';
+        return `LKR ${parseFloat(price).toFixed(2)}`;
+    };
+
+    // Format service charge/discount display
+    const formatServiceChargeDiscount = (value, type) => {
+        if (!value && value !== 0) return '-';
+        if (type === 'percentage') {
+            return `${value}%`;
+        } else {
+            return `LKR ${parseFloat(value).toFixed(2)}`;
+        }
+    };
 
     // Fetch all service data
     const fetchServiceData = async () => {
@@ -201,7 +217,7 @@ function ViewServicesBody() {
         <div className='relative background-white absolute top-[80px] left-[18%] w-[82%] min-h-[100vh] p-5'>
             <div className='flex justify-between mb-4'>
                 <div className="relative w-full max-w-md">
-                <form
+                    <form
                         className="flex items-center"
                         onSubmit={(e) => {
                             e.preventDefault();
@@ -268,7 +284,10 @@ function ViewServicesBody() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Charge</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-bold">Final Price</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Action</th>
                             </tr>
                         </thead>
@@ -277,7 +296,16 @@ function ViewServicesBody() {
                                 <tr key={service._id}>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{service.serviceName}</td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{service.description || '-'}</td>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{service.price ? `LKR ${service.price}` : '-'}</td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{formatPrice(service.price)}</td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
+                                        {(service.serviceCharge || service.orderTax) > 0 ? formatServiceChargeDiscount(service.serviceCharge || service.orderTax, service.serviceChargeType || service.taxType) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
+                                        {service.discount > 0 ? formatServiceChargeDiscount(service.discount, service.discountType) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900 font-semibold text-green-600">
+                                        {formatPrice(service.finalPrice)}
+                                    </td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900 text-right">
                                         <div className='flex items-center justify-end'>
                                             <Link to={`/editService/${service._id}`}
@@ -307,7 +335,10 @@ function ViewServicesBody() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Charge</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-bold">Final Price</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Action</th>
                             </tr>
                         </thead>
@@ -316,7 +347,16 @@ function ViewServicesBody() {
                                 <tr key={service._id}>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{service.serviceName}</td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{service.description || '-'}</td>
-                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{service.price ? `$${service.price}` : '-'}</td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">{formatPrice(service.price)}</td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
+                                        {(service.serviceCharge || service.orderTax) > 0 ? formatServiceChargeDiscount(service.serviceCharge || service.orderTax, service.serviceChargeType || service.taxType) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900">
+                                        {service.discount > 0 ? formatServiceChargeDiscount(service.discount, service.discountType) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900 font-semibold text-green-600">
+                                        {formatPrice(service.finalPrice)}
+                                    </td>
                                     <td className="px-6 py-4 text-left whitespace-nowrap text-m text-gray-900 text-right">
                                         <div className='flex text-left items-center justify-end'>
                                         <Link to={`/editService/${service._id}`}

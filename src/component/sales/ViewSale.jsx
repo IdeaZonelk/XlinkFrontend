@@ -872,7 +872,8 @@ function ViewSaleBody() {
                                                                                 </div>
                                                                             </td>
                                                                             <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(getApplicablePrice(product))}</td>
-                                                                            <td className="py-2 px-4 border-b text-left">{product.quantity}</td>
+                                                                            <td className="py-2 px-4 border-b text-left">{product.quantity} </td>
+                                                                            
                                                                             <td className="py-2 px-4 border-b text-left">{product.taxRate * 100} %</td>
                                                                             <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(product.discount ? product.discount : 0.00)}</td>
                                                                             <td className="py-2 px-4 border-b text-left">{currency}{' '} {formatWithCustomCommas(product.specialDiscount)}</td>
