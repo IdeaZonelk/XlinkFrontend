@@ -618,6 +618,7 @@ export const handleSave = async (
   const productsData = selectedProduct.map((product) => {
     const currentID = product._id;
     const ptype = product.ptype;
+    const warranty = product.warranty || '';
     const variationValue = product.selectedVariation;
     const quantity = product.barcodeQty || 1;
     const wholesaleEnabled = product.wholesaleEnabled || false;
@@ -684,6 +685,7 @@ export const handleSave = async (
     return {
         currentID,
         ptype,
+        warranty,
         variationValue: variationValue || 'No variations',
         name: product.name,
         appliedWholesale,
